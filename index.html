@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SEIMEI HS Volleyball Tracker</title>
     <!-- Ver.1.1.1: archive dark mode and server visibility fix -->
     <meta name="theme-color" content="#0f172a">
@@ -1147,8 +1147,15 @@
 }
 
 
-/* Ver.1.3.7 Double Tap Zoom Fix */
+/* Ver.1.3.7: iPad Safari ダブルタップズーム抑制（CSS/viewport中心・JS preventDefaultなし） */
 html, body {
+    touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
+}
+
+button, input, select, textarea,
+.btn, .action-btn, .menu-btn, .p-btn, .modal-btn,
+.player-btn, .stat-btn, .choice-btn {
     touch-action: manipulation;
 }
 
