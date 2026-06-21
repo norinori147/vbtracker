@@ -178,7 +178,7 @@
         .analysis-box { margin-top: 15px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.8rem; }
         .analysis-title { font-weight: bold; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; gap: 4px; }
 
-        /* ===== Ver.1.3.7 ローテーション分析 ===== */
+        /* ===== Ver.1.3.8 ローテーション分析 ===== */
         .rotation-analysis-box { margin-top: 15px; }
         .rotation-analysis-note { font-size: 0.78rem; color: #94a3b8; margin: 4px 0 8px; line-height: 1.5; }
         .rotation-analysis-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
@@ -191,7 +191,7 @@
         .rotation-best-row { background: rgba(22, 163, 74, 0.12); }
         .rotation-worst-row { background: rgba(220, 38, 38, 0.10); }
 
-/* Ver.1.3.7 ローテーション分析：小型コート図 */
+/* Ver.1.3.8 ローテーション分析：小型コート図 */
 .rotation-mini-court {
     display: grid;
     grid-template-columns: repeat(3, minmax(70px, 1fr));
@@ -1147,7 +1147,7 @@
 }
 
 
-/* Ver.1.3.7: iPad Safari ダブルタップズーム抑制（CSS/viewport中心・JS preventDefaultなし） */
+/* Ver.1.3.8: iPad Safari ダブルタップズーム抑制（CSS/viewport中心・JS preventDefaultなし） */
 html, body {
     touch-action: manipulation;
     -webkit-text-size-adjust: 100%;
@@ -1568,7 +1568,7 @@ button, input, select, textarea,
         <div class="modal-window" style="max-width:760px;">
             <div class="modal-header"><h2>💾 データ保存・読み込み</h2><button class="modal-close" onclick="closeModal('dataModal')">閉じる</button></div>
             <div class="modal-body">
-                <div style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:10px;margin-bottom:12px;color:#cbd5e1;font-size:0.85rem;">📱 PWA対応版です。AndroidはChrome、iPadはSafariで開き、ホーム画面に追加するとアプリ風に使えます。<br><span style="display:block;margin-top:6px;color:#93c5fd;font-weight:900;">Ver.1.3.7</span></div>
+                <div style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:10px;margin-bottom:12px;color:#cbd5e1;font-size:0.85rem;">📱 PWA対応版です。AndroidはChrome、iPadはSafariで開き、ホーム画面に追加するとアプリ風に使えます。<br><span style="display:block;margin-top:6px;color:#93c5fd;font-weight:900;">Ver.1.3.8</span></div>
                 <div class="panel">
                     <h3>外部ファイルへバックアップ</h3>
                     <p style="font-size:0.85rem; color:#cbd5e1; line-height:1.7;">現在の試合データ、選手名、S-Lineup、本日履歴、過去の記録をまとめて外部ファイルに保存できます。JSON単体に加えて、CSVや説明書を含むZIP一括保存にも対応しました。</p>
@@ -3480,7 +3480,7 @@ button, input, select, textarea,
     function getLineupForRotationIndex(baseLineup, rotationIndex) {
         var lineup = normalizeStartingLineupMap(baseLineup || startingLineup);
         var count = normalizeRotationIndex(rotationIndex);
-        for (var i = 0; i < count; i++) {
+        for (var step = 0; step < count; step++) {
             lineup = rotateLineupOnceForward(lineup);
         }
         return lineup;
@@ -3529,14 +3529,14 @@ button, input, select, textarea,
             tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:12px;">ローテーション分析に使える得点記録がまだありません。</td></tr>';
             return;
         }
-        tbody.innerHTML = rows.map(function(r) {
+        tbody.innerHTML = rows.map(function(r, idx) {
             var pct = r.total > 0 ? Math.round((r.us / r.total) * 100) + '%' : '-';
             var diffClass = r.diff > 0 ? 'rotation-diff-plus' : (r.diff < 0 ? 'rotation-diff-minus' : 'rotation-diff-zero');
             var trClass = '';
             if (r.total > 0 && r.diff === maxDiff && maxDiff > 0) trClass = 'rotation-best-row';
             if (r.total > 0 && r.diff === minDiff && minDiff < 0) trClass = 'rotation-worst-row';
             var diffText = r.diff > 0 ? '+' + r.diff : String(r.diff);
-            return '<tr class="' + trClass + '"><td>' + r.label + '</td><td>' + rotationMiniCourtHtml(baseLineup, i, nameMap, numberMap) + '</td><td>' + r.us + '</td><td>' + r.them + '</td><td class="' + diffClass + '">' + diffText + '</td><td>' + pct + '</td></tr>';
+            return '<tr class="' + trClass + '"><td>' + r.label + '</td><td>' + rotationMiniCourtHtml(baseLineup, idx, nameMap, numberMap) + '</td><td>' + r.us + '</td><td>' + r.them + '</td><td class="' + diffClass + '">' + diffText + '</td><td>' + pct + '</td></tr>';
         }).join('');
     }
 
@@ -3936,7 +3936,7 @@ button, input, select, textarea,
         var html = '<html><head><title>SEIMEI Volleyball Report</title><style>body{font-family:Arial,sans-serif;padding:20px;}h1,h2{color:#1e3a8a;}table{width:100%;border-collapse:collapse;font-size:12px;}th,td{border:1px solid #999;padding:6px;text-align:left;}th{background:#f3f4f6}.print-log{border-bottom:1px solid #ddd;padding:4px;font-size:12px;}</style></head><body>' +
             '<h1>' + getAppFullTitle() + '</h1><h2>' + label + ' / 第' + currentSet + 'セット / vs ' + opponentLabel + '</h2>' +
             '<h3>スタッツ集計</h3>' + tableHtmlFromStats(activeData, activeNameMap) + '<h3>ランニングスコア</h3>' + runningLogHtml() +
-            '<script>window.onload=function(){window.print();}<\/script></body></html><!-- Ver.1.3.7 set-center-layout -->';
+            '<script>window.onload=function(){window.print();}<\/script></body></html><!-- Ver.1.3.8 set-center-layout -->';
         var w = window.open('', '_blank'); w.document.open(); w.document.write(html); w.document.close();
     }
 
@@ -3945,7 +3945,7 @@ button, input, select, textarea,
         if (!dayVal) { alert('先に日付を選択してください。'); return; }
         viewArchiveDayTotal();
         var printContents = document.getElementById('archive-display-area').innerHTML;
-        var html = '<html><head><title>Archive Report</title><style>body{font-family:Arial,sans-serif;padding:20px;}h4,h5{color:#1e3a8a;}table{width:100%;border-collapse:collapse;font-size:12px;}th,td{border:1px solid #999;padding:6px;text-align:left;}th{background:#f3f4f6}.log-container{display:none;}</style></head><body>' + printContents + '<script>window.onload=function(){window.print();}<\/script></body></html><!-- Ver.1.3.7 set-center-layout -->';
+        var html = '<html><head><title>Archive Report</title><style>body{font-family:Arial,sans-serif;padding:20px;}h4,h5{color:#1e3a8a;}table{width:100%;border-collapse:collapse;font-size:12px;}th,td{border:1px solid #999;padding:6px;text-align:left;}th{background:#f3f4f6}.log-container{display:none;}</style></head><body>' + printContents + '<script>window.onload=function(){window.print();}<\/script></body></html><!-- Ver.1.3.8 set-center-layout -->';
         var w = window.open('', '_blank'); w.document.open(); w.document.write(html); w.document.close();
     }
 
@@ -4248,4 +4248,4 @@ button, input, select, textarea,
     initSetup(); updateUI();
 </script>
 </body>
-</html><!-- Ver.1.3.7 set-center-layout -->
+</html><!-- Ver.1.3.8 set-center-layout -->
