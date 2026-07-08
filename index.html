@@ -178,7 +178,7 @@
         .analysis-box { margin-top: 15px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.8rem; }
         .analysis-title { font-weight: bold; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; gap: 4px; }
 
-        /* ===== Ver.1.3.8 ローテーション分析 ===== */
+        /* ===== Ver.1.3.11 ローテーション分析 ===== */
         .rotation-analysis-box { margin-top: 15px; }
         .rotation-analysis-note { font-size: 0.78rem; color: #94a3b8; margin: 4px 0 8px; line-height: 1.5; }
         .rotation-analysis-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
@@ -191,7 +191,7 @@
         .rotation-best-row { background: rgba(22, 163, 74, 0.12); }
         .rotation-worst-row { background: rgba(220, 38, 38, 0.10); }
 
-/* Ver.1.3.8 ローテーション分析：小型コート図 */
+/* Ver.1.3.11 ローテーション分析：小型コート図 */
 .rotation-mini-court {
     display: grid;
     grid-template-columns: repeat(3, minmax(70px, 1fr));
@@ -1147,7 +1147,7 @@
 }
 
 
-/* Ver.1.3.8: iPad Safari ダブルタップズーム抑制（CSS/viewport中心・JS preventDefaultなし） */
+/* Ver.1.3.11: iPad Safari ダブルタップズーム抑制（CSS/viewport中心・JS preventDefaultなし） */
 html, body {
     touch-action: manipulation;
     -webkit-text-size-adjust: 100%;
@@ -1464,7 +1464,7 @@ button, input, select, textarea,
             <div class="analysis-box rotation-analysis-box" id="rotation-analysis-box">
                 <div class="analysis-title">🔄 ローテーション分析（現セット）</div>
                 <div class="rotation-analysis-note">※ R1はセット開始時のS-Lineup、以降は自チームがサイドアウトしてローテーションが進んだ状態です。配置図は P4-P3-P2 / P5-P6-P1 で表示します。</div>
-                <div class="table-container" style="max-height:260px;">
+                <div class="table-container" style="max-height:720px;">
                     <table class="rotation-analysis-table">
                         <thead>
                             <tr><th>ローテ</th><th>配置図</th><th>得点</th><th>失点</th><th>得失点</th><th>得点率</th></tr>
@@ -1568,7 +1568,7 @@ button, input, select, textarea,
         <div class="modal-window" style="max-width:760px;">
             <div class="modal-header"><h2>💾 データ保存・読み込み</h2><button class="modal-close" onclick="closeModal('dataModal')">閉じる</button></div>
             <div class="modal-body">
-                <div style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:10px;margin-bottom:12px;color:#cbd5e1;font-size:0.85rem;">📱 PWA対応版です。AndroidはChrome、iPadはSafariで開き、ホーム画面に追加するとアプリ風に使えます。<br><span style="display:block;margin-top:6px;color:#93c5fd;font-weight:900;">Ver.1.3.8</span></div>
+                <div style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:10px;margin-bottom:12px;color:#cbd5e1;font-size:0.85rem;">📱 PWA対応版です。AndroidはChrome、iPadはSafariで開き、ホーム画面に追加するとアプリ風に使えます。<br><span style="display:block;margin-top:6px;color:#93c5fd;font-weight:900;">Ver.1.3.11</span></div>
                 <div class="panel">
                     <h3>外部ファイルへバックアップ</h3>
                     <p style="font-size:0.85rem; color:#cbd5e1; line-height:1.7;">現在の試合データ、選手名、S-Lineup、本日履歴、過去の記録をまとめて外部ファイルに保存できます。JSON単体に加えて、CSVや説明書を含むZIP一括保存にも対応しました。</p>
@@ -1699,7 +1699,7 @@ button, input, select, textarea,
             <div class="analysis-box rotation-analysis-box" id="archive-rotation-analysis-box" style="margin-top:15px; display:none;">
                 <div class="analysis-title">🔄 ローテーション分析（1セット記録）</div>
                 <div class="rotation-analysis-note" id="archive-rotation-analysis-note">※ このセット単体のローテーション別得失点です。</div>
-                <div class="table-container" style="max-height:260px;">
+                <div class="table-container" style="max-height:720px;">
                     <table class="rotation-analysis-table">
                         <thead>
                             <tr><th>ローテ</th><th>配置図</th><th>得点</th><th>失点</th><th>得失点</th><th>得点率</th></tr>
@@ -1834,6 +1834,55 @@ button, input, select, textarea,
         var btn = document.getElementById('btn-' + id);
         if (!btn) return;
         btn.innerText = (id === 'team' || id === 'us_team') ? playerNames[id] : getPlayerDisplayName(id);
+    }
+
+    var APP_VERSION = '1.3.11';
+    var DATA_SCHEMA_VERSION = 2;
+
+    function normalizeBackupPayload(data) {
+        data = data || {};
+        if (!data.appVersion) data.appVersion = 'legacy';
+        if (!data.dataSchemaVersion) data.dataSchemaVersion = 1;
+        return migrateAppData(data);
+    }
+
+    function migrateAppData(data) {
+        data = data || {};
+        var schema = parseInt(data.dataSchemaVersion || 1, 10) || 1;
+
+        // schema 1 -> 2:
+        // v1.3.11以前の保存データを現行構造に補正する。
+        // 既存データを壊さず、足りない項目だけを補う。
+        if (schema < 2) {
+            data.globalArchive = Array.isArray(data.globalArchive) ? data.globalArchive : [];
+            data.autoBackups = Array.isArray(data.autoBackups) ? data.autoBackups : [];
+            data.setResults = Array.isArray(data.setResults) ? data.setResults : [];
+            data.historyLog = Array.isArray(data.historyLog) ? data.historyLog : [];
+
+            // 旧形式の日付を YYYY/MM/DD に寄せる
+            if (Array.isArray(data.globalArchive)) {
+                data.globalArchive.forEach(function(item) {
+                    if (item && item.date && typeof normalizeArchiveDateString === 'function') {
+                        item.date = normalizeArchiveDateString(item.date);
+                    }
+                    if (item && !item.matchLabel) {
+                        item.matchLabel = item.matchType === 'official'
+                            ? ('公式戦 第' + (item.matchNumber || 1) + '試合')
+                            : '練習試合';
+                    }
+                    if (item && item.score && (item.usScore === undefined || item.themScore === undefined)) {
+                        var parts = String(item.score).split('-');
+                        item.usScore = parseInt(parts[0], 10) || 0;
+                        item.themScore = parseInt(parts[1], 10) || 0;
+                    }
+                });
+            }
+            schema = 2;
+        }
+
+        data.dataSchemaVersion = DATA_SCHEMA_VERSION;
+        data.appVersion = APP_VERSION;
+        return data;
     }
 
     var appTitlePrefix = 'SEIMEI HS';
@@ -2204,6 +2253,17 @@ button, input, select, textarea,
     }
 
     function getCurrentStatsNameMap() {
+        if (currentView === 'today') {
+            var todaySets = getArchiveItemsByDate(getTodayArchiveDateString());
+            if (todaySets.length > 0) {
+                return getArchiveTotalNameMap(todaySets, todaySets[todaySets.length - 1].playerNamesSnap || playerNames);
+            }
+        }
+        if (currentView === 'all') {
+            if ((globalArchive || []).length > 0) {
+                return getArchiveTotalNameMap(globalArchive, globalArchive[globalArchive.length - 1].playerNamesSnap || playerNames);
+            }
+        }
         var map = Object.assign({}, playerNames);
         if (currentView !== 'set') {
             map['team'] = '相手(全体)';
@@ -2226,6 +2286,83 @@ button, input, select, textarea,
         map['team'] = (oppList.length === 1 ? oppList[0] : '相手') + '(全体)';
         return map;
     }
+
+    function getTodayArchiveDateString() {
+        var now = new Date();
+        return now.getFullYear() + '/' + String(now.getMonth() + 1).padStart(2, '0') + '/' + String(now.getDate()).padStart(2, '0');
+    }
+
+    function mergeStatsInto(target, source) {
+        target = ensureStatsDataShape(target || createEmptyStats());
+        source = ensureStatsDataShape(source || {});
+        for (var pKey in source) {
+            if (!target[pKey]) target[pKey] = {};
+            for (var sKey in source[pKey]) {
+                target[pKey][sKey] = (target[pKey][sKey] || 0) + (source[pKey][sKey] || 0);
+            }
+        }
+        return target;
+    }
+
+    function getArchiveItemsByDate(dateStr) {
+        var d = normalizeArchiveDateString(dateStr);
+        return (globalArchive || []).filter(function(item){
+            return normalizeArchiveDateString(item.date) === d;
+        });
+    }
+
+    function aggregateArchiveStats(items) {
+        var aggregated = createEmptyStats();
+        items = items || [];
+        for (var i = 0; i < items.length; i++) {
+            if (items[i] && items[i].statsSnap) {
+                mergeStatsInto(aggregated, items[i].statsSnap);
+            }
+        }
+        return aggregated;
+    }
+
+    function getActiveStatsData() {
+        if (currentView === 'set') {
+            return setData;
+        }
+        if (currentView === 'today') {
+            var todaySets = getArchiveItemsByDate(getTodayArchiveDateString());
+            var todayAgg = aggregateArchiveStats(todaySets);
+            // 現在進行中のセットはまだアーカイブに入っていないため、本日通算には現在セット分も加算する。
+            mergeStatsInto(todayAgg, setData);
+            return todayAgg;
+        }
+        if (currentView === 'all') {
+            var allAgg = aggregateArchiveStats(globalArchive || []);
+            mergeStatsInto(allAgg, setData);
+            return allAgg;
+        }
+        return setData;
+    }
+
+    function getTodayArchiveSetResults() {
+        var todaySets = getArchiveItemsByDate(getTodayArchiveDateString());
+        todaySets.sort(function(a,b){
+            var ai = parseInt(String(a.id || '').replace('set_',''), 10) || 0;
+            var bi = parseInt(String(b.id || '').replace('set_',''), 10) || 0;
+            return ai - bi;
+        });
+        return todaySets.map(function(item){
+            var uS = item.usScore !== undefined ? item.usScore : parseInt(String(item.score || '0-0').split('-')[0], 10) || 0;
+            var tS = item.themScore !== undefined ? item.themScore : parseInt(String(item.score || '0-0').split('-')[1], 10) || 0;
+            return {
+                matchType: item.matchType,
+                matchNumber: item.matchNumber,
+                matchLabel: item.matchLabel,
+                set: item.setNum,
+                us: uS,
+                them: tS,
+                opp: item.oppName || '相手'
+            };
+        });
+    }
+
 
     var posLabels = { 1: 'BR (P1)', 2: 'FR (P2)', 3: 'FC (P3)', 4: 'FL (P4)', 5: 'BL (P5)', 6: 'BC (P6)' };
 
@@ -3263,7 +3400,7 @@ button, input, select, textarea,
 
         document.getElementById('archive-set-select').value = '';
 
-        var daySets = globalArchive.filter(function(x){ return x.date === dayVal; });
+        var daySets = getArchiveItemsByDate(dayVal);
         if(daySets.length === 0) return;
 
         tbody.innerHTML = '';
@@ -3287,6 +3424,9 @@ button, input, select, textarea,
         titleEl.innerText = '📅 【1日合計データ】 ' + dayVal + ' （相手: ' + oppTitle + ' / 計 ' + daySets.length + 'セット）';
         renderTableRows(tbody, aggregatedStats, archiveNameMap, daySets[daySets.length-1].playerNumbersSnap || playerNumbers);
         calculateAndDrawArchiveAnalysis(aggregatedStats, oppList.length === 1 ? oppList[0] : '相手');
+        var archiveRotBox = document.getElementById('archive-rotation-analysis-box');
+        if (archiveRotBox) archiveRotBox.style.display = 'none';
+
         
         logTitleEl.innerText = '📝 ランニングスコア';
         logContainer.innerHTML = '<div style="color:#aaa; text-align:center; padding-top:10px;">※1日合算データではランニングスコアは表示されません。各セットごとの詳細ログをご覧ください。</div>';
@@ -3359,7 +3499,7 @@ button, input, select, textarea,
         var violations = vDr + vNt + vPs + vPo + vOv + vHl + vBack;
         var points = ak + bk + sa;
         return {
-            id: p, name: getPlayerDisplayName(p, nameMap, numberMap), points: points,
+            id: p, name: getPlayerDisplayName(p, nameMap, numberMap), number: getPlayerNumber(p, numberMap), points: points,
             ak: ak, ae: ae, bk: bk, be: be, sa: sa, se: se,
             techErrors: techErrors, violations: violations
         };
@@ -3377,10 +3517,18 @@ button, input, select, textarea,
             if (a.id === 'us_team' && b.id !== 'us_team') return 1;
             if (b.id === 'us_team' && a.id !== 'us_team') return -1;
             if (b.points !== a.points) return b.points - a.points;
+
+            // 第2キー：背番号の昇順。同点時に見つけやすい並びにする。
+            var aNum = parseInt(String(a.number || '').replace(/[^0-9]/g, ''), 10);
+            var bNum = parseInt(String(b.number || '').replace(/[^0-9]/g, ''), 10);
+            if (!isNaN(aNum) && !isNaN(bNum) && aNum !== bNum) return aNum - bNum;
+            if (!isNaN(aNum) && isNaN(bNum)) return -1;
+            if (isNaN(aNum) && !isNaN(bNum)) return 1;
+
             var bErrors = b.techErrors + b.violations + b.ae + b.be + b.se;
             var aErrors = a.techErrors + a.violations + a.ae + a.be + a.se;
             if (aErrors !== bErrors) return aErrors - bErrors;
-            return a.id.localeCompare(b.id, 'ja');
+            return a.name.localeCompare(b.name, 'ja') || a.id.localeCompare(b.id, 'ja');
         });
         return list;
     }
@@ -3723,8 +3871,9 @@ button, input, select, textarea,
         subThemEl.classList.toggle('count-alert', subCount.them >= 5);
 
         var historyDisplay = document.getElementById('set-history-display');
-        if (setResults && setResults.length > 0) {
-            historyDisplay.innerHTML = setResults.map(function(r) { 
+        var archiveSetResultsToday = getTodayArchiveSetResults();
+        if (archiveSetResultsToday && archiveSetResultsToday.length > 0) {
+            historyDisplay.innerHTML = archiveSetResultsToday.map(function(r) { 
                 var mark = '-';
                 if (r.us > r.them) { mark = '○'; } else if (r.us < r.them) { mark = '●'; }
                 var rLabel = r.matchLabel ? (r.matchLabel + ' ') : '';
@@ -3826,7 +3975,7 @@ button, input, select, textarea,
         drawCourt(currentRotationState);
         drawStartingLineupBox();
 
-        var activeData = (currentView === 'today') ? todayData : (currentView === 'all' ? allData : setData);
+        var activeData = getActiveStatsData();
         var activeNameMap = getCurrentStatsNameMap();
         var tbody = document.getElementById('stats-tbody'); tbody.innerHTML = ''; 
         renderTableRows(tbody, activeData, activeNameMap, playerNumbers);
@@ -3865,7 +4014,7 @@ button, input, select, textarea,
     function rowsToCsv(rows) { return rows.map(function(r){ return r.map(csvEscape).join(','); }).join('\n'); }
 
     function exportActiveStatsCSV() {
-        var activeData = (currentView === 'today') ? todayData : (currentView === 'all' ? allData : setData);
+        var activeData = getActiveStatsData();
         var label = currentView === 'set' ? '現セット' : (currentView === 'today' ? '本日通算' : '全通算');
         var activeNameMap = getCurrentStatsNameMap();
         var opponentLabel = getCurrentAnalysisOpponentLabel();
@@ -3876,7 +4025,7 @@ button, input, select, textarea,
     function exportArchiveDayCSV() {
         var dayVal = document.getElementById('archive-day-select').value;
         if (!dayVal) { alert('先に日付を選択してください。'); return; }
-        var daySets = globalArchive.filter(function(x){ return x.date === dayVal; });
+        var daySets = getArchiveItemsByDate(dayVal);
         if (daySets.length === 0) { alert('出力できるデータがありません。'); return; }
         var aggregatedStats = createEmptyStats();
         var namesSnap = getArchiveTotalNameMap(daySets, daySets[daySets.length-1].playerNamesSnap || playerNames);
@@ -3929,14 +4078,14 @@ button, input, select, textarea,
     }
 
     function openPrintView() {
-        var activeData = (currentView === 'today') ? todayData : (currentView === 'all' ? allData : setData);
+        var activeData = getActiveStatsData();
         var label = currentView === 'set' ? '現セット' : (currentView === 'today' ? '本日通算' : '全通算');
         var activeNameMap = getCurrentStatsNameMap();
         var opponentLabel = getCurrentAnalysisOpponentLabel();
         var html = '<html><head><title>SEIMEI Volleyball Report</title><style>body{font-family:Arial,sans-serif;padding:20px;}h1,h2{color:#1e3a8a;}table{width:100%;border-collapse:collapse;font-size:12px;}th,td{border:1px solid #999;padding:6px;text-align:left;}th{background:#f3f4f6}.print-log{border-bottom:1px solid #ddd;padding:4px;font-size:12px;}</style></head><body>' +
             '<h1>' + getAppFullTitle() + '</h1><h2>' + label + ' / 第' + currentSet + 'セット / vs ' + opponentLabel + '</h2>' +
             '<h3>スタッツ集計</h3>' + tableHtmlFromStats(activeData, activeNameMap) + '<h3>ランニングスコア</h3>' + runningLogHtml() +
-            '<script>window.onload=function(){window.print();}<\/script></body></html><!-- Ver.1.3.8 set-center-layout -->';
+            '<script>window.onload=function(){window.print();}<\/script></body></html><!-- Ver.1.3.11 set-center-layout -->';
         var w = window.open('', '_blank'); w.document.open(); w.document.write(html); w.document.close();
     }
 
@@ -3945,7 +4094,7 @@ button, input, select, textarea,
         if (!dayVal) { alert('先に日付を選択してください。'); return; }
         viewArchiveDayTotal();
         var printContents = document.getElementById('archive-display-area').innerHTML;
-        var html = '<html><head><title>Archive Report</title><style>body{font-family:Arial,sans-serif;padding:20px;}h4,h5{color:#1e3a8a;}table{width:100%;border-collapse:collapse;font-size:12px;}th,td{border:1px solid #999;padding:6px;text-align:left;}th{background:#f3f4f6}.log-container{display:none;}</style></head><body>' + printContents + '<script>window.onload=function(){window.print();}<\/script></body></html><!-- Ver.1.3.8 set-center-layout -->';
+        var html = '<html><head><title>Archive Report</title><style>body{font-family:Arial,sans-serif;padding:20px;}h4,h5{color:#1e3a8a;}table{width:100%;border-collapse:collapse;font-size:12px;}th,td{border:1px solid #999;padding:6px;text-align:left;}th{background:#f3f4f6}.log-container{display:none;}</style></head><body>' + printContents + '<script>window.onload=function(){window.print();}<\/script></body></html><!-- Ver.1.3.11 set-center-layout -->';
         var w = window.open('', '_blank'); w.document.open(); w.document.write(html); w.document.close();
     }
 
@@ -4080,6 +4229,7 @@ button, input, select, textarea,
     }
 
     function applyImportedAppData(data) {
+        data = normalizeBackupPayload(data);
         if (!data || typeof data !== 'object') throw new Error('データ形式が正しくありません。');
         if (data.appName && String(data.appName).indexOf('Volleyball Tracker') === -1) {
             if (!confirm('このファイルは別アプリのデータの可能性があります。読み込みを続けますか？')) return;
@@ -4248,4 +4398,4 @@ button, input, select, textarea,
     initSetup(); updateUI();
 </script>
 </body>
-</html><!-- Ver.1.3.8 set-center-layout -->
+</html><!-- Ver.1.3.11 set-center-layout -->
