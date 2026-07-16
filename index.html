@@ -91,11 +91,13 @@
             .rotation-panel-box { flex: 0.8; }
         }
         
-        .scoreboard { position: relative; display: flex; justify-content: space-around; align-items: center; background: linear-gradient(135deg, var(--primary), #3b82f6); color: white; padding: 10px 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 170px; box-sizing: border-box; }
-        .live-reception-dashboard { position: absolute; top: 8px; right: 10px; min-width: 92px; padding: 6px 9px; border-radius: 8px; background: rgba(15,23,42,0.62); border: 1px solid rgba(255,255,255,0.24); font-size: 0.68rem; line-height: 1.35; font-weight: 800; text-align: right; color: #e0f2fe; box-sizing: border-box; }
-        .live-reception-dashboard div { white-space: nowrap; }
-        .live-reception-dashboard span { display: inline-block; min-width: 42px; color: #fff; font-weight: 950; font-variant-numeric: tabular-nums; }
-        .team-score { text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .scoreboard { position: relative; display: flex; justify-content: space-between; align-items: center; gap: 8px; background: linear-gradient(135deg, var(--primary), #3b82f6); color: white; padding: 10px 12px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 170px; box-sizing: border-box; }
+        .live-reception-dashboard { flex: 0 0 86px; width: 86px; padding: 7px 8px; border-radius: 8px; background: rgba(15,23,42,0.62); border: 1px solid rgba(255,255,255,0.24); font-size: 0.8rem; line-height: 1.38; font-weight: 800; text-align: left; color: #e0f2fe; box-sizing: border-box; }
+        .live-reception-dashboard div { display: flex; justify-content: space-between; gap: 4px; white-space: nowrap; }
+        .live-reception-dashboard .live-reception-title { display: block; margin: 0 0 4px 0; padding-bottom: 4px; border-bottom: 1px solid rgba(186,230,253,0.24); color: #bae6fd; font-size: 0.68rem; font-weight: 900; line-height: 1.1; text-align: center; }
+        .live-reception-dashboard .live-rec-label { flex: 0 0 18px; color: #bfdbfe; }
+        .live-reception-dashboard .live-rec-value { color: #fff; font-weight: 950; font-variant-numeric: tabular-nums; text-align: right; }
+        .team-score { text-align: center; display: flex; flex: 0 1 130px; flex-direction: column; align-items: center; justify-content: center; }
         .score-num { font-size: 4.2rem; font-weight: bold; font-family: monospace; line-height: 1; margin: 2px 0; }
         .score-num.set-winner-ready { color: #fde047 !important; text-shadow: 0 0 10px rgba(253, 224, 71, 0.9), 0 2px 3px rgba(0,0,0,0.65); }
         .set-info { font-size: 1.1rem; background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 20px; text-align: center; font-weight: bold; min-width: 80px; }
@@ -106,7 +108,7 @@
         .sub-btn { background-color: #e2e8f0; }
 
         /* スコアボード左側の設定エリア（S/Rトグル用） */
-        .scoreboard-left-setup { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .scoreboard-left-setup { display: flex; flex: 0 0 62px; flex-direction: column; align-items: center; gap: 5px; }
         .start-side-toggle { display: flex; flex-direction: column; border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.4); }
         .side-btn { background: rgba(255,255,255,0.2); color: #cbd5e1; border: none; padding: 6px 12px; font-size: 0.8rem; font-weight: bold; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.2); }
         .side-btn:last-child { border-bottom: none; }
@@ -181,7 +183,7 @@
         /* 選手選択ボタン */
         .player-grid-box { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .player-buttons { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-top: 10px; }
-        .p-btn { padding: 10px 5px; font-size: 0.85rem; background-color: var(--gray); border: 2px solid #cbd5e1; border-radius: 6px; cursor: pointer; font-weight: bold; color: var(--dark); transition: all 0.1s ease; }
+        .p-btn, .reception-receiver-btn { padding: 10px 5px; font-size: 0.85rem; background-color: var(--gray); border: 2px solid #cbd5e1; border-radius: 6px; cursor: pointer; font-weight: bold; color: var(--dark); transition: all 0.1s ease; }
         .p-btn.active { background-color: var(--selected-blue) !important; border-color: #0284c7 !important; color: white !important; box-shadow: 0 0 8px rgba(29, 78, 216, 0.5); transform: scale(1.02); }
         .p-btn.opp-team-btn { background-color: #fef2f2; border-color: #fca5a5; color: #b91c1c; }
         .p-btn.opp-team-btn.active { background-color: var(--danger) !important; border-color: #b91c1c !important; color: white !important; box-shadow: 0 0 8px rgba(239, 68, 68, 0.5); }
@@ -199,6 +201,7 @@
         .main-stat-col { display: grid; grid-template-rows: auto auto auto; gap: 6px; }
         .stat-main-actions .section-title { text-align: center; margin-bottom: 0; }
         .btn-group.grid-three { grid-template-columns: repeat(3, 1fr); }
+        .btn-group.grid-four { grid-template-columns: repeat(4, 1fr); }
         .btn { width: 100%; padding: 10px 5px; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem; box-sizing: border-box; text-align: center; }
         .btn-plus { background-color: var(--success); }
         .btn-minus { background-color: var(--danger); }
@@ -497,7 +500,7 @@
         .player-grid-box { margin-bottom: 12px; padding: 12px; }
         .player-grid-box > span, .section-title, .active-player-title { color: #cbd5e1 !important; }
         .player-buttons { gap: 7px; }
-        .p-btn {
+        .p-btn, .reception-receiver-btn {
             background: #1e293b;
             border-color: #334155;
             color: #e5e7eb;
@@ -627,9 +630,9 @@
         /* 小さめタブレットでもクイック操作が枠外にはみ出さないようにする */
         @media (max-width: 1023px) {
             body { padding: 8px; }
-            .scoreboard { height: auto; min-height: 160px; padding: 10px 8px; }
-            .live-reception-dashboard { top: 6px; right: 6px; min-width: 82px; padding: 5px 7px; font-size: 0.6rem; }
-            .live-reception-dashboard span { min-width: 38px; }
+            .scoreboard { height: auto; min-height: 160px; padding: 10px 8px; gap: 7px; }
+            .live-reception-dashboard { flex-basis: 82px; width: 82px; padding: 6px 7px; font-size: 0.7rem; }
+            .live-reception-title { font-size: 0.62rem; margin-bottom: 3px; padding-bottom: 3px; }
             .score-num { font-size: clamp(3rem, 10vw, 4.2rem); }
             .grid { grid-template-columns: 1fr; }
             .main-action-strip { grid-template-columns: 1fr 1fr; }
@@ -641,6 +644,7 @@
             .btn-group { grid-template-columns: 1fr 1fr; }
             .main-stat-grid { grid-template-columns: repeat(3, 1fr); }
             .btn-group.grid-three { grid-template-columns: repeat(3, 1fr); }
+            .btn-group.grid-four { grid-template-columns: repeat(4, 1fr); }
             .main-action-strip { grid-template-columns: 1fr; }
         }
 
@@ -842,6 +846,8 @@
 
         .header-panel { gap: 8px !important; margin-bottom: 8px !important; }
         .scoreboard { height: 132px; min-height: 132px; padding: 7px 10px; border-radius: 10px; }
+        .live-reception-dashboard { flex-basis: 80px; width: 80px; padding: 5px 6px; font-size: 0.66rem; }
+        .live-reception-title { font-size: 0.58rem; }
         .score-num { font-size: clamp(2.65rem, 5.8vw, 3.45rem); }
         .set-info { font-size: 0.92rem; padding: 6px 8px; min-width: 66px; }
         .set-info button { margin-top: 5px !important; padding: 3px 8px !important; font-size: 0.74rem !important; }
@@ -865,8 +871,8 @@
         .player-grid-box { padding: 7px 9px !important; margin-bottom: 8px !important; border-radius: 10px; }
         .player-grid-box > span { font-size: 0.76rem; }
         .player-buttons { grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 5px; margin-top: 6px; }
-        .p-btn { padding: 6px 4px; font-size: 0.72rem; border-radius: 6px; border-width: 1px; min-height: 32px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .p-btn.active { transform: none; }
+        .p-btn, .reception-receiver-btn { padding: 6px 4px; font-size: 0.72rem; border-radius: 6px; border-width: 1px; min-height: 32px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .p-btn.active, .reception-receiver-btn.active { transform: none; }
 
         .grid { gap: 8px; }
         .panel { padding: 8px !important; border-radius: 10px; }
@@ -903,7 +909,7 @@
             .scoreboard, .rotation-court { height: 122px; min-height: 122px; }
             .score-num { font-size: clamp(2.45rem, 5vw, 3.15rem); }
             .player-buttons { grid-template-columns: repeat(auto-fill, minmax(82px, 1fr)); }
-            .p-btn { min-height: 30px; font-size: 0.7rem; padding: 5px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .p-btn, .reception-receiver-btn { min-height: 30px; font-size: 0.7rem; padding: 5px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
             .grid > .panel:first-child .log-container { height: 245px !important; }
             .btn { min-height: 31px !important; padding: 5px 3px; }
             .stat-section { margin-bottom: 4px !important; padding-bottom: 4px !important; }
@@ -1126,23 +1132,23 @@
         }
         .reception-receiver-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
-            gap: 6px;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 8px;
             margin: 8px 0 10px;
             max-height: 118px;
             overflow-y: auto;
         }
         .reception-receiver-btn {
-            border: 1px solid #334155;
-            border-radius: 8px;
+            border-color: #334155;
             background: #0f172a;
             color: #e5e7eb;
-            min-height: 42px;
-            padding: 5px 4px;
-            cursor: pointer;
-            font-weight: 800;
-            font-size: 0.78rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
+        .reception-receiver-btn br { display: none; }
+        .reception-receiver-btn span { display: inline; }
+        .reception-receiver-btn span:first-child { margin-right: 0.25em; }
         .reception-receiver-btn.active {
             border-color: #22c55e;
             background: #14532d;
@@ -1328,9 +1334,10 @@ button, input, select, textarea,
         <div class="scoreboard-box">
             <div class="scoreboard">
                 <div class="live-reception-dashboard" id="live-reception-dashboard">
-                    <div>受数 <span id="live-rec-total">0</span></div>
-                    <div>A率 <span id="live-rec-a-rate">0.0%</span></div>
-                    <div>AB率 <span id="live-rec-ab-rate">0.0%</span></div>
+                    <div class="live-reception-title">レセプション</div>
+                    <div><span class="live-rec-label">受</span><span class="live-rec-value" id="live-rec-total">0</span></div>
+                    <div><span class="live-rec-label">A</span><span class="live-rec-value" id="live-rec-a-rate">0.0%</span></div>
+                    <div><span class="live-rec-label">AB</span><span class="live-rec-value" id="live-rec-ab-rate">0.0%</span></div>
                 </div>
                 <div class="scoreboard-left-setup">
                     <span style="font-size:0.65rem; color:rgba(255,255,255,0.8); font-weight:bold;">セット開始時</span>
@@ -1501,18 +1508,20 @@ button, input, select, textarea,
             </div>
             <div class="stat-section">
                 <span class="section-title">ボールコントロールミス</span>
-                <div class="btn-group grid-three">
+                <div class="btn-group grid-four">
                     <button class="btn btn-minus" onclick="addStat('reception_error')">レセプション</button>
                     <button class="btn btn-minus" onclick="addStat('dig_error')">ディグ</button>
-                    <button class="btn btn-minus" onclick="addStat('toss_error')">トスミス</button>
+                    <button class="btn btn-minus" onclick="addStat('chanceball_error')">チャンスボール</button>
+                    <button class="btn btn-minus" onclick="addStat('toss_error')">トス</button>
                     <button class="btn btn-minus" onclick="addStat('miscommunication_error')">ミスコミュニケーション</button>
+                    <button class="btn btn-minus" onclick="addStat('blockfollow_error')">ブロックフォロー</button>
                     <button class="btn btn-minus" onclick="addStat('other_error')">その他</button>
                 </div>
             </div>
             
             <div class="stat-section">
                 <span class="section-title">反則</span>
-                <div class="btn-group grid-three">
+                <div class="btn-group grid-four">
                     <button class="btn btn-warn" onclick="addStat('v_net')">タッチネット</button>
                     <button class="btn btn-warn" onclick="addStat('v_over')">オーバーネット</button>
                     <button class="btn btn-warn" onclick="addStat('v_passing')">パッシング</button>
@@ -1763,7 +1772,7 @@ button, input, select, textarea,
         <div class="modal-window" style="max-width:760px;">
             <div class="modal-header"><h2>💾 データ保存・読み込み</h2><button class="modal-close" onclick="closeModal('dataModal')">閉じる</button></div>
             <div class="modal-body">
-                <div style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:10px;margin-bottom:12px;color:#cbd5e1;font-size:0.85rem;">📱 PWA対応版です。AndroidはChrome、iPadはSafariで開き、ホーム画面に追加するとアプリ風に使えます。<br><span style="display:block;margin-top:6px;color:#93c5fd;font-weight:900;">Ver.1.4.2 Live Reception Dashboard</span></div>
+                <div style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:10px;margin-bottom:12px;color:#cbd5e1;font-size:0.85rem;">📱 PWA対応版です。AndroidはChrome、iPadはSafariで開き、ホーム画面に追加するとアプリ風に使えます。<br><span style="display:block;margin-top:6px;color:#93c5fd;font-weight:900;">Ver.1.4.3b</span></div>
                 <div class="panel">
                     <h3>外部ファイルへバックアップ</h3>
                     <p style="font-size:0.85rem; color:#cbd5e1; line-height:1.7;">現在の試合データ、選手名、S-Lineup、本日履歴、過去の記録をまとめて外部ファイルに保存できます。JSON単体に加えて、CSVや説明書を含むZIP一括保存にも対応しました。</p>
@@ -1778,6 +1787,9 @@ button, input, select, textarea,
                         セット終了時に、ブラウザ内へ自動バックアップを残します。<br>
                         保存件数：<span id="auto-backup-count">0</span>件
                         <div class="backup-list" id="auto-backup-list"><div style="color:#64748b;text-align:center;">バックアップなし</div></div>
+                        <div class="footer-btns" style="margin-top:10px;">
+                            <button class="action-btn" style="background:#dc2626;color:white;" onclick="clearAutoBackupsOnly()">自動バックアップを全削除</button>
+                        </div>
                     </div>
                     <div class="backup-status-box" style="margin-top:12px;">
                         <strong>📊 保存容量診断</strong><br>
@@ -2103,6 +2115,7 @@ button, input, select, textarea,
     var setResults = [];
     var globalArchive = []; 
     var autoBackups = []; 
+    const MAX_AUTO_BACKUPS = 3;
 
     var startingLineup = { 1: 'p1', 2: 'p2', 3: 'p3', 4: 'p4', 5: 'p5', 6: 'p6' };
     var startSideSetting = 'S'; 
@@ -2114,7 +2127,7 @@ button, input, select, textarea,
         for (var k = 0; k < players.length; k++) {
             obj[players[k]] = {
                 attack_kill: 0, attack_error: 0, block_kill: 0, block_error: 0,
-                serve_ace: 0, serve_error: 0, reception_a: 0, reception_b: 0, reception_c: 0, reception_d: 0, reception_error: 0, dig_error: 0, toss_error: 0, miscommunication_error: 0, other_error: 0,
+                serve_ace: 0, serve_error: 0, reception_a: 0, reception_b: 0, reception_c: 0, reception_d: 0, reception_error: 0, dig_error: 0, chanceball_error: 0, toss_error: 0, miscommunication_error: 0, blockfollow_error: 0, other_error: 0,
                 v_dribble: 0, v_net: 0, v_over: 0, v_passing: 0, v_positional: 0, v_hold: 0, v_backrow: 0
             };
         }
@@ -2388,8 +2401,8 @@ button, input, select, textarea,
             validUnique.push(item);
         });
 
-        var oldCount = Math.max(0, validUnique.length - 10);
-        var optimized = validUnique.slice(0, 10);
+        var oldCount = Math.max(0, validUnique.length - MAX_AUTO_BACKUPS);
+        var optimized = validUnique.slice(0, MAX_AUTO_BACKUPS);
         var beforeText = JSON.stringify(source);
         var afterText = JSON.stringify(optimized);
         var beforeBytes = ('vball_autoBackups_s'.length + beforeText.length) * 2;
@@ -3585,7 +3598,7 @@ button, input, select, textarea,
     }
 
     function statChoiceOptions(handler, isUsAction) {
-        var keys = ['attack_kill','attack_error','block_kill','block_error','serve_ace','serve_error','reception_error','dig_error','toss_error','miscommunication_error','other_error','v_net','v_over','v_passing','v_dribble','v_hold','v_positional','v_backrow'];
+        var keys = ['attack_kill','attack_error','block_kill','block_error','serve_ace','serve_error','reception_error','dig_error','chanceball_error','toss_error','miscommunication_error','blockfollow_error','other_error','v_net','v_over','v_passing','v_dribble','v_hold','v_positional','v_backrow'];
         var opts = [];
         for (var i = 0; i < keys.length; i++) {
             (function(key) {
@@ -4171,15 +4184,15 @@ button, input, select, textarea,
         var ak = d.attack_kill || 0; var ae = d.attack_error || 0;
         var bk = d.block_kill || 0; var be = d.block_error || 0;
         var sa = d.serve_ace || 0; var se = d.serve_error || 0;
-        var rcErr = d.reception_error || 0; var dgErr = d.dig_error || 0;
-        var tsErr = d.toss_error || 0; var mcErr = d.miscommunication_error || 0; var otErr = d.other_error || 0;
+        var rcErr = d.reception_error || 0; var dgErr = d.dig_error || 0; var cbErr = d.chanceball_error || 0;
+        var tsErr = d.toss_error || 0; var mcErr = d.miscommunication_error || 0; var bfErr = d.blockfollow_error || 0; var otErr = d.other_error || 0;
         var vDr = d.v_dribble || 0; var vNt = d.v_net || 0;
         var vPs = d.v_passing || 0; var vPo = d.v_positional || 0;
         var vOv = d.v_over || 0; var vHl = d.v_hold || 0; var vBack = d.v_backrow || 0;
         var recA = d.reception_a || 0; var recB = d.reception_b || 0;
         var recC = d.reception_c || 0; var recD = d.reception_d || 0;
         var recTotal = recA + recB + recC + recD;
-        var techErrors = rcErr + dgErr + tsErr + mcErr + otErr;
+        var techErrors = rcErr + dgErr + cbErr + tsErr + mcErr + bfErr + otErr;
         var violations = vDr + vNt + vPs + vPo + vOv + vHl + vBack;
         var points = ak + bk + sa;
         return {
@@ -4189,6 +4202,7 @@ button, input, select, textarea,
             points: points,
             ak: ak, ae: ae, bk: bk, be: be, sa: sa, se: se,
             techErrors: techErrors, violations: violations,
+            rcErr: rcErr, dgErr: dgErr, cbErr: cbErr, tsErr: tsErr, mcErr: mcErr, bfErr: bfErr, otErr: otErr,
             recA: recA, recB: recB, recC: recC, recD: recD, recM: rcErr, recTotal: recTotal + rcErr,
             recAPct: (recTotal + rcErr) > 0 ? ((recA / (recTotal + rcErr)) * 100).toFixed(1) : '0.0',
             recABPct: (recTotal + rcErr) > 0 ? (((recA + recB) / (recTotal + rcErr)) * 100).toFixed(1) : '0.0'
@@ -4541,7 +4555,7 @@ button, input, select, textarea,
         var oppData = activeData['team'] || {};
         // 相手の各種ミス、反則のすべて＝清明の得点になる
         var usPointFromOppErr = (oppData.attack_error || 0) + (oppData.block_error || 0) + (oppData.serve_error || 0) +
-                                (oppData.reception_error || 0) + (oppData.dig_error || 0) + (oppData.toss_error || 0) + (oppData.miscommunication_error || 0) + (oppData.other_error || 0) +
+                                (oppData.reception_error || 0) + (oppData.dig_error || 0) + (oppData.chanceball_error || 0) + (oppData.toss_error || 0) + (oppData.miscommunication_error || 0) + (oppData.blockfollow_error || 0) + (oppData.other_error || 0) +
                                 (oppData.v_dribble || 0) + (oppData.v_net || 0) + (oppData.v_over || 0) + (oppData.v_passing || 0) + (oppData.v_positional || 0) + (oppData.v_hold || 0) + (oppData.v_backrow || 0);
         
         var totalUsScore = usOwnPoint + usPointFromOppErr;
@@ -4564,7 +4578,7 @@ button, input, select, textarea,
         for (var i = 1; i <= MAX_PLAYERS; i++) {
             var pd = activeData['p' + i] || {};
             themPointFromUsErr += (pd.attack_error || 0) + (pd.block_error || 0) + (pd.serve_error || 0) +
-                                  (pd.reception_error || 0) + (pd.dig_error || 0) + (pd.toss_error || 0) + (pd.miscommunication_error || 0) + (pd.other_error || 0) +
+                                  (pd.reception_error || 0) + (pd.dig_error || 0) + (pd.chanceball_error || 0) + (pd.toss_error || 0) + (pd.miscommunication_error || 0) + (pd.blockfollow_error || 0) + (pd.other_error || 0) +
                                   (pd.v_dribble || 0) + (pd.v_net || 0) + (pd.v_over || 0) + (pd.v_passing || 0) + (pd.v_positional || 0) + (pd.v_hold || 0) + (pd.v_backrow || 0);
         }
 
@@ -4596,7 +4610,7 @@ button, input, select, textarea,
 
         var oppData = activeData['team'] || {};
         var usPointFromOppErr = (oppData.attack_error || 0) + (oppData.block_error || 0) + (oppData.serve_error || 0) +
-                                (oppData.reception_error || 0) + (oppData.dig_error || 0) + (oppData.toss_error || 0) + (oppData.miscommunication_error || 0) + (oppData.other_error || 0) +
+                                (oppData.reception_error || 0) + (oppData.dig_error || 0) + (oppData.chanceball_error || 0) + (oppData.toss_error || 0) + (oppData.miscommunication_error || 0) + (oppData.blockfollow_error || 0) + (oppData.other_error || 0) +
                                 (oppData.v_dribble || 0) + (oppData.v_net || 0) + (oppData.v_over || 0) + (oppData.v_passing || 0) + (oppData.v_positional || 0) + (oppData.v_hold || 0) + (oppData.v_backrow || 0);
         var totalUsScore = usOwnPoint + usPointFromOppErr;
         var usOwnPct = totalUsScore > 0 ? Math.round((usOwnPoint / totalUsScore) * 100) : 0;
@@ -4614,11 +4628,11 @@ button, input, select, textarea,
         for (var j = 1; j <= MAX_PLAYERS; j++) {
             var upd = activeData['p' + j] || {};
             themPointFromUsErr += (upd.attack_error || 0) + (upd.block_error || 0) + (upd.serve_error || 0) +
-                                  (upd.reception_error || 0) + (upd.dig_error || 0) + (upd.toss_error || 0) + (upd.miscommunication_error || 0) + (upd.other_error || 0) +
+                                  (upd.reception_error || 0) + (upd.dig_error || 0) + (upd.chanceball_error || 0) + (upd.toss_error || 0) + (upd.miscommunication_error || 0) + (upd.blockfollow_error || 0) + (upd.other_error || 0) +
                                   (upd.v_dribble || 0) + (upd.v_net || 0) + (upd.v_over || 0) + (upd.v_passing || 0) + (upd.v_positional || 0) + (upd.v_hold || 0) + (upd.v_backrow || 0);
         }
         themPointFromUsErr += (usTeamData.attack_error || 0) + (usTeamData.block_error || 0) + (usTeamData.serve_error || 0) +
-                              (usTeamData.reception_error || 0) + (usTeamData.dig_error || 0) + (usTeamData.toss_error || 0) + (usTeamData.miscommunication_error || 0) + (usTeamData.other_error || 0) +
+                              (usTeamData.reception_error || 0) + (usTeamData.dig_error || 0) + (usTeamData.chanceball_error || 0) + (usTeamData.toss_error || 0) + (usTeamData.miscommunication_error || 0) + (usTeamData.blockfollow_error || 0) + (usTeamData.other_error || 0) +
                               (usTeamData.v_dribble || 0) + (usTeamData.v_net || 0) + (usTeamData.v_over || 0) + (usTeamData.v_passing || 0) + (usTeamData.v_positional || 0) + (usTeamData.v_hold || 0) + (usTeamData.v_backrow || 0);
 
         var totalThemScore = themOwnPoint + themPointFromUsErr;
@@ -4834,11 +4848,11 @@ button, input, select, textarea,
     }
 
     function statsToCsvRows(statsData, nameMap, numberMap) {
-        var rows = [['選手名','得点','スパイク○得点','スパイク×ミス','ブロック○決定','ブロック×ミス','サーブ○エース','サーブ×ミス','ミス合計','反則合計']];
+        var rows = [['選手名','得点','スパイク○得点','スパイク×ミス','ブロック○決定','ブロック×ミス','サーブ○エース','サーブ×ミス','レセプションミス','ディグミス','チャンスボール','トス','ミスコミュニケーション','ブロックフォロー','その他のミス','ミス合計','反則合計']];
         var list = getSortedStatSummaries(statsData, nameMap, numberMap);
         for (var j=0; j<list.length; j++) {
             var s = list[j];
-            rows.push([s.name, s.points, s.ak, s.ae, s.bk, s.be, s.sa, s.se, s.techErrors, s.violations]);
+            rows.push([s.name, s.points, s.ak, s.ae, s.bk, s.be, s.sa, s.se, s.rcErr, s.dgErr, s.cbErr, s.tsErr, s.mcErr, s.bfErr, s.otErr, s.techErrors, s.violations]);
         }
         return rows;
     }
@@ -4937,7 +4951,7 @@ button, input, select, textarea,
     function getLabelWithMap(item, isUsAction, nameMap) {
         var labels = {
             attack_kill: 'スパイク', attack_error: 'スパイクミス', block_kill: 'ブロック', block_error: 'ブロックミス',
-            serve_ace: 'サービスエース', serve_error: 'サーブミス', reception_error: 'レセプションミス', dig_error: 'ディグミス', toss_error: 'トスミス', miscommunication_error: 'ミスコミュニケーション', other_error: 'その他のミス',
+            serve_ace: 'サービスエース', serve_error: 'サーブミス', reception_error: 'レセプションミス', dig_error: 'ディグミス', chanceball_error: 'チャンスボール', toss_error: 'トス', miscommunication_error: 'ミスコミュニケーション', blockfollow_error: 'ブロックフォロー', other_error: 'その他のミス',
             v_dribble: 'ドリブル', v_net: 'タッチネット', v_over: 'オーバーネット', v_passing: 'パッシングザセンターライン', v_positional: 'ポジショナルフォールト', v_hold: 'ホールディング', v_backrow: 'バックプレー'
         };
         if (!isUsAction) {
@@ -4995,7 +5009,7 @@ button, input, select, textarea,
                 data: snapshot
             };
             autoBackups.unshift(item);
-            if (autoBackups.length > 10) autoBackups = autoBackups.slice(0, 10);
+            if (autoBackups.length > MAX_AUTO_BACKUPS) autoBackups = autoBackups.slice(0, MAX_AUTO_BACKUPS);
             writeStorageValue('vball_autoBackups_s', autoBackups, true);
             updateAutoBackupUI();
         } catch (err) {
@@ -5003,16 +5017,42 @@ button, input, select, textarea,
         }
     }
 
+    function clearAutoBackupsOnly() {
+        var previous = Array.isArray(autoBackups) ? autoBackups.slice() : [];
+        var beforeBytes = ('vball_autoBackups_s'.length + JSON.stringify(previous).length) * 2;
+        var message = '自動バックアップをすべて削除しますか？\n\n' +
+            '現在の試合データ、過去の記録、名簿、設定は削除されません。\n' +
+            '削除した自動バックアップは元に戻せません。\n\n' +
+            '削除する場合は「OK」、キャンセルする場合は「キャンセル」を押してください。';
+        if (!confirm(message)) return;
+
+        autoBackups = [];
+        if (!writeStorageValue('vball_autoBackups_s', autoBackups, true)) {
+            autoBackups = previous;
+            alert('自動バックアップの削除を保存できませんでした。データは変更されていません。');
+            return;
+        }
+
+        var afterBytes = ('vball_autoBackups_s'.length + JSON.stringify(autoBackups).length) * 2;
+        var savedBytes = Math.max(0, beforeBytes - afterBytes);
+        updateAutoBackupUI();
+        updateStorageMonitor();
+        updateStorageAnalyzer();
+        storageOptimizationPlan = null;
+        previewStorageOptimization();
+        alert('自動バックアップをすべて削除しました。\n削減容量：' + formatStorageBytes(savedBytes));
+    }
+
     function updateAutoBackupUI() {
         var countEl = document.getElementById('auto-backup-count');
         var listEl = document.getElementById('auto-backup-list');
-        if (countEl) countEl.innerText = Array.isArray(autoBackups) ? autoBackups.length : 0;
+        if (countEl) countEl.innerText = (Array.isArray(autoBackups) ? autoBackups.length : 0) + '（上限' + MAX_AUTO_BACKUPS + '件）';
         if (!listEl) return;
         if (!Array.isArray(autoBackups) || autoBackups.length === 0) {
             listEl.innerHTML = '<div style="color:#64748b;text-align:center;">バックアップなし</div>';
             return;
         }
-        listEl.innerHTML = autoBackups.slice(0, 10).map(function(b){
+        listEl.innerHTML = autoBackups.slice(0, MAX_AUTO_BACKUPS).map(function(b){
             var d = b.createdAt ? new Date(b.createdAt) : null;
             var time = d && !isNaN(d.getTime()) ? (d.getFullYear() + '/' + (d.getMonth()+1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0')) : '';
             return '<div class="backup-item"><b>' + (time || '日時不明') + '</b><br>' + (b.label || b.summary || '自動バックアップ') + '</div>';
