@@ -91,7 +91,10 @@
             .rotation-panel-box { flex: 0.8; }
         }
         
-        .scoreboard { display: flex; justify-content: space-around; align-items: center; background: linear-gradient(135deg, var(--primary), #3b82f6); color: white; padding: 10px 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 170px; box-sizing: border-box; }
+        .scoreboard { position: relative; display: flex; justify-content: space-around; align-items: center; background: linear-gradient(135deg, var(--primary), #3b82f6); color: white; padding: 10px 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 170px; box-sizing: border-box; }
+        .live-reception-dashboard { position: absolute; top: 8px; right: 10px; min-width: 92px; padding: 6px 9px; border-radius: 8px; background: rgba(15,23,42,0.62); border: 1px solid rgba(255,255,255,0.24); font-size: 0.68rem; line-height: 1.35; font-weight: 800; text-align: right; color: #e0f2fe; box-sizing: border-box; }
+        .live-reception-dashboard div { white-space: nowrap; }
+        .live-reception-dashboard span { display: inline-block; min-width: 42px; color: #fff; font-weight: 950; font-variant-numeric: tabular-nums; }
         .team-score { text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .score-num { font-size: 4.2rem; font-weight: bold; font-family: monospace; line-height: 1; margin: 2px 0; }
         .score-num.set-winner-ready { color: #fde047 !important; text-shadow: 0 0 10px rgba(253, 224, 71, 0.9), 0 2px 3px rgba(0,0,0,0.65); }
@@ -625,6 +628,8 @@
         @media (max-width: 1023px) {
             body { padding: 8px; }
             .scoreboard { height: auto; min-height: 160px; padding: 10px 8px; }
+            .live-reception-dashboard { top: 6px; right: 6px; min-width: 82px; padding: 5px 7px; font-size: 0.6rem; }
+            .live-reception-dashboard span { min-width: 38px; }
             .score-num { font-size: clamp(3rem, 10vw, 4.2rem); }
             .grid { grid-template-columns: 1fr; }
             .main-action-strip { grid-template-columns: 1fr 1fr; }
@@ -1089,6 +1094,104 @@
 
 
         /* ===== Ver.1.2.35 ローテ修正プレビュー ===== */
+        /* ===== Ver.1.4.2 Live Reception Dashboard ===== */
+        .reception-panel {
+            display: none;
+            margin: 0 0 12px 0;
+            padding: 10px;
+            border: 1px solid #14532d;
+            border-radius: 12px;
+            background: rgba(20, 83, 45, 0.18);
+            color: #e5e7eb;
+        }
+        .reception-panel.active { display: block; }
+        .reception-panel.collapsed .reception-expanded { display: none; }
+        .reception-panel:not(.collapsed) .reception-collapsed { display: none; }
+        .reception-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .reception-title {
+            font-weight: 900;
+            color: #bbf7d0;
+            font-size: 0.92rem;
+        }
+        .reception-note {
+            color: #94a3b8;
+            font-size: 0.76rem;
+            line-height: 1.5;
+        }
+        .reception-receiver-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+            gap: 6px;
+            margin: 8px 0 10px;
+            max-height: 118px;
+            overflow-y: auto;
+        }
+        .reception-receiver-btn {
+            border: 1px solid #334155;
+            border-radius: 8px;
+            background: #0f172a;
+            color: #e5e7eb;
+            min-height: 42px;
+            padding: 5px 4px;
+            cursor: pointer;
+            font-weight: 800;
+            font-size: 0.78rem;
+        }
+        .reception-receiver-btn.active {
+            border-color: #22c55e;
+            background: #14532d;
+            color: #dcfce7;
+        }
+        .reception-grade-row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+        }
+        .reception-grade-btn {
+            border: none;
+            border-radius: 8px;
+            min-height: 42px;
+            padding: 8px 4px;
+            cursor: pointer;
+            color: #0f172a;
+            font-weight: 900;
+            font-size: 0.96rem;
+        }
+        .reception-grade-btn.grade-a { background: #22c55e; }
+        .reception-grade-btn.grade-b { background: #84cc16; }
+        .reception-grade-btn.grade-c { background: #f59e0b; }
+        .reception-grade-btn.grade-d { background: #f97316; }
+        .reception-grade-btn.grade-m { background: #ef4444; color: #fff; }
+        .reception-grade-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+        .reception-collapsed {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            align-items: center;
+        }
+        .pending-reception-summary {
+            font-weight: 900;
+            color: #dcfce7;
+        }
+        .reception-edit-btn {
+            border: 1px solid #22c55e;
+            border-radius: 8px;
+            background: #052e16;
+            color: #bbf7d0;
+            padding: 7px 10px;
+            cursor: pointer;
+            font-weight: 900;
+        }
+
         .rotation-preview-wrap {
             margin-top: 10px;
             background: #020617;
@@ -1224,6 +1327,11 @@ button, input, select, textarea,
     <div class="header-panel">
         <div class="scoreboard-box">
             <div class="scoreboard">
+                <div class="live-reception-dashboard" id="live-reception-dashboard">
+                    <div>受数 <span id="live-rec-total">0</span></div>
+                    <div>A率 <span id="live-rec-a-rate">0.0%</span></div>
+                    <div>AB率 <span id="live-rec-ab-rate">0.0%</span></div>
+                </div>
                 <div class="scoreboard-left-setup">
                     <span style="font-size:0.65rem; color:rgba(255,255,255,0.8); font-weight:bold;">セット開始時</span>
                     <div class="start-side-toggle">
@@ -1350,6 +1458,28 @@ button, input, select, textarea,
 
         <div class="panel">
             <h3>スタッツ入力</h3>
+            <div id="reception-panel" class="reception-panel">
+                <div class="reception-expanded">
+                    <div class="reception-header">
+                        <div>
+                            <div class="reception-title">Reception Analytics</div>
+                            <div class="reception-note">相手サーブ時のみ入力します。レシーバーを選択してから評価を選んでください。</div>
+                        </div>
+                    </div>
+                    <div id="reception-receiver-list" class="reception-receiver-grid"></div>
+                    <div class="reception-grade-row">
+                        <button type="button" class="reception-grade-btn grade-a" onclick="selectReceptionGrade('A')">A</button>
+                        <button type="button" class="reception-grade-btn grade-b" onclick="selectReceptionGrade('B')">B</button>
+                        <button type="button" class="reception-grade-btn grade-c" onclick="selectReceptionGrade('C')">C</button>
+                        <button type="button" class="reception-grade-btn grade-d" onclick="selectReceptionGrade('D')">D</button>
+                        <button type="button" class="reception-grade-btn grade-m" onclick="selectReceptionGrade('M')">M</button>
+                    </div>
+                </div>
+                <div class="reception-collapsed">
+                    <div id="pending-reception-summary" class="pending-reception-summary"></div>
+                    <button type="button" class="reception-edit-btn" onclick="openReceptionInput()">修正</button>
+                </div>
+            </div>
             <div class="stat-section stat-main-actions">
                 <div class="main-stat-grid">
                     <div class="main-stat-col">
@@ -1474,6 +1604,30 @@ button, input, select, textarea,
                     </thead>
                     <tbody id="stats-tbody"></tbody>
                 </table>
+            </div>
+
+            <div class="analysis-box" id="reception-analytics-box">
+                <div class="analysis-title">レセプション分析</div>
+                <div class="table-container" style="max-height:360px;">
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>対象</th>
+                                <th>A</th>
+                                <th>B</th>
+                                <th>C</th>
+                                <th>D</th>
+                                <th>M</th>
+                                <th>受数</th>
+                                <th>A率</th>
+                                <th>AB率</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reception-analytics-tbody">
+                            <tr><td colspan="9" style="text-align:center;color:#94a3b8;">レセプション記録なし</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <div class="analysis-box">
@@ -1609,7 +1763,7 @@ button, input, select, textarea,
         <div class="modal-window" style="max-width:760px;">
             <div class="modal-header"><h2>💾 データ保存・読み込み</h2><button class="modal-close" onclick="closeModal('dataModal')">閉じる</button></div>
             <div class="modal-body">
-                <div style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:10px;margin-bottom:12px;color:#cbd5e1;font-size:0.85rem;">📱 PWA対応版です。AndroidはChrome、iPadはSafariで開き、ホーム画面に追加するとアプリ風に使えます。<br><span style="display:block;margin-top:6px;color:#93c5fd;font-weight:900;">Ver.1.4.0 Storage Optimizer</span></div>
+                <div style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:10px;margin-bottom:12px;color:#cbd5e1;font-size:0.85rem;">📱 PWA対応版です。AndroidはChrome、iPadはSafariで開き、ホーム画面に追加するとアプリ風に使えます。<br><span style="display:block;margin-top:6px;color:#93c5fd;font-weight:900;">Ver.1.4.2 Live Reception Dashboard</span></div>
                 <div class="panel">
                     <h3>外部ファイルへバックアップ</h3>
                     <p style="font-size:0.85rem; color:#cbd5e1; line-height:1.7;">現在の試合データ、選手名、S-Lineup、本日履歴、過去の記録をまとめて外部ファイルに保存できます。JSON単体に加えて、CSVや説明書を含むZIP一括保存にも対応しました。</p>
@@ -1736,6 +1890,30 @@ button, input, select, textarea,
                             </thead>
                             <tbody id="archive-tbody"></tbody>
                         </table></div></div>
+
+            <div class="analysis-box archive-reception-analytics-box" id="archive-reception-analytics-box" style="margin-top:15px;">
+                <div class="analysis-title">レセプション分析</div>
+                <div class="table-container" style="max-height:360px;background:white;">
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>対象</th>
+                                <th>A</th>
+                                <th>B</th>
+                                <th>C</th>
+                                <th>D</th>
+                                <th>M</th>
+                                <th>受数</th>
+                                <th>A率</th>
+                                <th>AB率</th>
+                            </tr>
+                        </thead>
+                        <tbody id="archive-reception-analytics-tbody">
+                            <tr><td colspan="9" style="text-align:center;color:#94a3b8;">レセプション記録なし</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
             <div class="analysis-box archive-analysis-box" id="archive-analysis-box" style="margin-top:15px;">
                 <div class="analysis-title">📈 得点割合分析（閲覧中データ）</div>
@@ -1929,13 +2107,14 @@ button, input, select, textarea,
     var startingLineup = { 1: 'p1', 2: 'p2', 3: 'p3', 4: 'p4', 5: 'p5', 6: 'p6' };
     var startSideSetting = 'S'; 
     var hasServeAuthority = true; 
+    var pendingReception = null;
 
     function createEmptyStats() {
         var obj = {};
         for (var k = 0; k < players.length; k++) {
             obj[players[k]] = {
                 attack_kill: 0, attack_error: 0, block_kill: 0, block_error: 0,
-                serve_ace: 0, serve_error: 0, reception_error: 0, dig_error: 0, toss_error: 0, miscommunication_error: 0, other_error: 0,
+                serve_ace: 0, serve_error: 0, reception_a: 0, reception_b: 0, reception_c: 0, reception_d: 0, reception_error: 0, dig_error: 0, toss_error: 0, miscommunication_error: 0, other_error: 0,
                 v_dribble: 0, v_net: 0, v_over: 0, v_passing: 0, v_positional: 0, v_hold: 0, v_backrow: 0
             };
         }
@@ -2000,7 +2179,7 @@ button, input, select, textarea,
         'vball_startingLineup_s', 'vball_startSideSetting_s', 'vball_hasServeAuthority_s',
         'vball_oppTeamName_s', 'vball_appTitlePrefix_s', 'vball_selfTeamName_s',
         'vball_matchType_s', 'vball_officialMatchNumber_s', 'vball_matchDateKey_s',
-        'vball_globalArchive_s', 'vball_autoBackups_s'
+        'vball_globalArchive_s', 'vball_autoBackups_s', 'vball_pendingReception_s'
     ];
     var storageErrorNotified = false;
 
@@ -2309,8 +2488,13 @@ button, input, select, textarea,
         allData = ensureStatsDataShape(allData);
         globalArchive = readStorageJSON('vball_globalArchive_s', []) || [];
         autoBackups = readStorageJSON('vball_autoBackups_s', []) || [];
+        pendingReception = readStorageJSON('vball_pendingReception_s', null);
+        if (!pendingReception || typeof pendingReception !== 'object' || !pendingReception.receiver || !isReceptionGrade(pendingReception.grade)) {
+            pendingReception = null;
+        }
         normalizeMatchManagementOnLoad();
         rebuildDerivedDataFromArchive();
+        renderPendingReceptionUI();
     }
 
     function saveStorage() {
@@ -2338,6 +2522,7 @@ button, input, select, textarea,
         ok = writeStorageValue('vball_matchDateKey_s', matchDateKey, false) && ok;
         ok = writeStorageValue('vball_globalArchive_s', globalArchive, true) && ok;
         ok = writeStorageValue('vball_autoBackups_s', autoBackups, true) && ok;
+        ok = writeStorageValue('vball_pendingReception_s', pendingReception, true) && ok;
         updateAutoBackupUI();
         updateStorageMonitor();
         return ok;
@@ -2382,6 +2567,7 @@ button, input, select, textarea,
         subCount = { us: 0, them: 0 };
         startSideSetting = 'S';
         hasServeAuthority = true;
+        clearPendingReception();
         matchDateKey = today;
 
         closeLineupPlayerPicker();
@@ -2403,6 +2589,7 @@ button, input, select, textarea,
         subCount = { us: 0, them: 0 };
         startSideSetting = 'S';
         hasServeAuthority = true;
+        clearPendingReception();
         closeLineupPlayerPicker();
         updateSideToggleUI();
     }
@@ -2953,6 +3140,137 @@ button, input, select, textarea,
         saveStorage();
     }
 
+    function isOpponentServing() {
+        return hasServeAuthority === false;
+    }
+
+    function isReceptionGrade(value) {
+        return ['A', 'B', 'C', 'D', 'M'].includes(String(value || '').toUpperCase());
+    }
+
+    function isReceptionPointGrade(value) {
+        return ['A', 'B', 'C', 'D'].includes(String(value || '').toUpperCase());
+    }
+
+    function getReceptionStatKey(grade) {
+        grade = String(grade || '').toUpperCase();
+        if (grade === 'A') return 'reception_a';
+        if (grade === 'B') return 'reception_b';
+        if (grade === 'C') return 'reception_c';
+        if (grade === 'D') return 'reception_d';
+        return '';
+    }
+
+    function openReceptionInput() {
+        var panel = document.getElementById('reception-panel');
+        if (!panel) return;
+        renderPendingReceptionUI();
+        panel.classList.remove('collapsed');
+    }
+
+    function collapseReceptionInput() {
+        var panel = document.getElementById('reception-panel');
+        if (!panel) return;
+        panel.classList.add('collapsed');
+    }
+
+    function selectReceptionReceiver(receiver) {
+        if (!receiver || receiver === 'team' || receiver === 'us_team') return;
+        if (!pendingReception || typeof pendingReception !== 'object') pendingReception = {};
+        pendingReception.receiver = receiver;
+        if (!pendingReception.createdAt) pendingReception.createdAt = Date.now();
+        renderPendingReceptionUI();
+        saveStorage();
+    }
+
+    function selectReceptionGrade(grade) {
+        grade = String(grade || '').toUpperCase();
+        if (!isReceptionGrade(grade)) return;
+        if (!pendingReception || !pendingReception.receiver) {
+            alert('レシーバーを選択してください。');
+            return;
+        }
+        pendingReception.grade = grade;
+        if (!pendingReception.createdAt) pendingReception.createdAt = Date.now();
+        if (grade === 'M') {
+            addStat('reception_error', {
+                player: pendingReception.receiver,
+                reception: {
+                    receiver: pendingReception.receiver,
+                    grade: 'M',
+                    createdAt: pendingReception.createdAt || Date.now()
+                },
+                bypassReceptionRequirement: true
+            });
+            return;
+        }
+        collapseReceptionInput();
+        renderPendingReceptionUI();
+        saveStorage();
+    }
+
+    function getPendingReceptionSummary() {
+        if (!pendingReception || !pendingReception.receiver || !pendingReception.grade) return '';
+        return '#' + getPlayerNumber(pendingReception.receiver) + ' ' + pendingReception.grade;
+    }
+
+    function renderReceptionReceiverButtons() {
+        var listEl = document.getElementById('reception-receiver-list');
+        if (!listEl) return;
+        var ids = visibleOwnPlayerIds();
+        listEl.innerHTML = ids.map(function(id) {
+            var active = pendingReception && pendingReception.receiver === id ? ' active' : '';
+            return '<button type="button" class="reception-receiver-btn' + active + '" onclick="selectReceptionReceiver(\'' + id + '\')">' +
+                '<span>' + escapeHtml(getPlayerNumber(id)) + '</span><br><span>' + escapeHtml(getPlayerNameOnly(id)) + '</span>' +
+                '</button>';
+        }).join('');
+    }
+
+    function renderPendingReceptionUI() {
+        var panel = document.getElementById('reception-panel');
+        if (!panel) return;
+        var shouldShow = isOpponentServing();
+        panel.classList.toggle('active', shouldShow);
+        if (!shouldShow) return;
+
+        renderReceptionReceiverButtons();
+        var hasCompletePending = !!(pendingReception && pendingReception.receiver && pendingReception.grade);
+        if (hasCompletePending) panel.classList.add('collapsed');
+        else panel.classList.remove('collapsed');
+
+        var summaryEl = document.getElementById('pending-reception-summary');
+        if (summaryEl) {
+            summaryEl.innerText = hasCompletePending ? getPendingReceptionSummary() : '';
+        }
+
+        var gradeButtons = panel.getElementsByClassName('reception-grade-btn');
+        var hasReceiver = !!(pendingReception && pendingReception.receiver);
+        for (var i = 0; i < gradeButtons.length; i++) {
+            gradeButtons[i].disabled = !hasReceiver;
+        }
+    }
+
+    function hasPendingReceptionForPoint() {
+        return !!(pendingReception && pendingReception.receiver && isReceptionPointGrade(pendingReception.grade));
+    }
+
+    function applyReceptionToStats(reception, delta) {
+        if (!reception || !reception.receiver) return;
+        var key = getReceptionStatKey(reception.grade);
+        if (!key) return;
+        adjustStatCount(reception.receiver, key, delta);
+    }
+
+    function clearPendingReception() {
+        pendingReception = null;
+        writeStorageValue('vball_pendingReception_s', null, true);
+        var panel = document.getElementById('reception-panel');
+        if (panel) panel.classList.remove('collapsed');
+        var summaryEl = document.getElementById('pending-reception-summary');
+        if (summaryEl) summaryEl.innerText = '';
+        renderPendingReceptionUI();
+    }
+
     function renamePlayer(id, newName) {
         playerNames[id] = newName.trim() ? newName.trim() : '選手 No.' + id.replace('p','');
         updatePlayerButtonLabel(id);
@@ -3355,13 +3673,36 @@ button, input, select, textarea,
         }), true, extra);
     }
 
-    function addStat(item) {
-        activePlayerHighlightFix(selectedPlayer);
-        setData[selectedPlayer][item] = (setData[selectedPlayer][item] || 0) + 1;
-        todayData[selectedPlayer][item] = (todayData[selectedPlayer][item] || 0) + 1;
-        allData[selectedPlayer][item] = (allData[selectedPlayer][item] || 0) + 1;
-        
-        historyLog.push({ type: 'stat', player: selectedPlayer, item: item });
+    function addStat(item, options) {
+        options = options || {};
+        var statPlayer = options.player || selectedPlayer;
+        var receptionForAction = options.reception || null;
+        if (isOpponentServing()) {
+            var bypassReceptionRequirement = !!options.bypassReceptionRequirement || (item === 'reception_error' && !hasPendingReceptionForPoint());
+            if (!receptionForAction && !hasPendingReceptionForPoint() && !bypassReceptionRequirement) {
+                alert('レセプション評価が未入力です');
+                openReceptionInput();
+                return;
+            }
+            if (!receptionForAction && hasPendingReceptionForPoint()) receptionForAction = {
+                receiver: pendingReception.receiver,
+                grade: pendingReception.grade,
+                createdAt: pendingReception.createdAt || Date.now()
+            };
+        }
+
+        if (statPlayer === selectedPlayer) activePlayerHighlightFix(selectedPlayer);
+        setData[statPlayer][item] = (setData[statPlayer][item] || 0) + 1;
+        todayData[statPlayer][item] = (todayData[statPlayer][item] || 0) + 1;
+        allData[statPlayer][item] = (allData[statPlayer][item] || 0) + 1;
+
+        var action = { type: 'stat', player: statPlayer, item: item };
+        if (receptionForAction) {
+            action.reception = receptionForAction;
+            applyReceptionToStats(receptionForAction, 1);
+        }
+        historyLog.push(action);
+        if (receptionForAction) clearPendingReception();
         updateUI();
     }
 
@@ -3396,6 +3737,7 @@ button, input, select, textarea,
         historyLog.splice(index, 1);
         if (target.type === 'stat') {
             adjustStatCount(target.player, target.item, -1);
+            if (target.reception) applyReceptionToStats(target.reception, -1);
         } else if (target.type === 'timeout') {
             if (timeoutCount[target.team] > 0) timeoutCount[target.team]--;
         } else if (target.type === 'substitution') {
@@ -3690,8 +4032,10 @@ button, input, select, textarea,
 
         var matchedLabel = matched.matchLabel ? (matched.matchLabel + ' ') : '';
         titleEl.innerText = '📑 【1セット記録】 ' + matched.timestamp + ' ' + matchedLabel + 'vs ' + matched.oppName + ' (第' + matched.setNum + 'S: ' + matched.score + ') ' + resultMark;
-        renderTableRows(tbody, matched.statsSnap, matched.playerNamesSnap, matched.playerNumbersSnap);
-        calculateAndDrawArchiveAnalysis(matched.statsSnap, matched.oppName || '相手');
+        var matchedStats = matched.statsSnap || createEmptyStats();
+        renderTableRows(tbody, matchedStats, matched.playerNamesSnap, matched.playerNumbersSnap);
+        renderArchiveReceptionAnalyticsRows(matched.statsSnap || null, matched.playerNamesSnap, matched.playerNumbersSnap);
+        calculateAndDrawArchiveAnalysis(matchedStats, matched.oppName || '相手');
         var archiveRotBox = document.getElementById('archive-rotation-analysis-box');
         if (archiveRotBox) archiveRotBox.style.display = '';
         var archiveRotNote = document.getElementById('archive-rotation-analysis-note');
@@ -3726,14 +4070,27 @@ button, input, select, textarea,
         logContainer.innerHTML = '';
 
         var aggregatedStats = createEmptyStats();
+        var receptionAggregatedStats = createEmptyStats();
+        var receptionDetailSetCount = 0;
+        var legacyReceptionSetCount = 0;
         var oppList = getUniqueOppNames(daySets);
 
         for(var k=0; k<daySets.length; k++) {
-            var sData = daySets[k].statsSnap;
+            var sData = daySets[k].statsSnap || {};
+            var hasReceptionDetail = hasArchiveReceptionAnalyticsData(sData);
+            if (hasReceptionDetail) receptionDetailSetCount++;
+            else legacyReceptionSetCount++;
             
             for(var pKey in sData) {
+                if (!aggregatedStats[pKey]) aggregatedStats[pKey] = {};
                 for(var sKey in sData[pKey]) {
+                    if (aggregatedStats[pKey][sKey] === undefined) aggregatedStats[pKey][sKey] = 0;
                     aggregatedStats[pKey][sKey] += (sData[pKey][sKey] || 0);
+                    if (hasReceptionDetail) {
+                        if (!receptionAggregatedStats[pKey]) receptionAggregatedStats[pKey] = {};
+                        if (receptionAggregatedStats[pKey][sKey] === undefined) receptionAggregatedStats[pKey][sKey] = 0;
+                        receptionAggregatedStats[pKey][sKey] += (sData[pKey][sKey] || 0);
+                    }
                 }
             }
         }
@@ -3742,6 +4099,11 @@ button, input, select, textarea,
         var oppTitle = oppList.length === 1 ? oppList[0] : '複数（' + oppList.join(', ') + '）';
         titleEl.innerText = '📅 【1日合計データ】 ' + dayVal + ' （相手: ' + oppTitle + ' / 計 ' + daySets.length + 'セット）';
         renderTableRows(tbody, aggregatedStats, archiveNameMap, daySets[daySets.length-1].playerNumbersSnap || playerNumbers);
+        if (receptionDetailSetCount > 0) {
+            renderArchiveReceptionAnalyticsRows(receptionAggregatedStats, archiveNameMap, daySets[daySets.length-1].playerNumbersSnap || playerNumbers, legacyReceptionSetCount > 0 ? 'レセプション詳細を記録したセットのみ集計しています。' : '');
+        } else {
+            renderArchiveReceptionLegacyNotice(document.getElementById('archive-reception-analytics-tbody'), getArchiveLegacyReceptionMissTotal(aggregatedStats), '');
+        }
         calculateAndDrawArchiveAnalysis(aggregatedStats, oppList.length === 1 ? oppList[0] : '相手');
 
         var archiveRotBox = document.getElementById('archive-rotation-analysis-box');
@@ -3814,6 +4176,9 @@ button, input, select, textarea,
         var vDr = d.v_dribble || 0; var vNt = d.v_net || 0;
         var vPs = d.v_passing || 0; var vPo = d.v_positional || 0;
         var vOv = d.v_over || 0; var vHl = d.v_hold || 0; var vBack = d.v_backrow || 0;
+        var recA = d.reception_a || 0; var recB = d.reception_b || 0;
+        var recC = d.reception_c || 0; var recD = d.reception_d || 0;
+        var recTotal = recA + recB + recC + recD;
         var techErrors = rcErr + dgErr + tsErr + mcErr + otErr;
         var violations = vDr + vNt + vPs + vPo + vOv + vHl + vBack;
         var points = ak + bk + sa;
@@ -3823,7 +4188,10 @@ button, input, select, textarea,
             number: getPlayerNumber(p, numberMap),
             points: points,
             ak: ak, ae: ae, bk: bk, be: be, sa: sa, se: se,
-            techErrors: techErrors, violations: violations
+            techErrors: techErrors, violations: violations,
+            recA: recA, recB: recB, recC: recC, recD: recD, recM: rcErr, recTotal: recTotal + rcErr,
+            recAPct: (recTotal + rcErr) > 0 ? ((recA / (recTotal + rcErr)) * 100).toFixed(1) : '0.0',
+            recABPct: (recTotal + rcErr) > 0 ? (((recA + recB) / (recTotal + rcErr)) * 100).toFixed(1) : '0.0'
         };
     }
 
@@ -3876,6 +4244,140 @@ button, input, select, textarea,
     }
 
     // 割合・分析計算ロジック
+
+    function receptionAnalyticsCellHtml(s, label, rowClass) {
+        return '<tr class="' + (rowClass || '') + '">' +
+            '<td style="font-weight:bold;">' + escapeHtml(label || s.name) + '</td>' +
+            '<td>' + s.recA + '</td>' +
+            '<td>' + s.recB + '</td>' +
+            '<td>' + s.recC + '</td>' +
+            '<td>' + s.recD + '</td>' +
+            '<td>' + s.recM + '</td>' +
+            '<td class="point-total">' + s.recTotal + '</td>' +
+            '<td>' + (s.recTotal > 0 ? s.recAPct + '%' : '-') + '</td>' +
+            '<td>' + (s.recTotal > 0 ? s.recABPct + '%' : '-') + '</td>' +
+            '</tr>';
+    }
+
+    function getTeamReceptionSummary(statsData) {
+        var total = { recA: 0, recB: 0, recC: 0, recD: 0, recM: 0, recTotal: 0, recAPct: '0.0', recABPct: '0.0' };
+        statsData = statsData || {};
+        for (var i = 1; i <= MAX_PLAYERS; i++) {
+            var d = statsData['p' + i] || {};
+            total.recA += d.reception_a || 0;
+            total.recB += d.reception_b || 0;
+            total.recC += d.reception_c || 0;
+            total.recD += d.reception_d || 0;
+            total.recM += d.reception_error || 0;
+        }
+        var teamData = statsData.us_team || {};
+        total.recA += teamData.reception_a || 0;
+        total.recB += teamData.reception_b || 0;
+        total.recC += teamData.reception_c || 0;
+        total.recD += teamData.reception_d || 0;
+        total.recM += teamData.reception_error || 0;
+        total.recTotal = total.recA + total.recB + total.recC + total.recD + total.recM;
+        total.recAPct = total.recTotal > 0 ? ((total.recA / total.recTotal) * 100).toFixed(1) : '0.0';
+        total.recABPct = total.recTotal > 0 ? (((total.recA + total.recB) / total.recTotal) * 100).toFixed(1) : '0.0';
+        return total;
+    }
+
+    function getLiveReceptionSummary() {
+        return getTeamReceptionSummary(setData);
+    }
+
+    function updateLiveReceptionDashboard() {
+        var totalEl = document.getElementById('live-rec-total');
+        var aRateEl = document.getElementById('live-rec-a-rate');
+        var abRateEl = document.getElementById('live-rec-ab-rate');
+        if (!totalEl || !aRateEl || !abRateEl) return;
+        var s = getLiveReceptionSummary();
+        totalEl.innerText = s.recTotal;
+        aRateEl.innerText = s.recAPct + '%';
+        abRateEl.innerText = s.recABPct + '%';
+    }
+
+    function renderReceptionAnalyticsRowsToTbody(tbody, statsData, nameMap, numberMap) {
+        if (!tbody) return;
+        var teamSummary = getTeamReceptionSummary(statsData);
+        var rows = [];
+        var list = [];
+        for (var i = 1; i <= MAX_PLAYERS; i++) {
+            var summary = getPlayerStatSummary('p' + i, statsData, nameMap, numberMap);
+            if (summary.recTotal > 0) list.push(summary);
+        }
+        list.sort(function(a, b) {
+            var aNum = parseInt(String(a.number || '').replace(/[^0-9]/g, ''), 10);
+            var bNum = parseInt(String(b.number || '').replace(/[^0-9]/g, ''), 10);
+            if (!isNaN(aNum) && !isNaN(bNum) && aNum !== bNum) return aNum - bNum;
+            if (!isNaN(aNum) && isNaN(bNum)) return -1;
+            if (isNaN(aNum) && !isNaN(bNum)) return 1;
+            return a.id.localeCompare(b.id, 'ja');
+        });
+        for (var i = 0; i < list.length; i++) {
+            rows.push(receptionAnalyticsCellHtml(list[i]));
+        }
+        if (teamSummary.recTotal === 0 && list.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#94a3b8;">レセプション記録なし</td></tr>';
+            return;
+        }
+        rows.push(receptionAnalyticsCellHtml(teamSummary, 'チーム全体', 'own-summary-row'));
+        tbody.innerHTML = rows.join('');
+    }
+
+    function renderReceptionAnalyticsRows(statsData, nameMap, numberMap) {
+        renderReceptionAnalyticsRowsToTbody(document.getElementById('reception-analytics-tbody'), statsData, nameMap, numberMap);
+    }
+
+    function hasArchiveReceptionAnalyticsData(statsData) {
+        if (!statsData || typeof statsData !== 'object') return false;
+        var keys = ['reception_a', 'reception_b', 'reception_c', 'reception_d'];
+        var ids = [];
+        for (var i = 1; i <= MAX_PLAYERS; i++) ids.push('p' + i);
+        ids.push('us_team');
+        for (var j = 0; j < ids.length; j++) {
+            var d = statsData[ids[j]];
+            if (!d || typeof d !== 'object') continue;
+            for (var k = 0; k < keys.length; k++) {
+                if (Object.prototype.hasOwnProperty.call(d, keys[k])) return true;
+            }
+        }
+        return false;
+    }
+
+    function getArchiveLegacyReceptionMissTotal(statsData) {
+        var total = 0;
+        statsData = statsData || {};
+        for (var i = 1; i <= MAX_PLAYERS; i++) {
+            var d = statsData['p' + i] || {};
+            total += d.reception_error || 0;
+        }
+        var teamData = statsData.us_team || {};
+        total += teamData.reception_error || 0;
+        return total;
+    }
+
+    function renderArchiveReceptionLegacyNotice(tbody, legacyMissTotal, note) {
+        if (!tbody) return;
+        var rows = ['<tr><td colspan="9" style="text-align:center;color:#94a3b8;">この記録にはレセプション詳細データがありません。従来記録のレセプションミスのみ保存されています。</td></tr>'];
+        if (legacyMissTotal > 0) {
+            rows.push('<tr><td colspan="9" style="text-align:center;color:#cbd5e1;">従来記録のレセプションミス：' + legacyMissTotal + '本</td></tr>');
+        }
+        if (note) rows.unshift('<tr><td colspan="9" style="text-align:center;color:#fde68a;">' + escapeHtml(note) + '</td></tr>');
+        tbody.innerHTML = rows.join('');
+    }
+
+    function renderArchiveReceptionAnalyticsRows(statsData, nameMap, numberMap, note) {
+        var tbody = document.getElementById('archive-reception-analytics-tbody');
+        if (!hasArchiveReceptionAnalyticsData(statsData)) {
+            renderArchiveReceptionLegacyNotice(tbody, getArchiveLegacyReceptionMissTotal(statsData), note);
+            return;
+        }
+        renderReceptionAnalyticsRowsToTbody(tbody, statsData, nameMap, numberMap);
+        if (note && tbody) {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#fde68a;">' + escapeHtml(note) + '</td></tr>' + tbody.innerHTML;
+        }
+    }
 
     function isPositivePointItem(item) {
         return ['attack_kill', 'block_kill', 'serve_ace'].includes(item);
@@ -4076,6 +4578,7 @@ button, input, select, textarea,
         document.getElementById('analysis-them-summary').innerText = totalThemScore + '点 (自力 ' + themOwnPct + '% : ' + (selfTeamName || '清明') + 'ミス ' + themUsErrPct + '%)';
         document.getElementById('bar-them-opp').style.width = themOwnPct + '%';
         document.getElementById('bar-them-own-err').style.width = themUsErrPct + '%';
+        renderReceptionAnalyticsRows(activeData, getCurrentStatsNameMap(), playerNumbers);
     }
 
 
@@ -4297,6 +4800,8 @@ button, input, select, textarea,
         document.getElementById('score-us').innerText = scoreUs;
         document.getElementById('score-them').innerText = scoreThem;
         updateSetFinishButtonState(scoreUs, scoreThem);
+        renderPendingReceptionUI();
+        updateLiveReceptionDashboard();
         logContainer.scrollTop = logContainer.scrollHeight;
 
         drawCourt(currentRotationState);
@@ -4412,7 +4917,7 @@ button, input, select, textarea,
         var html = '<html><head><title>SEIMEI Volleyball Report</title><style>body{font-family:Arial,sans-serif;padding:20px;}h1,h2{color:#1e3a8a;}table{width:100%;border-collapse:collapse;font-size:12px;}th,td{border:1px solid #999;padding:6px;text-align:left;}th{background:#f3f4f6}.print-log{border-bottom:1px solid #ddd;padding:4px;font-size:12px;}</style></head><body>' +
             '<h1>' + getAppFullTitle() + '</h1><h2>' + label + ' / 第' + currentSet + 'セット / vs ' + opponentLabel + '</h2>' +
             '<h3>スタッツ集計</h3>' + tableHtmlFromStats(activeData, activeNameMap) + '<h3>ランニングスコア</h3>' + runningLogHtml() +
-            '<script>window.onload=function(){window.print();}<\/script></body></html><!-- Ver.1.4.0 Storage Optimizer -->';
+            '<script>window.onload=function(){window.print();}<\/script></body></html><!-- Ver.1.4.2 Live Reception Dashboard -->';
         var w = window.open('', '_blank'); w.document.open(); w.document.write(html); w.document.close();
     }
 
@@ -4421,7 +4926,7 @@ button, input, select, textarea,
         if (!dayVal) { alert('先に日付を選択してください。'); return; }
         viewArchiveDayTotal();
         var printContents = document.getElementById('archive-display-area').innerHTML;
-        var html = '<html><head><title>Archive Report</title><style>body{font-family:Arial,sans-serif;padding:20px;}h4,h5{color:#1e3a8a;}table{width:100%;border-collapse:collapse;font-size:12px;}th,td{border:1px solid #999;padding:6px;text-align:left;}th{background:#f3f4f6}.log-container{display:none;}</style></head><body>' + printContents + '<script>window.onload=function(){window.print();}<\/script></body></html><!-- Ver.1.4.0 Storage Optimizer -->';
+        var html = '<html><head><title>Archive Report</title><style>body{font-family:Arial,sans-serif;padding:20px;}h4,h5{color:#1e3a8a;}table{width:100%;border-collapse:collapse;font-size:12px;}th,td{border:1px solid #999;padding:6px;text-align:left;}th{background:#f3f4f6}.log-container{display:none;}</style></head><body>' + printContents + '<script>window.onload=function(){window.print();}<\/script></body></html><!-- Ver.1.4.2 Live Reception Dashboard -->';
         var w = window.open('', '_blank'); w.document.open(); w.document.write(html); w.document.close();
     }
 
@@ -4448,7 +4953,7 @@ button, input, select, textarea,
     function buildAppDataBackup() {
         return {
             appName: getAppFullTitle(),
-            appVersion: 'Ver.1.4.0 Storage Optimizer',
+            appVersion: 'Ver.1.4.2 Live Reception Dashboard',
             exportedAt: new Date().toISOString(),
             matchType: matchType,
             officialMatchNumber: officialMatchNumber,
@@ -4705,7 +5210,7 @@ button, input, select, textarea,
             startingLineup = { 1: 'p1', 2: 'p2', 3: 'p3', 4: 'p4', 5: 'p5', 6: 'p6' };
             startSideSetting = 'S'; hasServeAuthority = true; oppTeamName = '相手'; appTitlePrefix = 'SEIMEI HS'; selfTeamName = '清明'; matchType = 'practice'; officialMatchNumber = 1; matchDateKey = getTodayKey();
             playerVisible = normalizePlayerVisible(null);
-            historyLog = []; setResults = []; timeoutCount = { us: 0, them: 0 }; subCount = { us: 0, them: 0 }; globalArchive = []; autoBackups = [];
+            historyLog = []; setResults = []; timeoutCount = { us: 0, them: 0 }; subCount = { us: 0, them: 0 }; globalArchive = []; autoBackups = []; pendingReception = null;
             switchView('set'); initSetup(); updateUI(); updateStorageMonitor();
         }
     }
@@ -4725,4 +5230,4 @@ button, input, select, textarea,
     initSetup(); updateUI(); updateStorageMonitor();
 </script>
 </body>
-</html><!-- Ver.1.4.0 Storage Optimizer -->
+</html><!-- Ver.1.4.2 Live Reception Dashboard -->
