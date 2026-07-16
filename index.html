@@ -3267,6 +3267,10 @@ button, input, select, textarea,
         return !!(pendingReception && pendingReception.receiver && isReceptionPointGrade(pendingReception.grade));
     }
 
+    function isOpponentServeErrorReceptionBypass(statPlayer, item) {
+        return isOpponentServing() && statPlayer === 'team' && item === 'serve_error';
+    }
+
     function applyReceptionToStats(reception, delta) {
         if (!reception || !reception.receiver) return;
         var key = getReceptionStatKey(reception.grade);
@@ -3690,14 +3694,16 @@ button, input, select, textarea,
         options = options || {};
         var statPlayer = options.player || selectedPlayer;
         var receptionForAction = options.reception || null;
+        var bypassOpponentServeErrorReception = isOpponentServeErrorReceptionBypass(statPlayer, item);
+        if (bypassOpponentServeErrorReception) receptionForAction = null;
         if (isOpponentServing()) {
-            var bypassReceptionRequirement = !!options.bypassReceptionRequirement || (item === 'reception_error' && !hasPendingReceptionForPoint());
+            var bypassReceptionRequirement = !!options.bypassReceptionRequirement || bypassOpponentServeErrorReception || (item === 'reception_error' && !hasPendingReceptionForPoint());
             if (!receptionForAction && !hasPendingReceptionForPoint() && !bypassReceptionRequirement) {
                 alert('レセプション評価が未入力です');
                 openReceptionInput();
                 return;
             }
-            if (!receptionForAction && hasPendingReceptionForPoint()) receptionForAction = {
+            if (!receptionForAction && !bypassOpponentServeErrorReception && hasPendingReceptionForPoint()) receptionForAction = {
                 receiver: pendingReception.receiver,
                 grade: pendingReception.grade,
                 createdAt: pendingReception.createdAt || Date.now()
@@ -3715,7 +3721,7 @@ button, input, select, textarea,
             applyReceptionToStats(receptionForAction, 1);
         }
         historyLog.push(action);
-        if (receptionForAction) clearPendingReception();
+        if (receptionForAction || bypassOpponentServeErrorReception) clearPendingReception();
         updateUI();
     }
 
