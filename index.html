@@ -1469,11 +1469,9 @@ button, input, select, textarea,
                 <div class="reception-expanded">
                     <div class="reception-header">
                         <div>
-                            <div class="reception-title">Reception Analytics</div>
-                            <div class="reception-note">相手サーブ時のみ入力します。レシーバーを選択してから評価を選んでください。</div>
+                            <div class="reception-title">レセプション</div>
                         </div>
                     </div>
-                    <div id="reception-receiver-list" class="reception-receiver-grid"></div>
                     <div class="reception-grade-row">
                         <button type="button" class="reception-grade-btn grade-a" onclick="selectReceptionGrade('A')">A</button>
                         <button type="button" class="reception-grade-btn grade-b" onclick="selectReceptionGrade('B')">B</button>
@@ -1772,7 +1770,7 @@ button, input, select, textarea,
         <div class="modal-window" style="max-width:760px;">
             <div class="modal-header"><h2>💾 データ保存・読み込み</h2><button class="modal-close" onclick="closeModal('dataModal')">閉じる</button></div>
             <div class="modal-body">
-                <div style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:10px;margin-bottom:12px;color:#cbd5e1;font-size:0.85rem;">📱 PWA対応版です。AndroidはChrome、iPadはSafariで開き、ホーム画面に追加するとアプリ風に使えます。<br><span style="display:block;margin-top:6px;color:#93c5fd;font-weight:900;">Ver.1.4.3c</span></div>
+                <div style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:10px;margin-bottom:12px;color:#cbd5e1;font-size:0.85rem;">📱 PWA対応版です。AndroidはChrome、iPadはSafariで開き、ホーム画面に追加するとアプリ風に使えます。<br><span style="display:block;margin-top:6px;color:#93c5fd;font-weight:900;">Ver.1.4.4</span></div>
                 <div class="panel">
                     <h3>外部ファイルへバックアップ</h3>
                     <p style="font-size:0.85rem; color:#cbd5e1; line-height:1.7;">現在の試合データ、選手名、S-Lineup、本日履歴、過去の記録をまとめて外部ファイルに保存できます。JSON単体に加えて、CSVや説明書を含むZIP一括保存にも対応しました。</p>
@@ -3150,6 +3148,7 @@ button, input, select, textarea,
         var buttons = document.getElementsByClassName('p-btn');
         for (var i = 0; i < buttons.length; i++) { buttons[i].classList.remove('active'); }
         document.getElementById('btn-' + id).classList.add('active');
+        renderPendingReceptionUI();
         saveStorage();
     }
 
@@ -3196,20 +3195,29 @@ button, input, select, textarea,
         saveStorage();
     }
 
+    function getReceptionSelectedReceiver() {
+        if (!selectedPlayer || selectedPlayer === 'team' || selectedPlayer === 'us_team') return '';
+        return isPlayerVisible(selectedPlayer) ? selectedPlayer : '';
+    }
+
     function selectReceptionGrade(grade) {
         grade = String(grade || '').toUpperCase();
         if (!isReceptionGrade(grade)) return;
-        if (!pendingReception || !pendingReception.receiver) {
+        var receiver = getReceptionSelectedReceiver();
+        if (!receiver) {
             alert('レシーバーを選択してください。');
             return;
         }
-        pendingReception.grade = grade;
-        if (!pendingReception.createdAt) pendingReception.createdAt = Date.now();
+        pendingReception = {
+            receiver: receiver,
+            grade: grade,
+            createdAt: Date.now()
+        };
         if (grade === 'M') {
             addStat('reception_error', {
-                player: pendingReception.receiver,
+                player: receiver,
                 reception: {
-                    receiver: pendingReception.receiver,
+                    receiver: receiver,
                     grade: 'M',
                     createdAt: pendingReception.createdAt || Date.now()
                 },
@@ -3230,13 +3238,7 @@ button, input, select, textarea,
     function renderReceptionReceiverButtons() {
         var listEl = document.getElementById('reception-receiver-list');
         if (!listEl) return;
-        var ids = visibleOwnPlayerIds();
-        listEl.innerHTML = ids.map(function(id) {
-            var active = pendingReception && pendingReception.receiver === id ? ' active' : '';
-            return '<button type="button" class="reception-receiver-btn' + active + '" onclick="selectReceptionReceiver(\'' + id + '\')">' +
-                '<span>' + escapeHtml(getPlayerNumber(id)) + '</span><br><span>' + escapeHtml(getPlayerNameOnly(id)) + '</span>' +
-                '</button>';
-        }).join('');
+        listEl.innerHTML = '';
     }
 
     function renderPendingReceptionUI() {
@@ -3244,6 +3246,11 @@ button, input, select, textarea,
         if (!panel) return;
         var shouldShow = isOpponentServing();
         panel.classList.toggle('active', shouldShow);
+        var gradeButtons = panel.getElementsByClassName('reception-grade-btn');
+        var hasReceiver = !!getReceptionSelectedReceiver();
+        for (var i = 0; i < gradeButtons.length; i++) {
+            gradeButtons[i].disabled = !(shouldShow && hasReceiver);
+        }
         if (!shouldShow) return;
 
         renderReceptionReceiverButtons();
@@ -3256,11 +3263,6 @@ button, input, select, textarea,
             summaryEl.innerText = hasCompletePending ? getPendingReceptionSummary() : '';
         }
 
-        var gradeButtons = panel.getElementsByClassName('reception-grade-btn');
-        var hasReceiver = !!(pendingReception && pendingReception.receiver);
-        for (var i = 0; i < gradeButtons.length; i++) {
-            gradeButtons[i].disabled = !hasReceiver;
-        }
     }
 
     function hasPendingReceptionForPoint() {
@@ -3697,7 +3699,7 @@ button, input, select, textarea,
         var bypassOpponentServeErrorReception = isOpponentServeErrorReceptionBypass(statPlayer, item);
         if (bypassOpponentServeErrorReception) receptionForAction = null;
         if (isOpponentServing()) {
-            var bypassReceptionRequirement = !!options.bypassReceptionRequirement || bypassOpponentServeErrorReception || (item === 'reception_error' && !hasPendingReceptionForPoint());
+            var bypassReceptionRequirement = true;
             if (!receptionForAction && !hasPendingReceptionForPoint() && !bypassReceptionRequirement) {
                 alert('レセプション評価が未入力です');
                 openReceptionInput();
