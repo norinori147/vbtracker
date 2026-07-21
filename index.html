@@ -1770,7 +1770,7 @@ button, input, select, textarea,
         <div class="modal-window" style="max-width:760px;">
             <div class="modal-header"><h2>💾 データ保存・読み込み</h2><button class="modal-close" onclick="closeModal('dataModal')">閉じる</button></div>
             <div class="modal-body">
-                <div style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:10px;margin-bottom:12px;color:#cbd5e1;font-size:0.85rem;">📱 PWA対応版です。AndroidはChrome、iPadはSafariで開き、ホーム画面に追加するとアプリ風に使えます。<br><span id="app-version-display" style="display:block;margin-top:6px;color:#93c5fd;font-weight:900;line-height:1.3;">Ver.1.4.4<br>Build 20260719</span></div>
+                <div style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:10px;margin-bottom:12px;color:#cbd5e1;font-size:0.85rem;">📱 PWA対応版です。AndroidはChrome、iPadはSafariで開き、ホーム画面に追加するとアプリ風に使えます。<br><span id="app-version-display" style="display:block;margin-top:6px;color:#93c5fd;font-weight:900;line-height:1.3;">Ver.1.4.5a<br>Build 20260720</span></div>
                 <div class="panel">
                     <h3>外部ファイルへバックアップ</h3>
                     <p style="font-size:0.85rem; color:#cbd5e1; line-height:1.7;">現在の試合データ、選手名、S-Lineup、本日履歴、過去の記録をまとめて外部ファイルに保存できます。JSON単体に加えて、CSVや説明書を含むZIP一括保存にも対応しました。</p>
@@ -1972,8 +1972,13 @@ button, input, select, textarea,
 <script>
 
     /*
-     * SEIMEI VB Tracker Ver.1.4.4
-     * Build 20260719 / Stable
+     * SEIMEI VB Tracker Ver.1.4.5a
+     * Build 20260720 / Release Candidate 2
+     *
+     * ==========================
+     * Ver.1.4.5a
+     * Release Identifier Fix & Final Revalidation
+     * ==========================
      *
      * Main changes:
      * - Reception evaluation became optional and bypassable.
@@ -1983,9 +1988,9 @@ button, input, select, textarea,
      * - Date normalization and active-set double-count prevention were added.
      * - Existing saved-data compatibility was preserved.
      */
-    const APP_VERSION = '1.4.4';
-    const APP_BUILD = '20260719';
-    const APP_RELEASE_STATUS = 'Stable';
+    const APP_VERSION = '1.4.5a';
+    const APP_BUILD = '20260720';
+    const APP_RELEASE_STATUS = 'Release Candidate 2';
 
     function updateAppVersionDisplay() {
         var versionEl = document.getElementById('app-version-display');
@@ -2486,6 +2491,13 @@ button, input, select, textarea,
     }
 
     function loadStorage() {
+        // ========================
+        // Ver.1.4.5a
+        // Storage Optimization
+        // ========================
+        // v1.4.4以前のlocalStorageと互換性を保つため、旧キャッシュKeyも読み込みます。
+        // todayData / allData / setResults は、この関数の後半で globalArchive と
+        // 現在の setData から必ず再生成されるため、読み込んだ値を正本にはしません。
         if (readStorageText('vball_currentSet_s', null) !== null) {
             currentSet = parseInt(readStorageText('vball_currentSet_s', currentSet), 10) || 1;
             historyLog = readStorageJSON('vball_historyLog_s', historyLog) || [];
@@ -2531,31 +2543,44 @@ button, input, select, textarea,
     }
 
     function saveStorage() {
+        // ========================
+        // Ver.1.4.5a
+        // Storage Optimization
+        // ========================
+        // 現行localStorage Keyと同期保存方式は維持したまま、保存責務を次の順に整理します。
+        // 1. 試合中データ  2. 選手・表示設定  3. 試合設定  4. Archive等
+        // todayData / allData / setResults は globalArchive + setData から再生成できる
+        // キャッシュのため、新規書き込みを停止します。旧Keyは互換読込のため削除しません。
         var ok = true;
+
+        // 試合中データ（ラリー、セット進行、現在配置）
         ok = writeStorageValue('vball_currentSet_s', currentSet, false) && ok;
         ok = writeStorageValue('vball_historyLog_s', historyLog, true) && ok;
         ok = writeStorageValue('vball_timeoutCount_s', timeoutCount, true) && ok;
         ok = writeStorageValue('vball_subCount_s', subCount, true) && ok;
-        ok = writeStorageValue('vball_setResults_s', setResults, true) && ok;
-        ok = writeStorageValue('vball_playerNames_s', playerNames, true) && ok;
-        ok = writeStorageValue('vball_playerNumbers_s', playerNumbers, true) && ok;
-        ok = writeStorageValue('vball_playerVisible_s', playerVisible, true) && ok;
         ok = writeStorageValue('vball_setData_s', setData, true) && ok;
-        ok = writeStorageValue('vball_todayData_s', todayData, true) && ok;
-        ok = writeStorageValue('vball_allData_s', allData, true) && ok;
         ok = writeStorageValue('vball_selectedPlayer_s', selectedPlayer, false) && ok;
         ok = writeStorageValue('vball_startingLineup_s', startingLineup, true) && ok;
         ok = writeStorageValue('vball_startSideSetting_s', startSideSetting, false) && ok;
         ok = writeStorageValue('vball_hasServeAuthority_s', hasServeAuthority, false) && ok;
+        ok = writeStorageValue('vball_pendingReception_s', pendingReception, true) && ok;
+
+        // 選手・表示設定
+        ok = writeStorageValue('vball_playerNames_s', playerNames, true) && ok;
+        ok = writeStorageValue('vball_playerNumbers_s', playerNumbers, true) && ok;
+        ok = writeStorageValue('vball_playerVisible_s', playerVisible, true) && ok;
+
+        // 試合・アプリ設定
         ok = writeStorageValue('vball_oppTeamName_s', oppTeamName, false) && ok;
         ok = writeStorageValue('vball_appTitlePrefix_s', appTitlePrefix, false) && ok;
         ok = writeStorageValue('vball_selfTeamName_s', selfTeamName, false) && ok;
         ok = writeStorageValue('vball_matchType_s', matchType, false) && ok;
         ok = writeStorageValue('vball_officialMatchNumber_s', officialMatchNumber, false) && ok;
         ok = writeStorageValue('vball_matchDateKey_s', matchDateKey, false) && ok;
+
+        // 終了セットの正本と自動バックアップ
         ok = writeStorageValue('vball_globalArchive_s', globalArchive, true) && ok;
         ok = writeStorageValue('vball_autoBackups_s', autoBackups, true) && ok;
-        ok = writeStorageValue('vball_pendingReception_s', pendingReception, true) && ok;
         updateAutoBackupUI();
         updateStorageMonitor();
         return ok;
@@ -3880,8 +3905,16 @@ button, input, select, textarea,
                 historyLogSnap: JSON.parse(JSON.stringify(historyLog))
             };
 
+            // ========================
+            // Ver.1.4.5a
+            // Storage Optimization
+            // ========================
+            // バックアップ用ラベルは、currentSetを次へ進める前に確定します。
+            // 自動バックアップ本体は、終了セットをArchiveへ追加し、Liveを初期化した後に
+            // 生成します。これにより同一セットがArchiveとLiveの両方へ入る状態を防ぎます。
+            var completedSetBackupLabel = getMatchLabel() + ' 第' + currentSet + 'セット終了 / vs ' + oppTeamName + ' / ' + scoreUs + '-' + scoreThem;
+
             globalArchive.push(archiveItem);
-            createAutoBackup(getMatchLabel() + ' 第' + currentSet + 'セット終了 / vs ' + oppTeamName + ' / ' + scoreUs + '-' + scoreThem);
 
             setResults.push({ matchType: matchType, matchNumber: matchType === 'official' ? officialMatchNumber : null, matchLabel: getMatchLabel(), set: currentSet, us: scoreUs, them: scoreThem, opp: oppTeamName });
             currentSet++;
@@ -3897,6 +3930,7 @@ button, input, select, textarea,
             // Rebuild after clearing the completed set so the live set and its
             // archived snapshot cannot both be included in the totals.
             rebuildDerivedDataFromArchive();
+            createAutoBackup(completedSetBackupLabel);
             updateSideToggleUI();
 
             closeLineupPlayerPicker();
@@ -3926,6 +3960,13 @@ button, input, select, textarea,
 
 
     function rebuildDerivedDataFromArchive() {
+        // ========================
+        // Ver.1.4.5a
+        // Storage Optimization
+        // ========================
+        // todayData / allData / setResults の唯一の再生成経路です。
+        // 起動時、JSON読込時、セット終了時など、正本である globalArchive または
+        // 現在の setData が読み込まれた後に呼び出し、旧キャッシュ値へ依存しません。
         var rebuiltToday = createEmptyStats();
         var rebuiltAll = createEmptyStats();
         var rebuiltSetResults = [];
@@ -3988,6 +4029,12 @@ button, input, select, textarea,
         todayData = rebuiltToday;
         allData = rebuiltAll;
         setResults = rebuiltSetResults;
+
+        // 再生成が正常完了した後にだけ、旧版が保存した派生キャッシュを解放します。
+        // Key定義と読込互換性は残すため、v1.4.4形式のデータは引き続き読み込めます。
+        ['vball_todayData_s', 'vball_allData_s', 'vball_setResults_s'].forEach(function(key) {
+            try { localStorage.removeItem(key); } catch (err) { console.warn('Derived cache remove failed:', key, err); }
+        });
     }
 
     function buildArchiveDaySelect() {
@@ -5036,6 +5083,15 @@ button, input, select, textarea,
     function createAutoBackup(label) {
         try {
             var snapshot = buildAppDataBackup();
+            // ========================
+            // Ver.1.4.5a
+            // Storage Optimization
+            // ========================
+            // 外部JSONの完全バックアップ形式は変更せず、自動バックアップだけを軽量化します。
+            // 以下は globalArchive + setData から復元時に再生成できるキャッシュです。
+            delete snapshot.todayData;
+            delete snapshot.allData;
+            delete snapshot.setResults;
             snapshot.autoBackups = [];
             var item = {
                 id: 'backup_' + Date.now(),
@@ -5137,6 +5193,13 @@ button, input, select, textarea,
     }
 
     function applyImportedAppData(data) {
+        // ========================
+        // Ver.1.4.5a
+        // Storage Optimization
+        // ========================
+        // 旧JSONとの互換性のためキャッシュ項目は従来どおり受け入れます。
+        // 軽量自動バックアップのように項目が無い場合も許容し、最終的には
+        // rebuildDerivedDataFromArchive() で正本から同じ集計結果を再生成します。
         if (!data || typeof data !== 'object') throw new Error('データ形式が正しくありません。');
         if (data.appName && String(data.appName).indexOf('Volleyball Tracker') === -1) {
             if (!confirm('このファイルは別アプリのデータの可能性があります。読み込みを続けますか？')) return;
