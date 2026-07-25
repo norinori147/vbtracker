@@ -2,7 +2,7 @@
 // Ver.1.4.5a
 // Release Identifier Fix & Final Revalidation
 // ==========================
-const CACHE_NAME = 'seimei-vb-tracker-v1-4-6c-build-20260725';
+const CACHE_NAME = 'seimei-vb-tracker-v1-4-6-stable-build-20260725';
 const ASSETS = [
   './',
   './index.html',
