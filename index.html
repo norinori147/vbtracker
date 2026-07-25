@@ -211,6 +211,7 @@
         .tab { flex: 1; text-align: center; padding: 10px 5px; cursor: pointer; font-weight: bold; color: #6b7280; font-size: 0.85rem; }
         .tab.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
         .table-container { max-height: 400px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 6px; }
+        .stats-aggregation-container { height: auto; max-height: none; overflow-x: auto; overflow-y: visible; }
         .stats-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
         .stats-table th, .stats-table td { padding: 9px 7px; text-align: left; border-bottom: 1px solid #e5e7eb; }
         .stats-table th { background-color: var(--gray); position: sticky; top: 0; z-index: 10; }
@@ -1597,7 +1598,7 @@ button, input, select, textarea,
                 <div class="tab" id="tab-all" onclick="switchView('all')">全通算</div>
             </div>
             <div class="stats-note">※ ○＝得点・決定　×＝ミス　／　得点順で表示</div>
-            <div class="table-container">
+            <div class="table-container stats-aggregation-container">
                 <table class="stats-table">
                     <thead>
                         <tr>
@@ -1771,7 +1772,7 @@ button, input, select, textarea,
         <div class="modal-window" style="max-width:760px;">
             <div class="modal-header"><h2>💾 データ保存・読み込み</h2><button class="modal-close" onclick="closeModal('dataModal')">閉じる</button></div>
             <div class="modal-body">
-                <div style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:10px;margin-bottom:12px;color:#cbd5e1;font-size:0.85rem;">📱 PWA対応版です。AndroidはChrome、iPadはSafariで開き、ホーム画面に追加するとアプリ風に使えます。<br><span id="app-version-display" style="display:block;margin-top:6px;color:#93c5fd;font-weight:900;line-height:1.3;">Ver.1.4.6a<br>Build 20260723<br>Development<br>READY FOR DEVICE TEST</span></div>
+                <div style="background:#0f172a;border:1px solid #334155;border-radius:12px;padding:10px;margin-bottom:12px;color:#cbd5e1;font-size:0.85rem;">📱 PWA対応版です。AndroidはChrome、iPadはSafariで開き、ホーム画面に追加するとアプリ風に使えます。<br><span id="app-version-display" style="display:block;margin-top:6px;color:#93c5fd;font-weight:900;line-height:1.3;">Ver.1.4.6b<br>Build 20260723<br>Development<br>READY FOR DEVICE TEST</span></div>
                 <div class="panel">
                     <h3>外部ファイルへバックアップ</h3>
                     <p style="font-size:0.85rem; color:#cbd5e1; line-height:1.7;">現在の試合データ、選手名、S-Lineup、本日履歴、過去の記録をまとめて外部ファイルに保存できます。JSON単体に加えて、CSVや説明書を含むZIP一括保存にも対応しました。</p>
@@ -1886,7 +1887,7 @@ button, input, select, textarea,
             <div style="margin-top:15px;">
                 <h5 style="margin: 5px 0; color: var(--dark);">📊 スタッツ集計</h5>
                 <div class="stats-note">※ ○＝得点・決定　×＝ミス　／　得点順で表示</div>
-                <div class="table-container" style="background:white;">
+                <div class="table-container stats-aggregation-container" style="background:white;">
                     <table class="stats-table">
                             <thead>
                                 <tr>
@@ -1973,7 +1974,7 @@ button, input, select, textarea,
 <script>
 
     /*
-     * SEIMEI VB Tracker Ver.1.4.6a
+     * SEIMEI VB Tracker Ver.1.4.6b
      * Build 20260723 / Development
      *
      * ==========================
@@ -1989,7 +1990,7 @@ button, input, select, textarea,
      * - Date normalization and active-set double-count prevention were added.
      * - Existing saved-data compatibility was preserved.
      */
-    const APP_VERSION = '1.4.6a';
+    const APP_VERSION = '1.4.6b';
     const APP_BUILD = '20260723';
     const APP_RELEASE_STATUS = 'Development';
     const APP_RECOMMENDATION = 'READY FOR DEVICE TEST';
