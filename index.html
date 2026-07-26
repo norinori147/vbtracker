@@ -1991,10 +1991,10 @@ button, input, select, textarea,
      * - Date normalization and active-set double-count prevention were added.
      * - Existing saved-data compatibility was preserved.
      */
-    const APP_VERSION = '1.4.7';
-    const APP_BUILD = '20260726';
+    const APP_VERSION = '1.4.8';
+    const APP_BUILD = '20260727';
     const APP_RELEASE_STATUS = 'Stable Candidate';
-    const APP_RECOMMENDATION = 'DATE MANAGEMENT RELIABILITY';
+    const APP_RECOMMENDATION = 'MATCH LIFECYCLE FOUNDATION';
 
     function updateAppVersionDisplay() {
         var versionEl = document.getElementById('app-version-display');
@@ -2134,6 +2134,8 @@ button, input, select, textarea,
     var matchType = 'practice';
     var officialMatchNumber = 1;
     var matchDateKey = '';
+    var startedAt = null;
+    var endedAt = null;
     var currentSet = 1;
     var historyLog = []; 
     var timeoutCount = { us: 0, them: 0 };
@@ -2218,6 +2220,7 @@ button, input, select, textarea,
         'vball_startingLineup_s', 'vball_startSideSetting_s', 'vball_hasServeAuthority_s',
         'vball_oppTeamName_s', 'vball_appTitlePrefix_s', 'vball_selfTeamName_s',
         'vball_matchType_s', 'vball_officialMatchNumber_s', 'vball_matchDateKey_s',
+        'vball_startedAt_s', 'vball_endedAt_s',
         'vball_globalArchive_s', 'vball_autoBackups_s', 'vball_pendingReception_s'
     ];
     var storageErrorNotified = false;
@@ -2287,6 +2290,8 @@ button, input, select, textarea,
         vball_matchType_s: '試合種別',
         vball_officialMatchNumber_s: '公式戦番号',
         vball_matchDateKey_s: '試合日',
+        vball_startedAt_s: '試合開始日時',
+        vball_endedAt_s: '試合終了日時',
         vball_globalArchive_s: '過去の記録',
         vball_autoBackups_s: '自動バックアップ'
     };
@@ -2521,7 +2526,11 @@ button, input, select, textarea,
             matchType = readStorageText('vball_matchType_s', matchType);
             officialMatchNumber = parseInt(readStorageText('vball_officialMatchNumber_s', officialMatchNumber), 10) || 1;
             matchDateKey = readStorageText('vball_matchDateKey_s', matchDateKey);
+            startedAt = readStorageJSON('vball_startedAt_s', null);
+            endedAt = readStorageJSON('vball_endedAt_s', null);
         }
+        startedAt = typeof startedAt === 'string' && startedAt ? startedAt : null;
+        endedAt = typeof endedAt === 'string' && endedAt ? endedAt : null;
         playerNames = normalizePlayerNames(playerNames);
         playerNumbers = normalizePlayerNumbers(playerNumbers);
         playerVisible = normalizePlayerVisible(playerVisible);
@@ -2533,6 +2542,11 @@ button, input, select, textarea,
         todayData = ensureStatsDataShape(todayData);
         allData = ensureStatsDataShape(allData);
         globalArchive = readStorageJSON('vball_globalArchive_s', []) || [];
+        globalArchive.forEach(function(item) {
+            if (!item || typeof item !== 'object') return;
+            item.startedAt = typeof item.startedAt === 'string' && item.startedAt ? item.startedAt : null;
+            item.endedAt = typeof item.endedAt === 'string' && item.endedAt ? item.endedAt : null;
+        });
         autoBackups = readStorageJSON('vball_autoBackups_s', []) || [];
         pendingReception = readStorageJSON('vball_pendingReception_s', null);
         if (!pendingReception || typeof pendingReception !== 'object' || !pendingReception.receiver || !isReceptionGrade(pendingReception.grade)) {
@@ -2578,6 +2592,8 @@ button, input, select, textarea,
         ok = writeStorageValue('vball_matchType_s', matchType, false) && ok;
         ok = writeStorageValue('vball_officialMatchNumber_s', officialMatchNumber, false) && ok;
         ok = writeStorageValue('vball_matchDateKey_s', matchDateKey, false) && ok;
+        ok = writeStorageValue('vball_startedAt_s', startedAt, true) && ok;
+        ok = writeStorageValue('vball_endedAt_s', endedAt, true) && ok;
 
         // 終了セットの正本と自動バックアップ
         ok = writeStorageValue('vball_globalArchive_s', globalArchive, true) && ok;
@@ -2603,11 +2619,20 @@ button, input, select, textarea,
         if (!matchDateKey) matchDateKey = getTodayKey();
     }
 
+    function ensureMatchStarted() {
+        if (startedAt) return false;
+        startedAt = new Date().toISOString();
+        endedAt = null;
+        return true;
+    }
+
     function checkAndRefreshMatchDate() {
         var today = getTodayKey();
         if (matchDateKey === today) return false;
 
         matchDateKey = today;
+        startedAt = null;
+        endedAt = null;
         currentSet = 1;
         setData = createEmptyStats();
         historyLog = [];
@@ -2625,6 +2650,8 @@ button, input, select, textarea,
     }
 
     function resetCurrentSetForMatchChange() {
+        startedAt = null;
+        endedAt = null;
         currentSet = 1;
         setData = createEmptyStats();
         historyLog = [];
@@ -3143,6 +3170,7 @@ button, input, select, textarea,
             return;
         }
         checkAndRefreshMatchDate();
+        ensureMatchStarted();
         var scoreUs = document.getElementById('score-us') ? document.getElementById('score-us').innerText : '0';
         var scoreThem = document.getElementById('score-them') ? document.getElementById('score-them').innerText : '0';
         var noteEl = document.getElementById('rotation-adjust-note');
@@ -3243,6 +3271,8 @@ button, input, select, textarea,
             alert('レシーバーを選択してください。');
             return;
         }
+        checkAndRefreshMatchDate();
+        ensureMatchStarted();
         pendingReception = {
             receiver: receiver,
             grade: grade,
@@ -3394,6 +3424,7 @@ button, input, select, textarea,
             return;
         }
         checkAndRefreshMatchDate();
+        ensureMatchStarted();
         var note = (document.getElementById('score-adjust-note').value || '').trim();
         historyLog.push({
             type: 'score_adjust',
@@ -3411,6 +3442,7 @@ button, input, select, textarea,
     function recordTimeout(team) {
         if (timeoutCount[team] >= 2) { alert('タイムアウト上限に達しています。'); return; }
         checkAndRefreshMatchDate();
+        ensureMatchStarted();
         var scoreUs = document.getElementById('score-us').innerText;
         var scoreThem = document.getElementById('score-them').innerText;
         timeoutCount[team]++;
@@ -3668,6 +3700,7 @@ button, input, select, textarea,
         if (subCount[team] >= 6) { alert('メンバー交代上限に達しています。'); return; }
         startSubstitutionFlow(team, null, function(subInfo) {
             checkAndRefreshMatchDate();
+            ensureMatchStarted();
             var scoreUs = document.getElementById('score-us').innerText;
             var scoreThem = document.getElementById('score-them').innerText;
             subInfo.type = 'substitution';
@@ -3751,6 +3784,7 @@ button, input, select, textarea,
         }
 
         checkAndRefreshMatchDate();
+        ensureMatchStarted();
         if (statPlayer === selectedPlayer) activePlayerHighlightFix(selectedPlayer);
         setData[statPlayer][item] = (setData[statPlayer][item] || 0) + 1;
         todayData[statPlayer][item] = (todayData[statPlayer][item] || 0) + 1;
@@ -3883,6 +3917,8 @@ button, input, select, textarea,
                 matchType: matchType,
                 matchNumber: matchType === 'official' ? officialMatchNumber : null,
                 matchLabel: getMatchLabel(),
+                startedAt: startedAt,
+                endedAt: endedAt,
                 setNum: currentSet,
                 score: scoreUs + '-' + scoreThem,
                 usScore: scoreUs,
@@ -5095,6 +5131,8 @@ button, input, select, textarea,
             matchType: matchType,
             officialMatchNumber: officialMatchNumber,
             matchDateKey: matchDateKey,
+            startedAt: startedAt,
+            endedAt: endedAt,
             currentSet: currentSet,
             historyLog: historyLog,
             timeoutCount: timeoutCount,
@@ -5251,6 +5289,11 @@ button, input, select, textarea,
         subCount = data.subCount || { us: 0, them: 0 };
         setResults = Array.isArray(data.setResults) ? data.setResults : [];
         globalArchive = Array.isArray(data.globalArchive) ? data.globalArchive : [];
+        globalArchive.forEach(function(item) {
+            if (!item || typeof item !== 'object') return;
+            item.startedAt = typeof item.startedAt === 'string' && item.startedAt ? item.startedAt : null;
+            item.endedAt = typeof item.endedAt === 'string' && item.endedAt ? item.endedAt : null;
+        });
         autoBackups = Array.isArray(data.autoBackups) ? data.autoBackups : [];
         playerNames = normalizePlayerNames(data.playerNames || playerNames);
         playerNumbers = normalizePlayerNumbers(data.playerNumbers || playerNumbers);
@@ -5264,6 +5307,8 @@ button, input, select, textarea,
         matchType = data.matchType || matchType || 'practice';
         officialMatchNumber = parseInt(data.officialMatchNumber || officialMatchNumber || 1, 10) || 1;
         matchDateKey = data.matchDateKey || matchDateKey || getTodayKey();
+        startedAt = typeof data.startedAt === 'string' && data.startedAt ? data.startedAt : null;
+        endedAt = typeof data.endedAt === 'string' && data.endedAt ? data.endedAt : null;
         startingLineup = data.startingLineup || { 1: 'p1', 2: 'p2', 3: 'p3', 4: 'p4', 5: 'p5', 6: 'p6' };
         startSideSetting = data.startSideSetting || 'S';
         hasServeAuthority = data.hasServeAuthority !== false;
@@ -5387,7 +5432,7 @@ button, input, select, textarea,
             clearAppStorage(); currentSet = 1; document.getElementById('current-set-num').innerText = currentSet;
             setData = createEmptyStats(); todayData = createEmptyStats(); allData = createEmptyStats();
             startingLineup = { 1: 'p1', 2: 'p2', 3: 'p3', 4: 'p4', 5: 'p5', 6: 'p6' };
-            startSideSetting = 'S'; hasServeAuthority = true; oppTeamName = '相手'; appTitlePrefix = 'SEIMEI HS'; selfTeamName = '清明'; matchType = 'practice'; officialMatchNumber = 1; matchDateKey = getTodayKey();
+            startSideSetting = 'S'; hasServeAuthority = true; oppTeamName = '相手'; appTitlePrefix = 'SEIMEI HS'; selfTeamName = '清明'; matchType = 'practice'; officialMatchNumber = 1; matchDateKey = getTodayKey(); startedAt = null; endedAt = null;
             playerVisible = normalizePlayerVisible(null);
             historyLog = []; setResults = []; timeoutCount = { us: 0, them: 0 }; subCount = { us: 0, them: 0 }; globalArchive = []; autoBackups = []; pendingReception = null;
             switchView('set'); initSetup(); updateUI(); updateStorageMonitor();
