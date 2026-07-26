@@ -1991,10 +1991,10 @@ button, input, select, textarea,
      * - Date normalization and active-set double-count prevention were added.
      * - Existing saved-data compatibility was preserved.
      */
-    const APP_VERSION = '1.4.6';
-    const APP_BUILD = '20260725';
-    const APP_RELEASE_STATUS = 'Stable';
-    const APP_RECOMMENDATION = 'VER.1.4.6 STABLE RELEASED';
+    const APP_VERSION = '1.4.7';
+    const APP_BUILD = '20260726';
+    const APP_RELEASE_STATUS = 'Stable Candidate';
+    const APP_RECOMMENDATION = 'DATE MANAGEMENT RELIABILITY';
 
     function updateAppVersionDisplay() {
         var versionEl = document.getElementById('app-version-display');
@@ -2003,9 +2003,6 @@ button, input, select, textarea,
     updateAppVersionDisplay();
 
     function openModal(id) {
-        if (id === 'matchManagementModal' || id === 'matchModal') {
-            ensurePracticeMatchDateCurrent({ silent: false });
-        }
         var modal = document.getElementById(id);
         if (!modal) return;
         modal.classList.add('active');
@@ -2603,25 +2600,14 @@ button, input, select, textarea,
     function normalizeMatchManagementOnLoad() {
         if (matchType !== 'official' && matchType !== 'practice') matchType = 'practice';
         officialMatchNumber = parseInt(officialMatchNumber || 1, 10) || 1;
-
-        // 保存データ読込・アプリ起動時は、セット番号や現在セット状態を変更しない。
-        // 日付差の確認と第1セットへのリセットは「試合管理」を開いた時だけ行う。
         if (!matchDateKey) matchDateKey = getTodayKey();
     }
 
-
-    function ensurePracticeMatchDateCurrent(options) {
-        options = options || {};
+    function checkAndRefreshMatchDate() {
         var today = getTodayKey();
-
-        if (matchType !== 'practice') return false;
-        if (!matchDateKey) {
-            matchDateKey = today;
-            saveStorage();
-            return false;
-        }
         if (matchDateKey === today) return false;
 
+        matchDateKey = today;
         currentSet = 1;
         setData = createEmptyStats();
         historyLog = [];
@@ -2630,17 +2616,11 @@ button, input, select, textarea,
         startSideSetting = 'S';
         hasServeAuthority = true;
         clearPendingReception();
-        matchDateKey = today;
         rebuildDerivedDataFromArchive();
-
         closeLineupPlayerPicker();
         updateSideToggleUI();
         saveStorage();
         updateUI();
-
-        if (!options.silent) {
-            alert('日付が変わったため、練習試合のセット数を第1セットに戻しました。');
-        }
         return true;
     }
 
@@ -2700,7 +2680,7 @@ button, input, select, textarea,
         if (shouldReset && !confirm(msg)) return;
         matchType = selectedType;
         officialMatchNumber = nextNumber;
-        if (matchType === 'practice') matchDateKey = getTodayKey();
+        checkAndRefreshMatchDate();
         if (shouldReset) resetCurrentSetForMatchChange();
         rebuildDerivedDataFromArchive();
         saveStorage();
@@ -2710,7 +2690,8 @@ button, input, select, textarea,
     }
 
     function initSetup() {
-        loadStorage(); 
+        loadStorage();
+        checkAndRefreshMatchDate();
         updateBaseDataUI();
         document.getElementById('opp-team-name-input').value = oppTeamName;
         updateOppLabels();
@@ -3161,6 +3142,7 @@ button, input, select, textarea,
             alert('ローテ位置が変更されていません。');
             return;
         }
+        checkAndRefreshMatchDate();
         var scoreUs = document.getElementById('score-us') ? document.getElementById('score-us').innerText : '0';
         var scoreThem = document.getElementById('score-them') ? document.getElementById('score-them').innerText : '0';
         var noteEl = document.getElementById('rotation-adjust-note');
@@ -3411,6 +3393,7 @@ button, input, select, textarea,
             alert('得点が変更されていません。');
             return;
         }
+        checkAndRefreshMatchDate();
         var note = (document.getElementById('score-adjust-note').value || '').trim();
         historyLog.push({
             type: 'score_adjust',
@@ -3427,6 +3410,7 @@ button, input, select, textarea,
 
     function recordTimeout(team) {
         if (timeoutCount[team] >= 2) { alert('タイムアウト上限に達しています。'); return; }
+        checkAndRefreshMatchDate();
         var scoreUs = document.getElementById('score-us').innerText;
         var scoreThem = document.getElementById('score-them').innerText;
         timeoutCount[team]++;
@@ -3683,6 +3667,7 @@ button, input, select, textarea,
     function recordSubstitution(team) {
         if (subCount[team] >= 6) { alert('メンバー交代上限に達しています。'); return; }
         startSubstitutionFlow(team, null, function(subInfo) {
+            checkAndRefreshMatchDate();
             var scoreUs = document.getElementById('score-us').innerText;
             var scoreThem = document.getElementById('score-them').innerText;
             subInfo.type = 'substitution';
@@ -3765,6 +3750,7 @@ button, input, select, textarea,
             };
         }
 
+        checkAndRefreshMatchDate();
         if (statPlayer === selectedPlayer) activePlayerHighlightFix(selectedPlayer);
         setData[statPlayer][item] = (setData[statPlayer][item] || 0) + 1;
         todayData[statPlayer][item] = (todayData[statPlayer][item] || 0) + 1;
