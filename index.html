@@ -1991,10 +1991,10 @@ button, input, select, textarea,
      * - Date normalization and active-set double-count prevention were added.
      * - Existing saved-data compatibility was preserved.
      */
-    const APP_VERSION = '1.4.8';
+    const APP_VERSION = '1.4.8a';
     const APP_BUILD = '20260727';
     const APP_RELEASE_STATUS = 'Stable Candidate';
-    const APP_RECOMMENDATION = 'MATCH LIFECYCLE FOUNDATION';
+    const APP_RECOMMENDATION = 'ARCHIVE VIEW RELIABILITY FIX';
 
     function updateAppVersionDisplay() {
         var versionEl = document.getElementById('app-version-display');
@@ -2008,6 +2008,7 @@ button, input, select, textarea,
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
         updateUI();
+        if (id === 'archiveModal') ensureArchiveModalState();
         if (id === 'dataModal') { updateStorageAnalyzer(); previewStorageOptimization(); }
     }
 
@@ -4084,6 +4085,38 @@ button, input, select, textarea,
         onArchiveDayChanged();
     }
 
+    function ensureArchiveModalState() {
+        var daySelect = document.getElementById('archive-day-select');
+        var setSelect = document.getElementById('archive-set-select');
+        if (!daySelect || !setSelect) return;
+
+        var dayVal = daySelect.value;
+        var setId = setSelect.value;
+        var selectedSetExists = !!setId && globalArchive.some(function(item) {
+            return item && item.id === setId && normalizeArchiveDateString(item.date) === dayVal;
+        });
+
+        if (selectedSetExists) {
+            viewArchiveSetItem();
+        } else {
+            onArchiveDayChanged();
+        }
+    }
+
+    function getArchiveItemDisplayValues(item) {
+        var scoreText = item && item.score !== null && item.score !== undefined ? String(item.score) : '';
+        var scoreParts = scoreText.split('-');
+        var timestampText = item && item.timestamp !== null && item.timestamp !== undefined ? String(item.timestamp) : '';
+        var timestampParts = timestampText.split(' ');
+        return {
+            scoreText: scoreText,
+            usScore: item && item.usScore !== null && item.usScore !== undefined ? item.usScore : parseInt(scoreParts[0], 10),
+            themScore: item && item.themScore !== null && item.themScore !== undefined ? item.themScore : parseInt(scoreParts[1], 10),
+            timestampText: timestampText,
+            timeText: timestampParts[1] || timestampText
+        };
+    }
+
     function onArchiveDayChanged() {
         var dayVal = document.getElementById('archive-day-select').value;
         var setSelect = document.getElementById('archive-set-select');
@@ -4119,15 +4152,21 @@ button, input, select, textarea,
             var item = filtered[i];
             var opt = document.createElement('option');
             opt.value = item.id;
-            
+
+            var displayValues = getArchiveItemDisplayValues(item);
             var resultMark = '-';
-            var uS = item.usScore !== undefined ? item.usScore : parseInt(item.score.split('-')[0]);
-            var tS = item.themScore !== undefined ? item.themScore : parseInt(item.score.split('-')[1]);
+            var uS = displayValues.usScore;
+            var tS = displayValues.themScore;
             if (uS > tS) { resultMark = '○'; } else if (uS < tS) { resultMark = '●'; }
 
             var itemLabel = item.matchLabel ? (item.matchLabel + ' ') : '';
-            opt.innerText = item.timestamp.split(' ')[1] + '〜 ' + itemLabel + 'vs ' + item.oppName + ' (第' + item.setNum + 'S: ' + item.score + ') ' + resultMark;
+            opt.innerText = displayValues.timeText + '〜 ' + itemLabel + 'vs ' + item.oppName + ' (第' + item.setNum + 'S: ' + displayValues.scoreText + ') ' + resultMark;
             setSelect.appendChild(opt);
+        }
+
+        if (filtered.length > 0) {
+            setSelect.value = filtered[0].id;
+            viewArchiveSetItem();
         }
     }
 
@@ -4147,13 +4186,14 @@ button, input, select, textarea,
         tbody.innerHTML = '';
         logContainer.innerHTML = '';
 
+        var displayValues = getArchiveItemDisplayValues(matched);
         var resultMark = '-';
-        var uS = matched.usScore !== undefined ? matched.usScore : parseInt(matched.score.split('-')[0]);
-        var tS = matched.themScore !== undefined ? matched.themScore : parseInt(matched.score.split('-')[1]);
+        var uS = displayValues.usScore;
+        var tS = displayValues.themScore;
         if (uS > tS) { resultMark = '○'; } else if (uS < tS) { resultMark = '●'; }
 
         var matchedLabel = matched.matchLabel ? (matched.matchLabel + ' ') : '';
-        titleEl.innerText = '📑 【1セット記録】 ' + matched.timestamp + ' ' + matchedLabel + 'vs ' + matched.oppName + ' (第' + matched.setNum + 'S: ' + matched.score + ') ' + resultMark;
+        titleEl.innerText = '📑 【1セット記録】 ' + displayValues.timestampText + ' ' + matchedLabel + 'vs ' + matched.oppName + ' (第' + matched.setNum + 'S: ' + displayValues.scoreText + ') ' + resultMark;
         var matchedStats = matched.statsSnap || createEmptyStats();
         renderTableRows(tbody, matchedStats, matched.playerNamesSnap, matched.playerNumbersSnap);
         renderArchiveReceptionAnalyticsRows(matched.statsSnap || null, matched.playerNamesSnap, matched.playerNumbersSnap);
