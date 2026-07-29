@@ -2,7 +2,7 @@
 // Ver.1.4.5a
 // Release Identifier Fix & Final Revalidation
 // ==========================
-const CACHE_NAME = 'seimei-vb-tracker-v1-4-9-pdf-engine-foundation-build-20260730';
+const CACHE_NAME = 'seimei-vb-tracker-v1-4-9a-today-coaching-report-build-20260730';
 const ASSETS = [
   './',
   './index.html',

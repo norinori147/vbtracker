@@ -1683,7 +1683,7 @@ button, input, select, textarea,
             <div class="footer-btns">
                 <button class="action-btn csv-btn" onclick="exportActiveStatsCSV()">CSV出力</button>
                 <button class="action-btn print-btn" onclick="openPrintView()">印刷/PDF</button>
-                <button class="action-btn pdf-direct-btn" id="today-pdf-btn" onclick="exportTodayReportPDF()">今日のPDF</button>
+                <button class="action-btn pdf-direct-btn" id="today-pdf-btn" onclick="exportTodayReportPDF()">今日の通算PDF</button>
             </div>
         </div>
             </div>
@@ -1995,10 +1995,10 @@ button, input, select, textarea,
      * - Date normalization and active-set double-count prevention were added.
      * - Existing saved-data compatibility was preserved.
      */
-    const APP_VERSION = '1.4.9';
+    const APP_VERSION = '1.4.9a';
     const APP_BUILD = '20260730';
-    const APP_RELEASE_STATUS = 'Foundation';
-    const APP_RECOMMENDATION = 'PDF ENGINE FOUNDATION';
+    const APP_RELEASE_STATUS = 'Development';
+    const APP_RECOMMENDATION = 'TODAY COACHING REPORT';
 
     function updateAppVersionDisplay() {
         var versionEl = document.getElementById('app-version-display');
@@ -5063,7 +5063,7 @@ button, input, select, textarea,
     function rowsToCsv(rows) { return rows.map(function(r){ return r.map(csvEscape).join(','); }).join('\n'); }
 
     // ==========================
-    // Ver.1.4.9 PDF Engine Foundation
+    // Ver.1.4.9a Today Coaching Report
     // Data -> reportData -> PDF. This path never reads or copies report DOM.
     // ==========================
     const PDF_FONT_URL = './fonts/NotoSansJP-VariableFont_wght.ttf';
@@ -5163,11 +5163,124 @@ button, input, select, textarea,
         });
     }
 
+    function buildReportReceptionSection(statsData, nameMap, numberMap) {
+        var rows = [];
+        for (var i = 1; i <= MAX_PLAYERS; i++) {
+            var playerSummary = getPlayerStatSummary('p' + i, statsData, nameMap, numberMap);
+            if (playerSummary.recTotal > 0) rows.push(playerSummary);
+        }
+        var sharedSummary = getPlayerStatSummary('us_team', statsData, nameMap, numberMap);
+        if (sharedSummary.recTotal > 0) {
+            sharedSummary.name = 'チーム共通';
+            rows.push(sharedSummary);
+        }
+        var total = getTeamReceptionSummary(statsData);
+        return {
+            available: total.recTotal > 0,
+            emptyMessage: total.recTotal > 0 ? '' : 'レセプションデータなし',
+            columns: ['選手名', 'A', 'B', 'C', 'D', 'M', '受数', 'A率', 'AB率'],
+            rows: rows.map(function(row) {
+                return {
+                    id: row.id,
+                    name: row.name,
+                    a: row.recA,
+                    b: row.recB,
+                    c: row.recC,
+                    d: row.recD,
+                    m: row.recM,
+                    total: row.recTotal,
+                    aRate: safeStatNumber(row.recAPct),
+                    abRate: safeStatNumber(row.recABPct)
+                };
+            }),
+            teamTotal: {
+                name: 'チーム総計',
+                a: total.recA,
+                b: total.recB,
+                c: total.recC,
+                d: total.recD,
+                m: total.recM,
+                total: total.recTotal,
+                aRate: safeStatNumber(total.recAPct),
+                abRate: safeStatNumber(total.recABPct)
+            }
+        };
+    }
+
+    function getOpponentErrorPointTotal(statsData) {
+        var d = (statsData && statsData.team) || {};
+        return safeStatNumber(d.attack_error) + safeStatNumber(d.block_error) + safeStatNumber(d.serve_error) +
+            safeStatNumber(d.reception_error) + safeStatNumber(d.dig_error) + safeStatNumber(d.chanceball_error) +
+            safeStatNumber(d.toss_error) + safeStatNumber(d.miscommunication_error) + safeStatNumber(d.blockfollow_error) +
+            safeStatNumber(d.other_error) + safeStatNumber(d.v_dribble) + safeStatNumber(d.v_net) +
+            safeStatNumber(d.v_over) + safeStatNumber(d.v_passing) + safeStatNumber(d.v_positional) +
+            safeStatNumber(d.v_hold) + safeStatNumber(d.v_backrow);
+    }
+
+    function buildReportScoringSection(statsData) {
+        var own = getOwnTeamTotalStats(statsData);
+        var attack = safeStatNumber(own.attack_kill);
+        var block = safeStatNumber(own.block_kill);
+        var serve = safeStatNumber(own.serve_ace);
+        var opponentErrors = getOpponentErrorPointTotal(statsData);
+        var total = attack + block + serve + opponentErrors;
+        function scoringItem(key, label, count) {
+            return {
+                key: key,
+                label: label,
+                count: count,
+                percentage: total > 0 ? Math.round((count / total) * 100) : 0
+            };
+        }
+        return {
+            totalPoints: total,
+            attackPoints: attack,
+            blockPoints: block,
+            servePoints: serve,
+            opponentErrorPoints: opponentErrors,
+            items: [
+                scoringItem('attack', 'スパイク', attack),
+                scoringItem('block', 'ブロック', block),
+                scoringItem('serve', 'サーブ', serve),
+                scoringItem('opponentErrors', '相手ミス', opponentErrors)
+            ]
+        };
+    }
+
+    function buildReportTeamSummary(scope, statsData, setScoresForReport, reception, scoring) {
+        var wins = 0, losses = 0, draws = 0;
+        setScoresForReport.forEach(function(setScore) {
+            if (setScore.us > setScore.them) wins++;
+            else if (setScore.us < setScore.them) losses++;
+            else draws++;
+        });
+        var inProgress = scope === 'today' && (hasStatsActivity(setData) || !!startedAt);
+        return {
+            setCount: setScoresForReport.length + (inProgress ? 1 : 0),
+            completedSetCount: setScoresForReport.length,
+            inProgressSetCount: inProgress ? 1 : 0,
+            wins: wins,
+            losses: losses,
+            draws: draws,
+            setStatusLabel: wins + 'セット取得 / ' + losses + 'セット失',
+            totalPoints: scoring.totalPoints,
+            attackPoints: scoring.attackPoints,
+            blockPoints: scoring.blockPoints,
+            servePoints: scoring.servePoints,
+            opponentErrorPoints: scoring.opponentErrorPoints,
+            receptionARate: reception.teamTotal.aRate,
+            receptionABRate: reception.teamTotal.abRate
+        };
+    }
+
     function buildReportData(scope) {
         scope = scope === 'set' || scope === 'all' ? scope : 'today';
         var statsData = getReportScopeData(scope);
         var reportDate = normalizeArchiveDateString(matchDateKey || getTodayKey());
         var setScoresForReport = buildReportSetScores(scope);
+        var reportNameMap = buildReportNameMap(scope);
+        var receptionForReport = buildReportReceptionSection(statsData, reportNameMap, playerNumbers);
+        var scoringForReport = buildReportScoringSection(statsData);
         return {
             schemaVersion: 1,
             reportType: 'live-' + scope,
@@ -5192,10 +5305,13 @@ button, input, select, textarea,
                 completedSetCount: setScoresForReport.length,
                 setScores: setScoresForReport
             },
+            teamSummary: buildReportTeamSummary(scope, statsData, setScoresForReport, receptionForReport, scoringForReport),
             statTable: {
                 columns: ['選手名', '得点', 'スパイク', 'ブロック', 'サーブ', 'ミス', '反則'],
-                rows: buildReportStatRows(statsData, buildReportNameMap(scope), playerNumbers)
-            }
+                rows: buildReportStatRows(statsData, reportNameMap, playerNumbers)
+            },
+            reception: receptionForReport,
+            scoring: scoringForReport
         };
     }
 
@@ -5235,23 +5351,112 @@ button, input, select, textarea,
         throw new Error('jsPDF-AutoTableを利用できません。');
     }
 
+    function drawReportSectionTitle(doc, title, y) {
+        doc.setFont(PDF_FONT_FAMILY, 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(0, 0, 0);
+        doc.text(title, 14, y);
+        doc.setDrawColor(30, 58, 138);
+        doc.setLineWidth(0.7);
+        doc.line(14, y + 2, 283, y + 2);
+    }
+
+    function drawTeamSummary(doc, reportData, startY) {
+        var s = reportData.teamSummary;
+        var items = [
+            ['本日のセット数', s.setCount + 'セット'],
+            ['セット取得状況', s.setStatusLabel],
+            ['総得点', s.totalPoints + '点'],
+            ['スパイク得点', s.attackPoints + '点'],
+            ['ブロック得点', s.blockPoints + '点'],
+            ['サーブ得点', s.servePoints + '点'],
+            ['相手ミス得点', s.opponentErrorPoints + '点'],
+            ['チームA率', s.receptionARate.toFixed(1) + '%'],
+            ['チームAB率', s.receptionABRate.toFixed(1) + '%']
+        ];
+        var columns = 5;
+        var cellWidth = 53.8;
+        var cellHeight = 16;
+        for (var i = 0; i < items.length; i++) {
+            var col = i % columns;
+            var row = Math.floor(i / columns);
+            var x = 14 + col * cellWidth;
+            var y = startY + row * cellHeight;
+            doc.setFillColor(row % 2 === 0 ? 239 : 248, row % 2 === 0 ? 246 : 250, row % 2 === 0 ? 255 : 252);
+            doc.setDrawColor(100, 116, 139);
+            doc.rect(x, y, cellWidth, cellHeight, 'FD');
+            doc.setFont(PDF_FONT_FAMILY, 'normal');
+            doc.setFontSize(9);
+            doc.setTextColor(0, 0, 0);
+            doc.text(items[i][0], x + 2.5, y + 5.3);
+            doc.setFont(PDF_FONT_FAMILY, 'bold');
+            doc.setFontSize(11);
+            doc.text(items[i][1], x + 2.5, y + 12.2);
+        }
+        return startY + Math.ceil(items.length / columns) * cellHeight;
+    }
+
+    function drawScoringAnalysis(doc, reportData, startY) {
+        var colors = {
+            attack: [37, 99, 235],
+            block: [5, 150, 105],
+            serve: [217, 119, 6],
+            opponentErrors: [126, 34, 206]
+        };
+        var barX = 71;
+        var barWidth = 150;
+        var maxPercentage = 100;
+        reportData.scoring.items.forEach(function(item, index) {
+            var y = startY + index * 14;
+            doc.setFont(PDF_FONT_FAMILY, 'bold');
+            doc.setFontSize(10.5);
+            doc.setTextColor(0, 0, 0);
+            doc.text(item.label, 18, y + 5.2);
+            doc.setFont(PDF_FONT_FAMILY, 'normal');
+            doc.setFontSize(10);
+            doc.text(item.count + '点 / ' + item.percentage + '%', 48, y + 5.2, { align: 'right' });
+            doc.setFillColor(226, 232, 240);
+            doc.roundedRect(barX, y, barWidth, 7, 1.2, 1.2, 'F');
+            var color = colors[item.key] || [30, 58, 138];
+            doc.setFillColor(color[0], color[1], color[2]);
+            if (item.percentage > 0) doc.roundedRect(barX, y, barWidth * Math.min(item.percentage, maxPercentage) / maxPercentage, 7, 1.2, 1.2, 'F');
+        });
+    }
+
+    function addReportFooters(doc, reportData) {
+        var totalPages = doc.getNumberOfPages();
+        for (var page = 1; page <= totalPages; page++) {
+            doc.setPage(page);
+            doc.setFont(PDF_FONT_FAMILY, 'normal');
+            doc.setFontSize(8);
+            doc.setTextColor(0, 0, 0);
+            doc.text('SEIMEI VB Tracker Ver.' + reportData.app.version, 14, 203);
+            doc.text(page + ' / ' + totalPages, 283, 203, { align: 'right' });
+        }
+    }
+
     function buildReportPdfBlob(reportData, fontBase64) {
         if (!window.jspdf || typeof window.jspdf.jsPDF !== 'function') throw new Error('jsPDFを利用できません。');
         var doc = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', compress: true });
         doc.addFileToVFS(PDF_FONT_FILE, fontBase64);
         doc.addFont(PDF_FONT_FILE, PDF_FONT_FAMILY, 'normal');
-        doc.setFont(PDF_FONT_FAMILY, 'normal');
+        doc.addFont(PDF_FONT_FILE, PDF_FONT_FAMILY, 'bold');
+        doc.setFont(PDF_FONT_FAMILY, 'bold');
 
-        doc.setFontSize(17);
-        doc.setTextColor(30, 58, 138);
+        doc.setFontSize(18);
+        doc.setTextColor(0, 0, 0);
         doc.text(reportData.app.name + ' コーチレポート', 14, 16);
-        doc.setFontSize(10);
-        doc.setTextColor(31, 41, 55);
+        doc.setFont(PDF_FONT_FAMILY, 'normal');
+        doc.setFontSize(10.5);
+        doc.setTextColor(0, 0, 0);
         doc.text('対象: ' + reportData.scope.label + '　日付: ' + reportData.match.dateKey, 14, 24);
         doc.text('試合: ' + reportData.match.matchLabel + '　対戦相手: ' + reportData.match.opponentNames.join(' / '), 14, 30);
-        if (reportData.scope.completedSetCount > 0) {
-            doc.text('終了セット: ' + reportData.scope.completedSetCount + 'セット', 14, 36);
-        }
+        var progressText = reportData.teamSummary.inProgressSetCount > 0 ? ' + 進行中1セット' : '';
+        doc.text('完了: ' + reportData.scope.completedSetCount + 'セット' + progressText, 14, 36);
+
+        drawReportSectionTitle(doc, 'チームサマリー', 45);
+        var summaryEndY = drawTeamSummary(doc, reportData, 50);
+        drawReportSectionTitle(doc, '基本スタッツ', summaryEndY + 8);
 
         var tableBody = reportData.statTable.rows.map(function(row) {
             return [
@@ -5266,14 +5471,15 @@ button, input, select, textarea,
         });
         var drawTable = getPdfAutoTableFunction(doc);
         drawTable({
-            startY: reportData.scope.completedSetCount > 0 ? 42 : 36,
+            startY: summaryEndY + 13,
             head: [reportData.statTable.columns],
             body: tableBody,
             theme: 'grid',
-            styles: { font: PDF_FONT_FAMILY, fontStyle: 'normal', fontSize: 8.5, cellPadding: 2.2, textColor: [31, 41, 55] },
-            headStyles: { font: PDF_FONT_FAMILY, fontStyle: 'normal', fillColor: [30, 58, 138], textColor: [255, 255, 255], halign: 'center' },
+            tableWidth: 'wrap',
+            styles: { font: PDF_FONT_FAMILY, fontStyle: 'normal', fontSize: 10, cellPadding: 3.2, minCellHeight: 10, textColor: [0, 0, 0], lineColor: [100, 116, 139], lineWidth: 0.2 },
+            headStyles: { font: PDF_FONT_FAMILY, fontStyle: 'bold', fontSize: 10, fillColor: [30, 58, 138], textColor: [255, 255, 255], halign: 'center', cellPadding: 3.2 },
             columnStyles: {
-                0: { cellWidth: 62 },
+                0: { cellWidth: 62, fontStyle: 'bold', fontSize: 10.5 },
                 1: { cellWidth: 22, halign: 'center' },
                 2: { cellWidth: 37, halign: 'center' },
                 3: { cellWidth: 37, halign: 'center' },
@@ -5281,15 +5487,67 @@ button, input, select, textarea,
                 5: { cellWidth: 25, halign: 'center' },
                 6: { cellWidth: 25, halign: 'center' }
             },
-            margin: { left: 14, right: 14, bottom: 14 },
-            didDrawPage: function() {
-                doc.setFont(PDF_FONT_FAMILY, 'normal');
-                doc.setFontSize(7);
-                doc.setTextColor(100, 116, 139);
-                doc.text('SEIMEI VB Tracker Ver.' + reportData.app.version, 14, 202);
-                doc.text(String(doc.internal.getNumberOfPages()), 282, 202, { align: 'right' });
+            margin: { top: 14, left: 14, right: 14, bottom: 16 },
+            didParseCell: function(data) {
+                if (data.section !== 'body') return;
+                var reportRow = reportData.statTable.rows[data.row.index];
+                if (!reportRow) return;
+                if (reportRow.id === 'team_total') data.cell.styles.fillColor = [219, 234, 254];
+                if (reportRow.id === 'us_team') data.cell.styles.fillColor = [236, 254, 255];
+                if (reportRow.id === 'team') data.cell.styles.fillColor = [254, 242, 242];
             }
         });
+
+        doc.addPage('a4', 'landscape');
+        drawReportSectionTitle(doc, 'レセプション分析', 18);
+        if (!reportData.reception.available) {
+            doc.setFont(PDF_FONT_FAMILY, 'bold');
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            doc.text(reportData.reception.emptyMessage, 18, 32);
+        } else {
+            var receptionRows = reportData.reception.rows.concat([reportData.reception.teamTotal]).map(function(row) {
+                return [row.name, String(row.a), String(row.b), String(row.c), String(row.d), String(row.m), String(row.total), row.aRate.toFixed(1) + '%', row.abRate.toFixed(1) + '%'];
+            });
+            drawTable({
+                startY: 24,
+                head: [reportData.reception.columns],
+                body: receptionRows,
+                theme: 'grid',
+                tableWidth: 'wrap',
+                styles: { font: PDF_FONT_FAMILY, fontStyle: 'normal', fontSize: 10, cellPadding: 3.2, minCellHeight: 10, textColor: [0, 0, 0], lineColor: [100, 116, 139], lineWidth: 0.2, halign: 'center' },
+                headStyles: { font: PDF_FONT_FAMILY, fontStyle: 'bold', fontSize: 10, fillColor: [15, 118, 110], textColor: [255, 255, 255], cellPadding: 3.2 },
+                columnStyles: {
+                    0: { cellWidth: 61, halign: 'left', fontStyle: 'bold', fontSize: 10.5 },
+                    1: { cellWidth: 20 },
+                    2: { cellWidth: 20 },
+                    3: { cellWidth: 20 },
+                    4: { cellWidth: 20 },
+                    5: { cellWidth: 20 },
+                    6: { cellWidth: 24 },
+                    7: { cellWidth: 32 },
+                    8: { cellWidth: 32 }
+                },
+                margin: { top: 14, left: 14, right: 14, bottom: 16 },
+                didParseCell: function(data) {
+                    if (data.section === 'body' && data.row.index === receptionRows.length - 1) data.cell.styles.fillColor = [204, 251, 241];
+                }
+            });
+        }
+
+        var receptionEndY = reportData.reception.available && doc.lastAutoTable ? doc.lastAutoTable.finalY : 36;
+        var scoringTitleY = receptionEndY + 14;
+        if (scoringTitleY > 138) {
+            doc.addPage('a4', 'landscape');
+            scoringTitleY = 18;
+        }
+        drawReportSectionTitle(doc, '得点割合分析', scoringTitleY);
+        doc.setFont(PDF_FONT_FAMILY, 'normal');
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        doc.text('総得点 ' + reportData.scoring.totalPoints + '点', 18, scoringTitleY + 10);
+        drawScoringAnalysis(doc, reportData, scoringTitleY + 15);
+        addReportFooters(doc, reportData);
         return doc.output('blob');
     }
 
@@ -5320,7 +5578,7 @@ button, input, select, textarea,
                 alert('PDFを生成できませんでした。\n' + (error && error.message ? error.message : String(error)));
             })
             .then(function() {
-                if (button) { button.disabled = false; button.innerText = originalText || '今日のPDF'; }
+                if (button) { button.disabled = false; button.innerText = originalText || '今日の通算PDF'; }
             });
     }
 
