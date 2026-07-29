@@ -2,11 +2,17 @@
 // Ver.1.4.5a
 // Release Identifier Fix & Final Revalidation
 // ==========================
-const CACHE_NAME = 'seimei-vb-tracker-v1-4-8-match-lifecycle-foundation-build-20260727';
+const CACHE_NAME = 'seimei-vb-tracker-v1-4-9-pdf-engine-foundation-build-20260730';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
+  './vendor/jspdf.umd.min.js',
+  './vendor/jspdf.plugin.autotable.min.js',
+  './fonts/NotoSansJP-VariableFont_wght.ttf',
+  './fonts/OFL-NotoSansJP.txt',
+  './vendor/LICENSE-jsPDF.txt',
+  './vendor/LICENSE-jsPDF-AutoTable.txt',
   './icons/icon-192.png',
   './icons/icon-512.png'
 ];

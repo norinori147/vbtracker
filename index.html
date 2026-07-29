@@ -326,6 +326,7 @@
         .log-actions-hint { font-size: 0.7rem; opacity: 0.65; float: right; }
         .export-btn { background-color: var(--primary); }
         .print-btn { background-color: #0f766e; }
+        .pdf-direct-btn { background-color: #b45309; }
         .csv-btn { background-color: #7c3aed; }
         @media print {
             body { background: white; padding: 0; }
@@ -1682,6 +1683,7 @@ button, input, select, textarea,
             <div class="footer-btns">
                 <button class="action-btn csv-btn" onclick="exportActiveStatsCSV()">CSV出力</button>
                 <button class="action-btn print-btn" onclick="openPrintView()">印刷/PDF</button>
+                <button class="action-btn pdf-direct-btn" id="today-pdf-btn" onclick="exportTodayReportPDF()">今日のPDF</button>
             </div>
         </div>
             </div>
@@ -1972,6 +1974,8 @@ button, input, select, textarea,
         </div>
     </div>
 
+<script src="./vendor/jspdf.umd.min.js"></script>
+<script src="./vendor/jspdf.plugin.autotable.min.js"></script>
 <script>
 
     /*
@@ -1991,10 +1995,10 @@ button, input, select, textarea,
      * - Date normalization and active-set double-count prevention were added.
      * - Existing saved-data compatibility was preserved.
      */
-    const APP_VERSION = '1.4.8a';
-    const APP_BUILD = '20260727';
-    const APP_RELEASE_STATUS = 'Stable Candidate';
-    const APP_RECOMMENDATION = 'ARCHIVE VIEW RELIABILITY FIX';
+    const APP_VERSION = '1.4.9';
+    const APP_BUILD = '20260730';
+    const APP_RELEASE_STATUS = 'Foundation';
+    const APP_RECOMMENDATION = 'PDF ENGINE FOUNDATION';
 
     function updateAppVersionDisplay() {
         var versionEl = document.getElementById('app-version-display');
@@ -5057,6 +5061,268 @@ button, input, select, textarea,
     }
 
     function rowsToCsv(rows) { return rows.map(function(r){ return r.map(csvEscape).join(','); }).join('\n'); }
+
+    // ==========================
+    // Ver.1.4.9 PDF Engine Foundation
+    // Data -> reportData -> PDF. This path never reads or copies report DOM.
+    // ==========================
+    const PDF_FONT_URL = './fonts/NotoSansJP-VariableFont_wght.ttf';
+    const PDF_FONT_FILE = 'NotoSansJP-VariableFont_wght.ttf';
+    const PDF_FONT_FAMILY = 'NotoSansJP';
+    var pdfFontBase64Promise = null;
+
+    function getReportScopeData(scope) {
+        if (scope === 'set') return setData;
+        if (scope === 'all') return allData;
+        return todayData;
+    }
+
+    function getReportScopeLabel(scope) {
+        if (scope === 'set') return '現セット';
+        if (scope === 'all') return '全通算';
+        return '本日通算';
+    }
+
+    function getTodayReportArchiveItems() {
+        var dateKey = normalizeArchiveDateString(matchDateKey || getTodayKey());
+        return globalArchive.filter(function(item) {
+            return item && normalizeArchiveDateString(item.date) === dateKey;
+        });
+    }
+
+    function hasStatsActivity(statsData) {
+        statsData = statsData || {};
+        for (var playerId in statsData) {
+            if (!Object.prototype.hasOwnProperty.call(statsData, playerId)) continue;
+            var row = statsData[playerId] || {};
+            for (var statKey in row) {
+                if (Object.prototype.hasOwnProperty.call(row, statKey) && safeStatNumber(row[statKey]) !== 0) return true;
+            }
+        }
+        return false;
+    }
+
+    function buildReportOpponentNames(scope) {
+        var names = [];
+        function addName(value) {
+            var name = String(value || '').trim();
+            if (name && name !== '相手' && !names.includes(name)) names.push(name);
+        }
+        if (scope === 'today') {
+            getTodayReportArchiveItems().forEach(function(item) { addName(item.oppName); });
+            if (hasStatsActivity(setData) || startedAt) addName(oppTeamName);
+        } else {
+            addName(oppTeamName);
+        }
+        if (names.length === 0) names.push(oppTeamName || '相手');
+        return names;
+    }
+
+    function buildReportNameMap(scope) {
+        var map = Object.assign({}, playerNames);
+        if (scope !== 'set') {
+            var opponents = buildReportOpponentNames(scope);
+            map.team = (opponents.length === 1 ? opponents[0] : '相手') + '(全体)';
+        }
+        return map;
+    }
+
+    function buildReportStatRows(statsData, nameMap, numberMap) {
+        var summaries = getSortedStatSummaries(statsData, nameMap, numberMap);
+        var playersOnly = summaries.filter(function(row) { return row.id !== 'us_team' && row.id !== 'team'; });
+        var shared = summaries.filter(function(row) { return row.id === 'us_team'; });
+        var opponent = summaries.filter(function(row) { return row.id === 'team'; });
+        var totalData = { team_total: getOwnTeamTotalStats(statsData) };
+        var teamTotal = getPlayerStatSummary('team_total', totalData, nameMap, numberMap);
+        teamTotal.name = 'チーム総計';
+        teamTotal.id = 'team_total';
+        return playersOnly.concat(shared).concat([teamTotal]).concat(opponent).map(function(row) {
+            return {
+                id: row.id,
+                name: row.id === 'us_team' ? 'チーム共通' : row.name,
+                points: row.points,
+                attack: { success: row.ak, error: row.ae },
+                block: { success: row.bk, error: row.be },
+                serve: { success: row.sa, error: row.se },
+                errors: row.techErrors,
+                violations: row.violations
+            };
+        });
+    }
+
+    function buildReportSetScores(scope) {
+        if (scope !== 'today') return [];
+        return getTodayReportArchiveItems().map(function(item) {
+            var values = getArchiveItemDisplayValues(item);
+            return {
+                setNumber: item.setNum,
+                opponent: item.oppName || '相手',
+                us: safeStatNumber(values.usScore),
+                them: safeStatNumber(values.themScore)
+            };
+        });
+    }
+
+    function buildReportData(scope) {
+        scope = scope === 'set' || scope === 'all' ? scope : 'today';
+        var statsData = getReportScopeData(scope);
+        var reportDate = normalizeArchiveDateString(matchDateKey || getTodayKey());
+        var setScoresForReport = buildReportSetScores(scope);
+        return {
+            schemaVersion: 1,
+            reportType: 'live-' + scope,
+            app: {
+                name: getAppFullTitle(),
+                version: APP_VERSION,
+                generatedAt: new Date().toISOString()
+            },
+            match: {
+                dateKey: reportDate,
+                matchType: matchType,
+                matchNumber: matchType === 'official' ? officialMatchNumber : null,
+                matchLabel: getMatchLabel(),
+                opponentNames: buildReportOpponentNames(scope),
+                startedAt: startedAt,
+                endedAt: endedAt
+            },
+            scope: {
+                key: scope,
+                label: getReportScopeLabel(scope),
+                setNumber: scope === 'set' ? currentSet : null,
+                completedSetCount: setScoresForReport.length,
+                setScores: setScoresForReport
+            },
+            statTable: {
+                columns: ['選手名', '得点', 'スパイク', 'ブロック', 'サーブ', 'ミス', '反則'],
+                rows: buildReportStatRows(statsData, buildReportNameMap(scope), playerNumbers)
+            }
+        };
+    }
+
+    function arrayBufferToBase64(buffer) {
+        var bytes = new Uint8Array(buffer);
+        var chunkSize = 0x8000;
+        var binary = '';
+        for (var offset = 0; offset < bytes.length; offset += chunkSize) {
+            binary += String.fromCharCode.apply(null, bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length)));
+        }
+        return btoa(binary);
+    }
+
+    function loadPdfJapaneseFontBase64() {
+        if (!pdfFontBase64Promise) {
+            pdfFontBase64Promise = fetch(PDF_FONT_URL)
+                .then(function(response) {
+                    if (!response.ok) throw new Error('日本語フォントを読み込めませんでした。HTTP ' + response.status);
+                    return response.arrayBuffer();
+                })
+                .then(arrayBufferToBase64)
+                .catch(function(error) {
+                    pdfFontBase64Promise = null;
+                    throw error;
+                });
+        }
+        return pdfFontBase64Promise;
+    }
+
+    function getPdfAutoTableFunction(doc) {
+        if (doc && typeof doc.autoTable === 'function') {
+            return function(options) { doc.autoTable(options); };
+        }
+        if (window.jspdfAutotable && typeof window.jspdfAutotable.autoTable === 'function') {
+            return function(options) { window.jspdfAutotable.autoTable(doc, options); };
+        }
+        throw new Error('jsPDF-AutoTableを利用できません。');
+    }
+
+    function buildReportPdfBlob(reportData, fontBase64) {
+        if (!window.jspdf || typeof window.jspdf.jsPDF !== 'function') throw new Error('jsPDFを利用できません。');
+        var doc = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', compress: true });
+        doc.addFileToVFS(PDF_FONT_FILE, fontBase64);
+        doc.addFont(PDF_FONT_FILE, PDF_FONT_FAMILY, 'normal');
+        doc.setFont(PDF_FONT_FAMILY, 'normal');
+
+        doc.setFontSize(17);
+        doc.setTextColor(30, 58, 138);
+        doc.text(reportData.app.name + ' コーチレポート', 14, 16);
+        doc.setFontSize(10);
+        doc.setTextColor(31, 41, 55);
+        doc.text('対象: ' + reportData.scope.label + '　日付: ' + reportData.match.dateKey, 14, 24);
+        doc.text('試合: ' + reportData.match.matchLabel + '　対戦相手: ' + reportData.match.opponentNames.join(' / '), 14, 30);
+        if (reportData.scope.completedSetCount > 0) {
+            doc.text('終了セット: ' + reportData.scope.completedSetCount + 'セット', 14, 36);
+        }
+
+        var tableBody = reportData.statTable.rows.map(function(row) {
+            return [
+                row.name,
+                String(row.points),
+                '○' + row.attack.success + ' / ×' + row.attack.error,
+                '○' + row.block.success + ' / ×' + row.block.error,
+                '○' + row.serve.success + ' / ×' + row.serve.error,
+                String(row.errors),
+                String(row.violations)
+            ];
+        });
+        var drawTable = getPdfAutoTableFunction(doc);
+        drawTable({
+            startY: reportData.scope.completedSetCount > 0 ? 42 : 36,
+            head: [reportData.statTable.columns],
+            body: tableBody,
+            theme: 'grid',
+            styles: { font: PDF_FONT_FAMILY, fontStyle: 'normal', fontSize: 8.5, cellPadding: 2.2, textColor: [31, 41, 55] },
+            headStyles: { font: PDF_FONT_FAMILY, fontStyle: 'normal', fillColor: [30, 58, 138], textColor: [255, 255, 255], halign: 'center' },
+            columnStyles: {
+                0: { cellWidth: 62 },
+                1: { cellWidth: 22, halign: 'center' },
+                2: { cellWidth: 37, halign: 'center' },
+                3: { cellWidth: 37, halign: 'center' },
+                4: { cellWidth: 37, halign: 'center' },
+                5: { cellWidth: 25, halign: 'center' },
+                6: { cellWidth: 25, halign: 'center' }
+            },
+            margin: { left: 14, right: 14, bottom: 14 },
+            didDrawPage: function() {
+                doc.setFont(PDF_FONT_FAMILY, 'normal');
+                doc.setFontSize(7);
+                doc.setTextColor(100, 116, 139);
+                doc.text('SEIMEI VB Tracker Ver.' + reportData.app.version, 14, 202);
+                doc.text(String(doc.internal.getNumberOfPages()), 282, 202, { align: 'right' });
+            }
+        });
+        return doc.output('blob');
+    }
+
+    function downloadPdfBlob(blob, filename) {
+        var url = URL.createObjectURL(blob);
+        var anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = filename;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        window.setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+    }
+
+    function exportTodayReportPDF() {
+        var button = document.getElementById('today-pdf-btn');
+        var originalText = button ? button.innerText : '';
+        if (button) { button.disabled = true; button.innerText = 'PDF生成中...'; }
+        var reportData = buildReportData('today');
+        loadPdfJapaneseFontBase64()
+            .then(function(fontBase64) {
+                var pdfBlob = buildReportPdfBlob(reportData, fontBase64);
+                var safeDate = String(reportData.match.dateKey || getTodayKey()).replace(/[^0-9]/g, '');
+                downloadPdfBlob(pdfBlob, 'SEIMEI_VB_Report_' + safeDate + '.pdf');
+            })
+            .catch(function(error) {
+                console.error('PDF generation failed:', error);
+                alert('PDFを生成できませんでした。\n' + (error && error.message ? error.message : String(error)));
+            })
+            .then(function() {
+                if (button) { button.disabled = false; button.innerText = originalText || '今日のPDF'; }
+            });
+    }
 
     function exportActiveStatsCSV() {
         var activeData = (currentView === 'today') ? todayData : (currentView === 'all' ? allData : setData);
