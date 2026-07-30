@@ -1683,7 +1683,7 @@ button, input, select, textarea,
             <div class="footer-btns">
                 <button class="action-btn csv-btn" onclick="exportActiveStatsCSV()">CSV出力</button>
                 <button class="action-btn print-btn" onclick="openPrintView()">印刷/PDF</button>
-                <button class="action-btn pdf-direct-btn" id="today-pdf-btn" onclick="exportTodayReportPDF()">今日の通算PDF</button>
+                <button class="action-btn pdf-direct-btn" id="today-pdf-btn" onclick="exportCurrentViewReportPDF()">今日の通算PDF</button>
             </div>
         </div>
             </div>
@@ -1873,6 +1873,7 @@ button, input, select, textarea,
             </div>
             <div style="display:flex; gap:10px; align-items:flex-end;">
                 <button class="archive-btn" style="background-color:#059669;" id="archive-day-total-btn" onclick="viewArchiveDayTotal()" disabled>📅 この日の合計データを見る</button>
+                <button class="archive-btn" id="archive-report-pdf-btn" onclick="exportArchiveReportPDF()" disabled>このセットのPDF</button>
                 <button class="archive-btn csv-btn" onclick="exportArchiveDayCSV()">CSV出力</button>
                 <button class="archive-btn print-btn" onclick="openArchivePrintView()">印刷/PDF</button>
             </div>
@@ -1995,7 +1996,7 @@ button, input, select, textarea,
      * - Date normalization and active-set double-count prevention were added.
      * - Existing saved-data compatibility was preserved.
      */
-    const APP_VERSION = '1.4.9e';
+    const APP_VERSION = '1.4.11';
     const APP_BUILD = '20260730';
     const APP_RELEASE_STATUS = 'Development';
     const APP_RECOMMENDATION = 'TODAY COACHING REPORT';
@@ -4121,6 +4122,16 @@ button, input, select, textarea,
         };
     }
 
+    function updateArchiveReportPdfButton(range, value) {
+        var button = document.getElementById('archive-report-pdf-btn');
+        archiveReportSelection = { range: null, setId: '', dateKey: '' };
+        if (range === 'set' && value) archiveReportSelection = { range: 'set', setId: String(value), dateKey: '' };
+        if (range === 'day' && value) archiveReportSelection = { range: 'day', setId: '', dateKey: normalizeArchiveDateString(value) };
+        if (!button) return;
+        button.disabled = !archiveReportSelection.range;
+        button.innerText = archiveReportSelection.range === 'day' ? 'この日の合計PDF' : 'このセットのPDF';
+    }
+
     function onArchiveDayChanged() {
         var dayVal = document.getElementById('archive-day-select').value;
         var setSelect = document.getElementById('archive-set-select');
@@ -4133,6 +4144,7 @@ button, input, select, textarea,
             setSelect.innerHTML = '<option value="">まず日付を選んでください</option>';
             setSelect.disabled = true;
             totalBtn.disabled = true;
+            updateArchiveReportPdfButton(null, '');
             return;
         }
 
@@ -4182,7 +4194,7 @@ button, input, select, textarea,
         var logContainer = document.getElementById('archive-running-score-log');
         var logTitleEl = document.getElementById('archive-log-title');
 
-        if (!setId) { area.style.display = 'none'; return; }
+        if (!setId) { area.style.display = 'none'; updateArchiveReportPdfButton(null, ''); return; }
 
         var matched = globalArchive.find(function(x){ return x.id === setId; });
         if(!matched) return;
@@ -4215,6 +4227,7 @@ button, input, select, textarea,
             logContainer.innerHTML = '<div style="color:#aaa; text-align:center; padding-top:10px;">スコアログなし</div>';
         }
         area.style.display = 'block';
+        updateArchiveReportPdfButton('set', matched.id);
     }
 
     function viewArchiveDayTotal() {
@@ -4278,6 +4291,7 @@ button, input, select, textarea,
         logTitleEl.innerText = '📝 ランニングスコア';
         logContainer.innerHTML = '<div style="color:#aaa; text-align:center; padding-top:10px;">※1日合算データではランニングスコアは表示されません。各セットごとの詳細ログをご覧ください。</div>';
         area.style.display = 'block';
+        updateArchiveReportPdfButton('day', dayVal);
     }
 
     function renderArchiveLogs(containerElement, logSnap, nameMap, numberMap) {
@@ -4387,8 +4401,9 @@ button, input, select, textarea,
         return total;
     }
 
-    function getSortedStatSummaries(statsData, nameMap, numberMap) {
-        var list = getStatsDisplayIds(statsData).map(function(p){ return getPlayerStatSummary(p, statsData, nameMap, numberMap); });
+    function getSortedStatSummaries(statsData, nameMap, numberMap, displayIds) {
+        var ids = Array.isArray(displayIds) ? displayIds : getStatsDisplayIds(statsData);
+        var list = ids.map(function(p){ return getPlayerStatSummary(p, statsData, nameMap, numberMap); });
         list.sort(function(a, b) {
             if (a.id === 'team' && b.id !== 'team') return 1;
             if (b.id === 'team' && a.id !== 'team') return -1;
@@ -4867,6 +4882,12 @@ button, input, select, textarea,
         updateUI();
     }
 
+    function updateReportPdfButton() {
+        var button = document.getElementById('today-pdf-btn');
+        if (!button || button.disabled) return;
+        button.innerText = currentView === 'all' ? '全通算PDF' : '今日の通算PDF';
+    }
+
     function isStandardSetEndReady(scoreUs, scoreThem) {
         var maxScore = Math.max(scoreUs || 0, scoreThem || 0);
         var diff = Math.abs((scoreUs || 0) - (scoreThem || 0));
@@ -5032,6 +5053,7 @@ button, input, select, textarea,
         // 割合分析表示を更新
         calculateAndDrawAnalysis(activeData, getCurrentAnalysisOpponentLabel());
         updateCurrentRotationAnalysisVisibility();
+        updateReportPdfButton();
 
         activePlayerHighlightFix(selectedPlayer);
         saveStorage(); 
@@ -5063,7 +5085,7 @@ button, input, select, textarea,
     function rowsToCsv(rows) { return rows.map(function(r){ return r.map(csvEscape).join(','); }).join('\n'); }
 
     // ==========================
-    // Ver.1.4.9e PDF Japanese Bold Font Support
+    // Ver.1.4.11 Archive Report Engine
     // Data -> reportData -> PDF. This path never reads or copies report DOM.
     // ==========================
     const PDF_FONT_REGULAR_URL = './fonts/NotoSansJP-Regular.ttf';
@@ -5072,6 +5094,7 @@ button, input, select, textarea,
     const PDF_FONT_BOLD_FILE = 'NotoSansJP-Bold.ttf';
     const PDF_FONT_FAMILY = 'NotoSansJP';
     var pdfFontsBase64Promise = null;
+    var archiveReportSelection = { range: null, setId: '', dateKey: '' };
 
     function getReportScopeData(scope) {
         if (scope === 'set') return setData;
@@ -5083,6 +5106,114 @@ button, input, select, textarea,
         if (scope === 'set') return '現セット';
         if (scope === 'all') return '全通算';
         return '本日通算';
+    }
+
+    function normalizeReportRequest(request) {
+        if (typeof request === 'string') request = { source: 'live', range: request };
+        request = request && typeof request === 'object' ? request : {};
+        var source = request.source || 'live';
+        var range = request.range || 'today';
+        var allowed = source === 'live' ? ['set', 'today', 'all'] : (source === 'archive' ? ['set', 'day'] : []);
+        if (allowed.indexOf(range) === -1) throw new Error('未対応のReportRequestです: ' + source + '/' + range);
+        var normalized = { source: source, range: range };
+        if (source === 'archive' && range === 'set') {
+            normalized.setId = String(request.setId || '').trim();
+            if (!normalized.setId) throw new Error('ArchiveセットPDFにはsetIdが必要です。');
+        }
+        if (source === 'archive' && range === 'day') {
+            normalized.dateKey = normalizeArchiveDateString(request.dateKey || '');
+            if (!normalized.dateKey) throw new Error('Archive日合計PDFにはdateKeyが必要です。');
+        }
+        return normalized;
+    }
+
+    function aggregateStatsSnapshots(archiveItems) {
+        var aggregated = createEmptyStats();
+        (archiveItems || []).forEach(function(item) {
+            var snapshot = item && item.statsSnap && typeof item.statsSnap === 'object' ? item.statsSnap : {};
+            for (var playerId in snapshot) {
+                if (!Object.prototype.hasOwnProperty.call(snapshot, playerId)) continue;
+                if (!aggregated[playerId]) aggregated[playerId] = {};
+                var row = snapshot[playerId] || {};
+                for (var statKey in row) {
+                    if (!Object.prototype.hasOwnProperty.call(row, statKey)) continue;
+                    aggregated[playerId][statKey] = safeStatNumber(aggregated[playerId][statKey]) + safeStatNumber(row[statKey]);
+                }
+            }
+        });
+        return aggregated;
+    }
+
+    function mergeArchivePlayerSnapshots(archiveItems) {
+        var names = {};
+        var numbers = {};
+        (archiveItems || []).forEach(function(item) {
+            var nameSnapshot = item && item.playerNamesSnap && typeof item.playerNamesSnap === 'object' ? item.playerNamesSnap : {};
+            var numberSnapshot = item && item.playerNumbersSnap && typeof item.playerNumbersSnap === 'object' ? item.playerNumbersSnap : {};
+            for (var i = 1; i <= MAX_PLAYERS; i++) {
+                var id = 'p' + i;
+                var snapshotName = String(nameSnapshot[id] === undefined || nameSnapshot[id] === null ? '' : nameSnapshot[id]).trim();
+                var snapshotNumber = String(numberSnapshot[id] === undefined || numberSnapshot[id] === null ? '' : numberSnapshot[id]).trim();
+                if (snapshotName) names[id] = snapshotName;
+                if (snapshotNumber) numbers[id] = snapshotNumber;
+            }
+        });
+        for (var j = 1; j <= MAX_PLAYERS; j++) {
+            var playerId = 'p' + j;
+            if (!names[playerId]) names[playerId] = playerNames[playerId] || ('選手 No.' + j);
+            if (!numbers[playerId]) numbers[playerId] = playerNumbers[playerId] || String(j);
+        }
+        names.us_team = '自チーム(全体)';
+        names.team = '相手チーム(全体)';
+        return { nameMap: names, numberMap: numbers };
+    }
+
+    function sortArchiveItemsOldestFirst(archiveItems) {
+        return (archiveItems || []).map(function(item, index) {
+            var candidates = [item && item.endedAt, item && item.startedAt];
+            var order = NaN;
+            for (var i = 0; i < candidates.length && isNaN(order); i++) order = Date.parse(candidates[i] || '');
+            if (isNaN(order) && item && String(item.id || '').indexOf('set_') === 0) order = parseInt(String(item.id).replace('set_', ''), 10);
+            return { item: item, order: isNaN(order) ? index : order, index: index };
+        }).sort(function(a, b) {
+            return a.order - b.order || a.index - b.index;
+        }).map(function(entry) { return entry.item; });
+    }
+
+    function getArchiveReportDisplayIds(archiveItems, statsData) {
+        var ids = [];
+        for (var i = 1; i <= MAX_PLAYERS; i++) {
+            var id = 'p' + i;
+            var existedInSnapshot = (archiveItems || []).some(function(item) {
+                var names = item && item.playerNamesSnap;
+                var numbers = item && item.playerNumbersSnap;
+                var name = names && names[id] !== undefined ? String(names[id]).trim() : '';
+                var number = numbers && numbers[id] !== undefined ? String(numbers[id]).trim() : '';
+                var lineup = item && item.startingLineupSnap ? Object.keys(item.startingLineupSnap).some(function(pos) { return item.startingLineupSnap[pos] === id; }) : false;
+                var history = item && Array.isArray(item.historyLogSnap) ? item.historyLogSnap.some(function(action) { return action && (action.player === id || action.inPlayer === id || action.outPlayer === id); }) : false;
+                return (name && name !== '選手 No.' + i) || (number && number !== String(i)) || lineup || history;
+            });
+            if (existedInSnapshot || hasAnyStatsForPlayer(id, statsData)) ids.push(id);
+        }
+        ids.push('us_team');
+        ids.push('team');
+        return ids;
+    }
+
+    function getArchiveReceptionSource(archiveItems) {
+        var detailedItems = [];
+        var legacyCount = 0;
+        (archiveItems || []).forEach(function(item) {
+            if (hasArchiveReceptionAnalyticsData(item && item.statsSnap)) detailedItems.push(item);
+            else legacyCount++;
+        });
+        return {
+            statsData: detailedItems.length > 0 ? aggregateStatsSnapshots(detailedItems) : createEmptyStats(),
+            detailedSetCount: detailedItems.length,
+            legacySetCount: legacyCount,
+            note: detailedItems.length > 0 && legacyCount > 0 ? 'レセプション詳細を保持するセットのみ合算しています。' : '',
+            emptyMessage: detailedItems.length === 0 ? '旧記録のためレセプション詳細なし' : ''
+        };
     }
 
     function getTodayReportArchiveItems() {
@@ -5104,33 +5235,139 @@ button, input, select, textarea,
         return false;
     }
 
-    function buildReportOpponentNames(scope) {
-        var names = [];
-        function addName(value) {
+    function resolveLiveReportSource(request) {
+        var range = request.range;
+        var archiveItems = range === 'all'
+            ? globalArchive.filter(function(item) { return !!item; })
+            : (range === 'today' ? getTodayReportArchiveItems() : []);
+        var includeInProgress = (range === 'today' || range === 'all') && (hasStatsActivity(setData) || !!startedAt);
+        var currentDateKey = normalizeArchiveDateString(matchDateKey || getTodayKey());
+        var dateKeys = archiveItems.map(function(item) {
+            return normalizeArchiveDateString(item.date);
+        }).filter(function(value) { return !!value; });
+        if ((range === 'set' || range === 'today' || includeInProgress) && currentDateKey) dateKeys.push(currentDateKey);
+        dateKeys = dateKeys.filter(function(value, index, values) { return values.indexOf(value) === index; }).sort();
+        if (dateKeys.length === 0 && currentDateKey) dateKeys.push(currentDateKey);
+
+        var opponentNames = [];
+        function addOpponentName(value) {
             var name = String(value || '').trim();
-            if (name && name !== '相手' && !names.includes(name)) names.push(name);
+            if (name && name !== '相手' && !opponentNames.includes(name)) opponentNames.push(name);
         }
-        if (scope === 'today') {
-            getTodayReportArchiveItems().forEach(function(item) { addName(item.oppName); });
-            if (hasStatsActivity(setData) || startedAt) addName(oppTeamName);
+        archiveItems.forEach(function(item) { addOpponentName(item.oppName); });
+        if (range === 'set' || includeInProgress) addOpponentName(oppTeamName);
+        if (opponentNames.length === 0) opponentNames.push(oppTeamName || '相手');
+
+        var nameMap = Object.assign({}, playerNames);
+        if (range !== 'set') nameMap.team = (opponentNames.length === 1 ? opponentNames[0] : '相手') + '(全体)';
+
+        var setScores = archiveItems.map(function(item) {
+            var values = getArchiveItemDisplayValues(item);
+            return {
+                setNumber: item.setNum,
+                opponent: item.oppName || '相手',
+                us: safeStatNumber(values.usScore),
+                them: safeStatNumber(values.themScore)
+            };
+        });
+
+        return {
+            request: request,
+            statsData: getReportScopeData(range),
+            archiveItems: archiveItems,
+            nameMap: nameMap,
+            numberMap: playerNumbers,
+            opponentNames: opponentNames,
+            setScores: setScores,
+            includeInProgress: includeInProgress,
+            period: {
+                from: dateKeys[0] || '',
+                to: dateKeys[dateKeys.length - 1] || '',
+                label: dateKeys.length > 1 ? dateKeys[0] + ' ～ ' + dateKeys[dateKeys.length - 1] : (dateKeys[0] || currentDateKey)
+            },
+            matchLabel: range === 'all' ? '全試合' : getMatchLabel(),
+            matchType: matchType,
+            matchNumber: matchType === 'official' ? officialMatchNumber : null,
+            setNumber: range === 'set' ? currentSet : null,
+            startedAt: startedAt,
+            endedAt: endedAt,
+            notes: [],
+            receptionSource: null,
+            displayIds: null,
+            scopeLabel: getReportScopeLabel(range)
+        };
+    }
+
+    function resolveArchiveReportSource(request) {
+        var archiveItems;
+        if (request.range === 'set') {
+            var matched = globalArchive.find(function(item) { return item && String(item.id) === request.setId; });
+            if (!matched) throw new Error('指定されたArchiveセットが見つかりません: ' + request.setId);
+            archiveItems = [matched];
         } else {
-            addName(oppTeamName);
+            archiveItems = globalArchive.filter(function(item) {
+                return item && normalizeArchiveDateString(item.date) === request.dateKey;
+            });
+            if (archiveItems.length === 0) throw new Error('指定日のArchive記録が見つかりません: ' + request.dateKey);
         }
-        if (names.length === 0) names.push(oppTeamName || '相手');
-        return names;
+        archiveItems = sortArchiveItemsOldestFirst(archiveItems);
+
+        var statsData = request.range === 'set' ? (archiveItems[0].statsSnap || createEmptyStats()) : aggregateStatsSnapshots(archiveItems);
+        var snapshots = mergeArchivePlayerSnapshots(archiveItems);
+        var opponentNames = getUniqueOppNames(archiveItems);
+        if (opponentNames.length === 0) opponentNames.push('相手');
+        snapshots.nameMap.team = (request.range === 'day' && opponentNames.length > 1 ? '相手' : opponentNames[0]) + '(全体)';
+        var setScores = archiveItems.map(function(item) {
+            var values = getArchiveItemDisplayValues(item);
+            return {
+                setNumber: item.setNum,
+                opponent: item.oppName || '相手',
+                us: safeStatNumber(values.usScore),
+                them: safeStatNumber(values.themScore)
+            };
+        });
+        var primary = archiveItems[archiveItems.length - 1];
+        var dateKey = request.range === 'day' ? request.dateKey : normalizeArchiveDateString(primary.date);
+        var receptionSource = getArchiveReceptionSource(archiveItems);
+        var notes = receptionSource.note ? [receptionSource.note] : [];
+        return {
+            request: request,
+            statsData: statsData,
+            archiveItems: archiveItems,
+            nameMap: snapshots.nameMap,
+            numberMap: snapshots.numberMap,
+            opponentNames: opponentNames,
+            setScores: setScores,
+            includeInProgress: false,
+            period: { from: dateKey, to: dateKey, label: dateKey },
+            matchLabel: request.range === 'day' ? 'Archive 1日合計' : (primary.matchLabel || 'Archive記録'),
+            matchType: primary.matchType || null,
+            matchNumber: primary.matchNumber === undefined ? null : primary.matchNumber,
+            setNumber: request.range === 'set' ? primary.setNum : null,
+            startedAt: request.range === 'set' ? (primary.startedAt || null) : null,
+            endedAt: request.range === 'set' ? (primary.endedAt || null) : null,
+            notes: notes,
+            receptionSource: receptionSource,
+            displayIds: getArchiveReportDisplayIds(archiveItems, statsData),
+            scopeLabel: request.range === 'set' ? '1セット記録' : '1日合計'
+        };
+    }
+
+    function resolveReportSource(request) {
+        request = normalizeReportRequest(request);
+        return request.source === 'archive' ? resolveArchiveReportSource(request) : resolveLiveReportSource(request);
+    }
+
+    function buildReportOpponentNames(scope) {
+        return resolveReportSource(scope).opponentNames;
     }
 
     function buildReportNameMap(scope) {
-        var map = Object.assign({}, playerNames);
-        if (scope !== 'set') {
-            var opponents = buildReportOpponentNames(scope);
-            map.team = (opponents.length === 1 ? opponents[0] : '相手') + '(全体)';
-        }
-        return map;
+        return resolveReportSource(scope).nameMap;
     }
 
-    function buildReportStatRows(statsData, nameMap, numberMap) {
-        var summaries = getSortedStatSummaries(statsData, nameMap, numberMap);
+    function buildReportStatRows(statsData, nameMap, numberMap, displayIds) {
+        var summaries = getSortedStatSummaries(statsData, nameMap, numberMap, displayIds);
         var playersOnly = summaries.filter(function(row) { return row.id !== 'us_team' && row.id !== 'team'; });
         var shared = summaries.filter(function(row) { return row.id === 'us_team'; });
         var opponent = summaries.filter(function(row) { return row.id === 'team'; });
@@ -5153,16 +5390,7 @@ button, input, select, textarea,
     }
 
     function buildReportSetScores(scope) {
-        if (scope !== 'today') return [];
-        return getTodayReportArchiveItems().map(function(item) {
-            var values = getArchiveItemDisplayValues(item);
-            return {
-                setNumber: item.setNum,
-                opponent: item.oppName || '相手',
-                us: safeStatNumber(values.usScore),
-                them: safeStatNumber(values.themScore)
-            };
-        });
+        return resolveReportSource(scope).setScores;
     }
 
     function buildReportReceptionSection(statsData, nameMap, numberMap) {
@@ -5180,6 +5408,7 @@ button, input, select, textarea,
         return {
             available: total.recTotal > 0,
             emptyMessage: total.recTotal > 0 ? '' : 'レセプションデータなし',
+            note: '',
             columns: ['選手名', 'A', 'B', 'C', 'D', 'M', '受数', 'A率', 'AB率'],
             rows: rows.map(function(row) {
                 return {
@@ -5249,14 +5478,14 @@ button, input, select, textarea,
         };
     }
 
-    function buildReportTeamSummary(scope, statsData, setScoresForReport, reception, scoring) {
+    function buildReportTeamSummary(reportSource, statsData, setScoresForReport, reception, scoring) {
         var wins = 0, losses = 0, draws = 0;
         setScoresForReport.forEach(function(setScore) {
             if (setScore.us > setScore.them) wins++;
             else if (setScore.us < setScore.them) losses++;
             else draws++;
         });
-        var inProgress = scope === 'today' && (hasStatsActivity(setData) || !!startedAt);
+        var inProgress = !!reportSource.includeInProgress;
         return {
             setCount: setScoresForReport.length + (inProgress ? 1 : 0),
             completedSetCount: setScoresForReport.length,
@@ -5270,51 +5499,81 @@ button, input, select, textarea,
             blockPoints: scoring.blockPoints,
             servePoints: scoring.servePoints,
             opponentErrorPoints: scoring.opponentErrorPoints,
-            receptionARate: reception.teamTotal.aRate,
-            receptionABRate: reception.teamTotal.abRate
+            receptionARate: reception.detailAvailable === false ? null : reception.teamTotal.aRate,
+            receptionABRate: reception.detailAvailable === false ? null : reception.teamTotal.abRate
         };
     }
 
-    function buildReportData(scope) {
-        scope = scope === 'set' || scope === 'all' ? scope : 'today';
-        var statsData = getReportScopeData(scope);
-        var reportDate = normalizeArchiveDateString(matchDateKey || getTodayKey());
-        var setScoresForReport = buildReportSetScores(scope);
-        var reportNameMap = buildReportNameMap(scope);
-        var receptionForReport = buildReportReceptionSection(statsData, reportNameMap, playerNumbers);
+    function formatReportTime(value) {
+        var text = String(value || '');
+        var match = text.match(/[T\s](\d{2}:\d{2})/);
+        return match ? match[1] : text;
+    }
+
+    function buildReportData(request) {
+        var reportSource = resolveReportSource(request);
+        var scope = reportSource.request.range;
+        var statsData = reportSource.statsData;
+        var setScoresForReport = reportSource.setScores;
+        var reportNameMap = reportSource.nameMap;
+        var receptionStatsData = reportSource.receptionSource ? reportSource.receptionSource.statsData : statsData;
+        var receptionForReport = buildReportReceptionSection(receptionStatsData, reportNameMap, reportSource.numberMap);
+        if (reportSource.receptionSource) {
+            receptionForReport.note = reportSource.receptionSource.note;
+            receptionForReport.detailAvailable = reportSource.receptionSource.detailedSetCount > 0;
+            if (reportSource.receptionSource.emptyMessage) receptionForReport.emptyMessage = reportSource.receptionSource.emptyMessage;
+        }
         var scoringForReport = buildReportScoringSection(statsData);
-        return {
+        var reportData = {
             schemaVersion: 1,
-            reportType: 'live-' + scope,
+            reportType: reportSource.request.source + '-' + scope,
             app: {
                 name: getAppFullTitle(),
                 version: APP_VERSION,
                 generatedAt: new Date().toISOString()
             },
             match: {
-                dateKey: reportDate,
-                matchType: matchType,
-                matchNumber: matchType === 'official' ? officialMatchNumber : null,
-                matchLabel: getMatchLabel(),
-                opponentNames: buildReportOpponentNames(scope),
-                startedAt: startedAt,
-                endedAt: endedAt
+                dateKey: reportSource.period.label,
+                matchType: reportSource.matchType,
+                matchNumber: reportSource.matchNumber,
+                matchLabel: reportSource.matchLabel,
+                opponentNames: reportSource.opponentNames,
+                startedAt: reportSource.startedAt,
+                endedAt: reportSource.endedAt
             },
             scope: {
                 key: scope,
-                label: getReportScopeLabel(scope),
-                setNumber: scope === 'set' ? currentSet : null,
+                label: reportSource.scopeLabel,
+                setNumber: reportSource.setNumber,
                 completedSetCount: setScoresForReport.length,
-                setScores: setScoresForReport
+                setScores: setScoresForReport,
+                period: reportSource.period
             },
-            teamSummary: buildReportTeamSummary(scope, statsData, setScoresForReport, receptionForReport, scoringForReport),
+            notes: reportSource.notes || [],
+            teamSummary: buildReportTeamSummary(reportSource, statsData, setScoresForReport, receptionForReport, scoringForReport),
             statTable: {
                 columns: ['選手名', '得点', 'スパイク', 'ブロック', 'サーブ', 'ミス', '反則'],
-                rows: buildReportStatRows(statsData, reportNameMap, playerNumbers)
+                rows: buildReportStatRows(statsData, reportNameMap, reportSource.numberMap, reportSource.displayIds)
             },
             reception: receptionForReport,
             scoring: scoringForReport
         };
+        var progressText = reportData.teamSummary.inProgressSetCount > 0 ? ' + 進行中1セット' : '';
+        reportData.header = {
+            primary: '対象: ' + reportData.scope.label + '　日付: ' + reportData.match.dateKey + '　完了: ' + reportData.scope.completedSetCount + 'セット' + progressText,
+            secondary: '試合: ' + reportData.match.matchLabel + '　対戦相手: ' + reportData.match.opponentNames.join(' / ')
+        };
+        if (reportData.reportType === 'archive-set') {
+            var archiveScore = reportData.scope.setScores[0] || { us: 0, them: 0 };
+            var timeParts = [];
+            if (reportData.match.startedAt) timeParts.push('開始 ' + formatReportTime(reportData.match.startedAt));
+            if (reportData.match.endedAt) timeParts.push('終了 ' + formatReportTime(reportData.match.endedAt));
+            reportData.header.secondary += '　第' + reportData.scope.setNumber + 'セット　最終スコア: ' + archiveScore.us + '-' + archiveScore.them + (timeParts.length ? '　' + timeParts.join(' / ') : '');
+        } else if (reportData.reportType === 'archive-day') {
+            var scoreList = reportData.scope.setScores.map(function(score) { return '第' + score.setNumber + 'S ' + score.us + '-' + score.them; }).join(' / ');
+            reportData.header.secondary += '　勝敗: ' + reportData.teamSummary.wins + '勝' + reportData.teamSummary.losses + '敗' + (scoreList ? '　' + scoreList : '');
+        }
+        return reportData;
     }
 
     function arrayBufferToBase64(buffer) {
@@ -5385,8 +5644,8 @@ button, input, select, textarea,
             ['ブロック得点', s.blockPoints + '点'],
             ['サーブ得点', s.servePoints + '点'],
             ['相手ミス得点', s.opponentErrorPoints + '点'],
-            ['チームA率', s.receptionARate.toFixed(1) + '%'],
-            ['チームAB率', s.receptionABRate.toFixed(1) + '%']
+            ['チームA率', s.receptionARate === null ? '詳細なし' : s.receptionARate.toFixed(1) + '%'],
+            ['チームAB率', s.receptionABRate === null ? '詳細なし' : s.receptionABRate.toFixed(1) + '%']
         ];
         var columns = 3;
         var cellWidth = 46;
@@ -5463,9 +5722,8 @@ button, input, select, textarea,
         doc.text(reportData.app.name + ' コーチレポート', 14, 10);
         doc.setFont(PDF_FONT_FAMILY, 'normal');
         doc.setTextColor(0, 0, 0);
-        var progressText = reportData.teamSummary.inProgressSetCount > 0 ? ' + 進行中1セット' : '';
-        drawFittedReportText(doc, '対象: ' + reportData.scope.label + '　日付: ' + reportData.match.dateKey + '　完了: ' + reportData.scope.completedSetCount + 'セット' + progressText, 14, 17, 125, 10, 8.5);
-        drawFittedReportText(doc, '試合: ' + reportData.match.matchLabel + '　対戦相手: ' + reportData.match.opponentNames.join(' / '), 14, 23.5, 125, 10, 8.5);
+        drawFittedReportText(doc, reportData.header.primary, 14, 17, 125, 10, 8.5);
+        drawFittedReportText(doc, reportData.header.secondary, 14, 23.5, 125, 10, 8.5);
 
         drawTeamSummary(doc, reportData, 145, 4);
         drawReportSectionTitle(doc, '基本スタッツ', 34);
@@ -5513,6 +5771,12 @@ button, input, select, textarea,
 
         doc.addPage('a4', 'landscape');
         drawReportSectionTitle(doc, 'レセプション分析', 18);
+        if (reportData.reception.note) {
+            doc.setFont(PDF_FONT_FAMILY, 'normal');
+            doc.setFontSize(7);
+            doc.setTextColor(0, 0, 0);
+            doc.text('※ ' + reportData.reception.note, 283, 22.5, { align: 'right' });
+        }
         if (!reportData.reception.available) {
             doc.setFont(PDF_FONT_FAMILY, 'normal');
             doc.setFontSize(12);
@@ -5576,24 +5840,79 @@ button, input, select, textarea,
         window.setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
     }
 
-    function exportTodayReportPDF() {
+    function exportLiveReportPDF(range) {
         var button = document.getElementById('today-pdf-btn');
         var originalText = button ? button.innerText : '';
         if (button) { button.disabled = true; button.innerText = 'PDF生成中...'; }
-        var reportData = buildReportData('today');
+        var request = { source: 'live', range: range === 'all' ? 'all' : 'today' };
+        var reportData = buildReportData(request);
         loadPdfJapaneseFontsBase64()
             .then(function(fontsBase64) {
                 var pdfBlob = buildReportPdfBlob(reportData, fontsBase64);
-                var safeDate = String(reportData.match.dateKey || getTodayKey()).replace(/[^0-9]/g, '');
-                downloadPdfBlob(pdfBlob, 'SEIMEI_VB_Report_' + safeDate + '.pdf');
+                var safePeriod = String(reportData.match.dateKey || getTodayKey()).replace(/[^0-9]+/g, '-').replace(/^-|-$/g, '');
+                var rangeLabel = request.range === 'all' ? 'All_' : '';
+                downloadPdfBlob(pdfBlob, 'SEIMEI_VB_Report_' + rangeLabel + safePeriod + '.pdf');
             })
             .catch(function(error) {
                 console.error('PDF generation failed:', error);
                 alert('PDFを生成できませんでした。\n' + (error && error.message ? error.message : String(error)));
             })
             .then(function() {
-                if (button) { button.disabled = false; button.innerText = originalText || '今日の通算PDF'; }
+                if (button) { button.disabled = false; button.innerText = originalText || (request.range === 'all' ? '全通算PDF' : '今日の通算PDF'); }
+                updateReportPdfButton();
             });
+    }
+
+    function exportTodayReportPDF() {
+        return exportLiveReportPDF('today');
+    }
+
+    function exportCurrentViewReportPDF() {
+        return exportLiveReportPDF(currentView === 'all' ? 'all' : 'today');
+    }
+
+    function sanitizePdfFilenamePart(value, fallback) {
+        var safe = String(value || '').trim().replace(/[\\\/:*?"<>|\u0000-\u001f]/g, '_').replace(/\s+/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+        return safe || fallback || 'Unknown';
+    }
+
+    function buildArchiveReportFilename(reportData) {
+        var datePart = sanitizePdfFilenamePart(String(reportData.match.dateKey || '').replace(/\//g, '-'), 'Unknown-Date');
+        if (reportData.reportType === 'archive-set') {
+            var setPart = String(reportData.scope.setNumber || 0).padStart(2, '0');
+            var opponentPart = sanitizePdfFilenamePart(reportData.match.opponentNames[0], 'Opponent');
+            return 'SEIMEI_VB_Archive_Set_' + datePart + '_Set' + setPart + '_' + opponentPart + '_Ver' + APP_VERSION + '.pdf';
+        }
+        return 'SEIMEI_VB_Archive_Day_' + datePart + '_Ver' + APP_VERSION + '.pdf';
+    }
+
+    function exportArchiveReportPDF() {
+        var button = document.getElementById('archive-report-pdf-btn');
+        var originalText = button ? button.innerText : '';
+        try {
+            if (!archiveReportSelection.range) throw new Error('PDF出力対象を選択してください。');
+            var request = archiveReportSelection.range === 'set'
+                ? { source: 'archive', range: 'set', setId: archiveReportSelection.setId }
+                : { source: 'archive', range: 'day', dateKey: archiveReportSelection.dateKey };
+            var reportData = buildReportData(request);
+            if (button) { button.disabled = true; button.innerText = 'PDF生成中...'; }
+            return loadPdfJapaneseFontsBase64()
+                .then(function(fontsBase64) {
+                    downloadPdfBlob(buildReportPdfBlob(reportData, fontsBase64), buildArchiveReportFilename(reportData));
+                })
+                .catch(function(error) {
+                    console.error('Archive PDF generation failed:', error);
+                    alert('Archive PDFを生成できませんでした。\n' + (error && error.message ? error.message : String(error)));
+                })
+                .then(function() {
+                    if (button) { button.disabled = false; button.innerText = originalText; }
+                    updateArchiveReportPdfButton(archiveReportSelection.range, archiveReportSelection.range === 'set' ? archiveReportSelection.setId : archiveReportSelection.dateKey);
+                });
+        } catch (error) {
+            if (button) { button.disabled = true; button.innerText = originalText || 'このセットのPDF'; }
+            alert(error.message || String(error));
+            return null;
+        }
     }
 
     function exportActiveStatsCSV() {
