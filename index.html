@@ -1995,7 +1995,7 @@ button, input, select, textarea,
      * - Date normalization and active-set double-count prevention were added.
      * - Existing saved-data compatibility was preserved.
      */
-    const APP_VERSION = '1.4.9d';
+    const APP_VERSION = '1.4.9e';
     const APP_BUILD = '20260730';
     const APP_RELEASE_STATUS = 'Development';
     const APP_RECOMMENDATION = 'TODAY COACHING REPORT';
@@ -5063,13 +5063,15 @@ button, input, select, textarea,
     function rowsToCsv(rows) { return rows.map(function(r){ return r.map(csvEscape).join(','); }).join('\n'); }
 
     // ==========================
-    // Ver.1.4.9d PDF Readability - Bold Data Emphasis
+    // Ver.1.4.9e PDF Japanese Bold Font Support
     // Data -> reportData -> PDF. This path never reads or copies report DOM.
     // ==========================
-    const PDF_FONT_URL = './fonts/NotoSansJP-VariableFont_wght.ttf';
-    const PDF_FONT_FILE = 'NotoSansJP-VariableFont_wght.ttf';
+    const PDF_FONT_REGULAR_URL = './fonts/NotoSansJP-Regular.ttf';
+    const PDF_FONT_BOLD_URL = './fonts/NotoSansJP-Bold.ttf';
+    const PDF_FONT_REGULAR_FILE = 'NotoSansJP-Regular.ttf';
+    const PDF_FONT_BOLD_FILE = 'NotoSansJP-Bold.ttf';
     const PDF_FONT_FAMILY = 'NotoSansJP';
-    var pdfFontBase64Promise = null;
+    var pdfFontsBase64Promise = null;
 
     function getReportScopeData(scope) {
         if (scope === 'set') return setData;
@@ -5325,20 +5327,22 @@ button, input, select, textarea,
         return btoa(binary);
     }
 
-    function loadPdfJapaneseFontBase64() {
-        if (!pdfFontBase64Promise) {
-            pdfFontBase64Promise = fetch(PDF_FONT_URL)
-                .then(function(response) {
-                    if (!response.ok) throw new Error('日本語フォントを読み込めませんでした。HTTP ' + response.status);
+    function loadPdfJapaneseFontsBase64() {
+        if (!pdfFontsBase64Promise) {
+            pdfFontsBase64Promise = Promise.all([PDF_FONT_REGULAR_URL, PDF_FONT_BOLD_URL].map(function(url) {
+                return fetch(url).then(function(response) {
+                    if (!response.ok) throw new Error('日本語フォントを読み込めませんでした。HTTP ' + response.status + ' ' + url);
                     return response.arrayBuffer();
-                })
-                .then(arrayBufferToBase64)
+                }).then(arrayBufferToBase64);
+            })).then(function(fonts) {
+                return { regular: fonts[0], bold: fonts[1] };
+            })
                 .catch(function(error) {
-                    pdfFontBase64Promise = null;
+                    pdfFontsBase64Promise = null;
                     throw error;
                 });
         }
-        return pdfFontBase64Promise;
+        return pdfFontsBase64Promise;
     }
 
     function getPdfAutoTableFunction(doc) {
@@ -5352,7 +5356,7 @@ button, input, select, textarea,
     }
 
     function drawReportSectionTitle(doc, title, y) {
-        doc.setFont(PDF_FONT_FAMILY, 'bold');
+        doc.setFont(PDF_FONT_FAMILY, 'normal');
         doc.setFontSize(14);
         doc.setTextColor(0, 0, 0);
         doc.text(title, 14, y);
@@ -5418,7 +5422,7 @@ button, input, select, textarea,
         var maxPercentage = 100;
         reportData.scoring.items.forEach(function(item, index) {
             var y = startY + index * 14;
-            doc.setFont(PDF_FONT_FAMILY, 'bold');
+            doc.setFont(PDF_FONT_FAMILY, 'normal');
             doc.setFontSize(10.5);
             doc.setTextColor(0, 0, 0);
             doc.text(item.label, 18, y + 5.2);
@@ -5445,13 +5449,14 @@ button, input, select, textarea,
         }
     }
 
-    function buildReportPdfBlob(reportData, fontBase64) {
+    function buildReportPdfBlob(reportData, fontsBase64) {
         if (!window.jspdf || typeof window.jspdf.jsPDF !== 'function') throw new Error('jsPDFを利用できません。');
         var doc = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', compress: true });
-        doc.addFileToVFS(PDF_FONT_FILE, fontBase64);
-        doc.addFont(PDF_FONT_FILE, PDF_FONT_FAMILY, 'normal');
-        doc.addFont(PDF_FONT_FILE, PDF_FONT_FAMILY, 'bold');
-        doc.setFont(PDF_FONT_FAMILY, 'bold');
+        doc.addFileToVFS(PDF_FONT_REGULAR_FILE, fontsBase64.regular);
+        doc.addFont(PDF_FONT_REGULAR_FILE, PDF_FONT_FAMILY, 'normal');
+        doc.addFileToVFS(PDF_FONT_BOLD_FILE, fontsBase64.bold);
+        doc.addFont(PDF_FONT_BOLD_FILE, PDF_FONT_FAMILY, 'bold');
+        doc.setFont(PDF_FONT_FAMILY, 'normal');
 
         doc.setFontSize(17);
         doc.setTextColor(0, 0, 0);
@@ -5485,7 +5490,7 @@ button, input, select, textarea,
             tableWidth: 'wrap',
             styles: { font: PDF_FONT_FAMILY, fontStyle: 'normal', fontSize: 10, cellPadding: { top: 1, right: 1.2, bottom: 1, left: 1.2 }, minCellHeight: 6.5, textColor: [0, 0, 0], lineColor: [100, 116, 139], lineWidth: 0.2 },
             bodyStyles: { font: PDF_FONT_FAMILY, fontStyle: 'bold' },
-            headStyles: { font: PDF_FONT_FAMILY, fontStyle: 'bold', fontSize: 10, fillColor: [30, 58, 138], textColor: [255, 255, 255], halign: 'center', cellPadding: { top: 1, right: 1.2, bottom: 1, left: 1.2 } },
+            headStyles: { font: PDF_FONT_FAMILY, fontStyle: 'normal', fontSize: 10, fillColor: [30, 58, 138], textColor: [255, 255, 255], halign: 'center', cellPadding: { top: 1, right: 1.2, bottom: 1, left: 1.2 } },
             columnStyles: {
                 0: { cellWidth: 62, fontStyle: 'bold', fontSize: 10.5 },
                 1: { cellWidth: 22, halign: 'center' },
@@ -5509,7 +5514,7 @@ button, input, select, textarea,
         doc.addPage('a4', 'landscape');
         drawReportSectionTitle(doc, 'レセプション分析', 18);
         if (!reportData.reception.available) {
-            doc.setFont(PDF_FONT_FAMILY, 'bold');
+            doc.setFont(PDF_FONT_FAMILY, 'normal');
             doc.setFontSize(12);
             doc.setTextColor(0, 0, 0);
             doc.text(reportData.reception.emptyMessage, 18, 32);
@@ -5525,7 +5530,7 @@ button, input, select, textarea,
                 tableWidth: 'wrap',
                 styles: { font: PDF_FONT_FAMILY, fontStyle: 'normal', fontSize: 10, cellPadding: 3.2, minCellHeight: 10, textColor: [0, 0, 0], lineColor: [100, 116, 139], lineWidth: 0.2, halign: 'center' },
                 bodyStyles: { font: PDF_FONT_FAMILY, fontStyle: 'bold' },
-                headStyles: { font: PDF_FONT_FAMILY, fontStyle: 'bold', fontSize: 10, fillColor: [15, 118, 110], textColor: [255, 255, 255], cellPadding: 3.2 },
+                headStyles: { font: PDF_FONT_FAMILY, fontStyle: 'normal', fontSize: 10, fillColor: [15, 118, 110], textColor: [255, 255, 255], cellPadding: 3.2 },
                 columnStyles: {
                     0: { cellWidth: 61, halign: 'left', fontStyle: 'bold', fontSize: 10.5 },
                     1: { cellWidth: 20 },
@@ -5576,9 +5581,9 @@ button, input, select, textarea,
         var originalText = button ? button.innerText : '';
         if (button) { button.disabled = true; button.innerText = 'PDF生成中...'; }
         var reportData = buildReportData('today');
-        loadPdfJapaneseFontBase64()
-            .then(function(fontBase64) {
-                var pdfBlob = buildReportPdfBlob(reportData, fontBase64);
+        loadPdfJapaneseFontsBase64()
+            .then(function(fontsBase64) {
+                var pdfBlob = buildReportPdfBlob(reportData, fontsBase64);
                 var safeDate = String(reportData.match.dateKey || getTodayKey()).replace(/[^0-9]/g, '');
                 downloadPdfBlob(pdfBlob, 'SEIMEI_VB_Report_' + safeDate + '.pdf');
             })
