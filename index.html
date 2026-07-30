@@ -1682,8 +1682,8 @@ button, input, select, textarea,
 
             <div class="footer-btns">
                 <button class="action-btn csv-btn" onclick="exportActiveStatsCSV()">CSV出力</button>
-                <button class="action-btn print-btn" onclick="openPrintView()">印刷/PDF</button>
-                <button class="action-btn pdf-direct-btn" id="today-pdf-btn" onclick="exportCurrentViewReportPDF()">今日の通算PDF</button>
+                <button class="action-btn print-btn" onclick="openPrintView()">印刷/レポート</button>
+                <button class="action-btn pdf-direct-btn" id="today-pdf-btn" onclick="exportCurrentViewReportPDF()">今日のレポート</button>
             </div>
         </div>
             </div>
@@ -1873,9 +1873,9 @@ button, input, select, textarea,
             </div>
             <div style="display:flex; gap:10px; align-items:flex-end;">
                 <button class="archive-btn" style="background-color:#059669;" id="archive-day-total-btn" onclick="viewArchiveDayTotal()" disabled>📅 この日の合計データを見る</button>
-                <button class="archive-btn" id="archive-report-pdf-btn" onclick="exportArchiveReportPDF()" disabled>このセットのPDF</button>
+                <button class="archive-btn" id="archive-report-pdf-btn" onclick="exportArchiveReportPDF()" disabled>このセットのレポート</button>
                 <button class="archive-btn csv-btn" onclick="exportArchiveDayCSV()">CSV出力</button>
-                <button class="archive-btn print-btn" onclick="openArchivePrintView()">印刷/PDF</button>
+                <button class="archive-btn print-btn" onclick="openArchivePrintView()">印刷/レポート</button>
             </div>
             
         </div>
@@ -1996,10 +1996,10 @@ button, input, select, textarea,
      * - Date normalization and active-set double-count prevention were added.
      * - Existing saved-data compatibility was preserved.
      */
-    const APP_VERSION = '1.4.11';
+    const APP_VERSION = '1.4.12c';
     const APP_BUILD = '20260730';
     const APP_RELEASE_STATUS = 'Development';
-    const APP_RECOMMENDATION = 'TODAY COACHING REPORT';
+    const APP_RECOMMENDATION = 'ANALYSIS LAYOUT POLISH';
 
     function updateAppVersionDisplay() {
         var versionEl = document.getElementById('app-version-display');
@@ -4129,7 +4129,7 @@ button, input, select, textarea,
         if (range === 'day' && value) archiveReportSelection = { range: 'day', setId: '', dateKey: normalizeArchiveDateString(value) };
         if (!button) return;
         button.disabled = !archiveReportSelection.range;
-        button.innerText = archiveReportSelection.range === 'day' ? 'この日の合計PDF' : 'このセットのPDF';
+        button.innerText = archiveReportSelection.range === 'day' ? 'この日の合計レポート' : 'このセットのレポート';
     }
 
     function onArchiveDayChanged() {
@@ -4885,7 +4885,7 @@ button, input, select, textarea,
     function updateReportPdfButton() {
         var button = document.getElementById('today-pdf-btn');
         if (!button || button.disabled) return;
-        button.innerText = currentView === 'all' ? '全通算PDF' : '今日の通算PDF';
+        button.innerText = currentView === 'all' ? '全通算レポート' : '今日のレポート';
     }
 
     function isStandardSetEndReady(scoreUs, scoreThem) {
@@ -5118,11 +5118,11 @@ button, input, select, textarea,
         var normalized = { source: source, range: range };
         if (source === 'archive' && range === 'set') {
             normalized.setId = String(request.setId || '').trim();
-            if (!normalized.setId) throw new Error('ArchiveセットPDFにはsetIdが必要です。');
+            if (!normalized.setId) throw new Error('ArchiveセットレポートにはsetIdが必要です。');
         }
         if (source === 'archive' && range === 'day') {
             normalized.dateKey = normalizeArchiveDateString(request.dateKey || '');
-            if (!normalized.dateKey) throw new Error('Archive日合計PDFにはdateKeyが必要です。');
+            if (!normalized.dateKey) throw new Error('Archive日合計レポートにはdateKeyが必要です。');
         }
         return normalized;
     }
@@ -5478,6 +5478,71 @@ button, input, select, textarea,
         };
     }
 
+    function buildScoringAnalysis(statsData) {
+        statsData = statsData || {};
+        var own = getOwnTeamTotalStats(statsData);
+        var opponent = statsData.team || {};
+        var bcmKeys = ['reception_error', 'dig_error', 'chanceball_error', 'toss_error', 'miscommunication_error', 'blockfollow_error', 'other_error'];
+        var faultKeys = ['v_dribble', 'v_net', 'v_over', 'v_passing', 'v_positional', 'v_hold', 'v_backrow'];
+
+        function sumKeys(row, keys) {
+            return keys.reduce(function(total, key) { return total + safeStatNumber(row[key]); }, 0);
+        }
+        function item(key, label, count, total) {
+            var percentage = total > 0 ? (count / total) * 100 : 0;
+            return {
+                key: key,
+                label: label,
+                count: count,
+                percentage: percentage,
+                percentageText: percentage.toFixed(1) + '%',
+                display: count + '（' + percentage.toFixed(1) + '%）'
+            };
+        }
+
+        var scoring = {
+            spike: safeStatNumber(own.attack_kill),
+            block: safeStatNumber(own.block_kill),
+            ace: safeStatNumber(own.serve_ace),
+            opponentError: sumKeys(opponent, ['attack_error', 'block_error', 'serve_error'].concat(bcmKeys).concat(faultKeys))
+        };
+        scoring.total = scoring.spike + scoring.block + scoring.ace + scoring.opponentError;
+        scoring.items = [
+            item('spike', 'スパイク', scoring.spike, scoring.total),
+            item('block', 'ブロック', scoring.block, scoring.total),
+            item('ace', 'サービスエース', scoring.ace, scoring.total),
+            item('opponentError', '相手ミス', scoring.opponentError, scoring.total)
+        ];
+        scoring.totalDisplay = '合計　' + scoring.total + '点';
+
+        var conceding = {
+            spike: safeStatNumber(opponent.attack_kill),
+            block: safeStatNumber(opponent.block_kill),
+            ace: safeStatNumber(opponent.serve_ace),
+            spikeMiss: safeStatNumber(own.attack_error),
+            blockMiss: safeStatNumber(own.block_error),
+            serveMiss: safeStatNumber(own.serve_error),
+            bcm: sumKeys(own, bcmKeys),
+            fault: sumKeys(own, faultKeys)
+        };
+        conceding.total = conceding.spike + conceding.block + conceding.ace + conceding.spikeMiss + conceding.blockMiss + conceding.serveMiss + conceding.bcm + conceding.fault;
+        conceding.opponentItems = [
+            item('spike', '被スパイク', conceding.spike, conceding.total),
+            item('block', '被ブロック', conceding.block, conceding.total),
+            item('ace', '被エース', conceding.ace, conceding.total)
+        ];
+        conceding.ownErrorItems = [
+            item('spikeMiss', 'スパイク', conceding.spikeMiss, conceding.total),
+            item('blockMiss', 'ブロック', conceding.blockMiss, conceding.total),
+            item('serveMiss', 'サーブ', conceding.serveMiss, conceding.total),
+            item('bcm', 'ボールコントロールミス', conceding.bcm, conceding.total),
+            item('fault', '反則', conceding.fault, conceding.total)
+        ];
+        conceding.totalDisplay = '合計　' + conceding.total + '点';
+
+        return { scoring: scoring, conceding: conceding };
+    }
+
     function buildReportTeamSummary(reportSource, statsData, setScoresForReport, reception, scoring) {
         var wins = 0, losses = 0, draws = 0;
         setScoresForReport.forEach(function(setScore) {
@@ -5524,6 +5589,7 @@ button, input, select, textarea,
             if (reportSource.receptionSource.emptyMessage) receptionForReport.emptyMessage = reportSource.receptionSource.emptyMessage;
         }
         var scoringForReport = buildReportScoringSection(statsData);
+        var scoringAnalysisForReport = buildScoringAnalysis(statsData);
         var reportData = {
             schemaVersion: 1,
             reportType: reportSource.request.source + '-' + scope,
@@ -5556,22 +5622,23 @@ button, input, select, textarea,
                 rows: buildReportStatRows(statsData, reportNameMap, reportSource.numberMap, reportSource.displayIds)
             },
             reception: receptionForReport,
-            scoring: scoringForReport
+            scoring: scoringForReport,
+            scoringAnalysis: scoringAnalysisForReport
         };
         var progressText = reportData.teamSummary.inProgressSetCount > 0 ? ' + 進行中1セット' : '';
         reportData.header = {
-            primary: '対象: ' + reportData.scope.label + '　日付: ' + reportData.match.dateKey + '　完了: ' + reportData.scope.completedSetCount + 'セット' + progressText,
-            secondary: '試合: ' + reportData.match.matchLabel + '　対戦相手: ' + reportData.match.opponentNames.join(' / ')
+            primary: '対象: ' + reportData.scope.label + '　日付: ' + reportData.match.dateKey,
+            summary: reportData.teamSummary.wins + '勝' + reportData.teamSummary.losses + '敗　対戦' + reportData.match.opponentNames.length + 'チーム　完了' + reportData.scope.completedSetCount + 'セット' + progressText
         };
         if (reportData.reportType === 'archive-set') {
             var archiveScore = reportData.scope.setScores[0] || { us: 0, them: 0 };
             var timeParts = [];
             if (reportData.match.startedAt) timeParts.push('開始 ' + formatReportTime(reportData.match.startedAt));
             if (reportData.match.endedAt) timeParts.push('終了 ' + formatReportTime(reportData.match.endedAt));
-            reportData.header.secondary += '　第' + reportData.scope.setNumber + 'セット　最終スコア: ' + archiveScore.us + '-' + archiveScore.them + (timeParts.length ? '　' + timeParts.join(' / ') : '');
-        } else if (reportData.reportType === 'archive-day') {
-            var scoreList = reportData.scope.setScores.map(function(score) { return '第' + score.setNumber + 'S ' + score.us + '-' + score.them; }).join(' / ');
-            reportData.header.secondary += '　勝敗: ' + reportData.teamSummary.wins + '勝' + reportData.teamSummary.losses + '敗' + (scoreList ? '　' + scoreList : '');
+            reportData.header.primary += '　完了: 1セット';
+            reportData.header.summary = '試合: ' + reportData.match.matchLabel + '　対戦相手: ' + reportData.match.opponentNames.join(' / ') + '　第' + reportData.scope.setNumber + 'セット　最終スコア: ' + archiveScore.us + '-' + archiveScore.them + (timeParts.length ? '　' + timeParts.join(' / ') : '');
+        } else if (reportData.reportType === 'live-set') {
+            reportData.header.summary = '試合: ' + reportData.match.matchLabel + '　対戦相手: ' + reportData.match.opponentNames.join(' / ');
         }
         return reportData;
     }
@@ -5669,31 +5736,118 @@ button, input, select, textarea,
         return startY + Math.ceil(items.length / columns) * cellHeight;
     }
 
+    function allocateStackedBandPercentages(items, total) {
+        if (total <= 0) return (items || []).map(function() { return 0; });
+        var allocations = (items || []).map(function(item, index) {
+            var count = Number(item.count);
+            if (!isFinite(count)) count = 0;
+            var exact = count / total * 100;
+            var base = Math.floor(exact);
+            return { index: index, value: base, remainder: exact - base };
+        });
+        var remaining = 100 - allocations.reduce(function(sum, entry) { return sum + entry.value; }, 0);
+        allocations.slice().sort(function(a, b) {
+            return b.remainder - a.remainder || a.index - b.index;
+        }).slice(0, remaining).forEach(function(entry) {
+            allocations[entry.index].value++;
+        });
+        return allocations.map(function(entry) { return entry.value; });
+    }
+
     function drawScoringAnalysis(doc, reportData, startY) {
-        var colors = {
-            attack: [37, 99, 235],
-            block: [5, 150, 105],
-            serve: [217, 119, 6],
-            opponentErrors: [126, 34, 206]
+        var analysis = reportData.scoringAnalysis;
+        var scoringColors = {
+            spike: [37, 99, 235], block: [234, 88, 12], ace: [202, 138, 4], opponentError: [100, 116, 139]
         };
-        var barX = 71;
-        var barWidth = 150;
-        var maxPercentage = 100;
-        reportData.scoring.items.forEach(function(item, index) {
-            var y = startY + index * 14;
+        var concedingColors = {
+            spike: [220, 38, 38], block: [194, 65, 12], ace: [219, 39, 119],
+            spikeMiss: [147, 51, 234], blockMiss: [30, 58, 138], serveMiss: [161, 98, 7],
+            bcm: [14, 165, 233], fault: [15, 23, 42]
+        };
+
+        function drawPercentageBand(items, total, x, y, width, colors) {
+            var height = 18;
+            var activeItems = items.filter(function(item) { return item.count > 0; });
+            if (total <= 0 || activeItems.length === 0) {
+                doc.setFont(PDF_FONT_FAMILY, 'normal');
+                doc.setFontSize(10);
+                doc.setTextColor(100, 116, 139);
+                doc.text('記録なし', x + width / 2, y + 11, { align: 'center' });
+                return false;
+            }
+            var displayedPercentages = allocateStackedBandPercentages(items, total);
+            var cursorX = x;
+            var lastActiveItem = activeItems[activeItems.length - 1];
+            items.forEach(function(item, index) {
+                if (item.count <= 0) return;
+                var segmentWidth = item === lastActiveItem ? x + width - cursorX : width * item.count / total;
+                var color = colors[item.key] || [100, 116, 139];
+                doc.setFillColor(color[0], color[1], color[2]);
+                doc.rect(cursorX, y, segmentWidth, height, 'F');
+                doc.setFont(PDF_FONT_FAMILY, 'bold');
+                doc.setTextColor(255, 255, 255);
+                var nameText = item.label;
+                var percentageText = displayedPercentages[index] + '%';
+                doc.setFontSize(7);
+                if (segmentWidth >= 15 && doc.getTextWidth(nameText) <= segmentWidth - 2 && doc.getTextWidth(percentageText) <= segmentWidth - 2) {
+                    doc.text(nameText, cursorX + segmentWidth / 2, y + 7.2, { align: 'center' });
+                    doc.text(percentageText, cursorX + segmentWidth / 2, y + 14.1, { align: 'center' });
+                } else if (segmentWidth >= 8 && doc.getTextWidth(percentageText) <= segmentWidth - 1.5) {
+                    doc.text(percentageText, cursorX + segmentWidth / 2, y + 10.8, { align: 'center' });
+                }
+                cursorX += segmentWidth;
+            });
+            doc.setDrawColor(71, 85, 105);
+            doc.setLineWidth(0.25);
+            doc.rect(x, y, width, height);
+            return true;
+        }
+
+        function drawAlignedCounts(items, labelX, valueX, firstY, rowStep) {
             doc.setFont(PDF_FONT_FAMILY, 'normal');
+            doc.setFontSize(8.5);
+            doc.setTextColor(0, 0, 0);
+            items.forEach(function(item, index) {
+                var y = firstY + index * rowStep;
+                doc.text(item.label, labelX, y);
+                doc.setFont(PDF_FONT_FAMILY, 'bold');
+                doc.text(item.count + '点', valueX, y, { align: 'right' });
+                doc.setFont(PDF_FONT_FAMILY, 'normal');
+            });
+        }
+
+        function drawAnalysisTotal(totalDisplay, x, valueX, y) {
+            doc.setFillColor(241, 245, 249);
+            doc.setDrawColor(148, 163, 184);
+            doc.setLineWidth(0.25);
+            doc.roundedRect(x, y - 5, valueX - x, 8, 1, 1, 'FD');
+            doc.setFont(PDF_FONT_FAMILY, 'bold');
             doc.setFontSize(10.5);
             doc.setTextColor(0, 0, 0);
-            doc.text(item.label, 18, y + 5.2);
-            doc.setFont(PDF_FONT_FAMILY, 'bold');
-            doc.setFontSize(10);
-            doc.text(item.count + '点 / ' + item.percentage + '%', 48, y + 5.2, { align: 'right' });
-            doc.setFillColor(226, 232, 240);
-            doc.roundedRect(barX, y, barWidth, 7, 1.2, 1.2, 'F');
-            var color = colors[item.key] || [30, 58, 138];
-            doc.setFillColor(color[0], color[1], color[2]);
-            if (item.percentage > 0) doc.roundedRect(barX, y, barWidth * Math.min(item.percentage, maxPercentage) / maxPercentage, 7, 1.2, 1.2, 'F');
-        });
+            doc.text(totalDisplay, valueX - 3, y, { align: 'right' });
+        }
+
+        doc.setFont(PDF_FONT_FAMILY, 'bold');
+        doc.setFontSize(11.5);
+        doc.setTextColor(30, 58, 138);
+        doc.text('得点分析', 18, startY);
+        doc.setDrawColor(148, 163, 184);
+        doc.setLineWidth(0.3);
+        doc.line(18, startY + 2, 137, startY + 2);
+        drawPercentageBand(analysis.scoring.items, analysis.scoring.total, 18, startY + 5, 119, scoringColors);
+        drawAlignedCounts(analysis.scoring.items, 22, 134, startY + 31, 4.8);
+        drawAnalysisTotal(analysis.scoring.totalDisplay, 18, 137, startY + 72);
+
+        doc.setFont(PDF_FONT_FAMILY, 'bold');
+        doc.setFontSize(11.5);
+        doc.setTextColor(153, 27, 27);
+        doc.text('失点分析', 152, startY);
+        doc.setDrawColor(148, 163, 184);
+        doc.line(152, startY + 2, 283, startY + 2);
+        var concedingItems = analysis.conceding.opponentItems.concat(analysis.conceding.ownErrorItems);
+        drawPercentageBand(concedingItems, analysis.conceding.total, 152, startY + 5, 131, concedingColors);
+        drawAlignedCounts(concedingItems, 156, 280, startY + 31, 4.8);
+        drawAnalysisTotal(analysis.conceding.totalDisplay, 152, 283, startY + 72);
     }
 
     function addReportFooters(doc, reportData) {
@@ -5723,7 +5877,7 @@ button, input, select, textarea,
         doc.setFont(PDF_FONT_FAMILY, 'normal');
         doc.setTextColor(0, 0, 0);
         drawFittedReportText(doc, reportData.header.primary, 14, 17, 125, 10, 8.5);
-        drawFittedReportText(doc, reportData.header.secondary, 14, 23.5, 125, 10, 8.5);
+        drawFittedReportText(doc, reportData.header.summary, 14, 23.5, 125, 10, 8.5);
 
         drawTeamSummary(doc, reportData, 145, 4);
         drawReportSectionTitle(doc, '基本スタッツ', 34);
@@ -5815,16 +5969,12 @@ button, input, select, textarea,
 
         var receptionEndY = reportData.reception.available && doc.lastAutoTable ? doc.lastAutoTable.finalY : 36;
         var scoringTitleY = receptionEndY + 14;
-        if (scoringTitleY > 138) {
+        if (scoringTitleY > 118) {
             doc.addPage('a4', 'landscape');
             scoringTitleY = 18;
         }
-        drawReportSectionTitle(doc, '得点割合分析', scoringTitleY);
-        doc.setFont(PDF_FONT_FAMILY, 'bold');
-        doc.setFontSize(10);
-        doc.setTextColor(0, 0, 0);
-        doc.text('総得点 ' + reportData.scoring.totalPoints + '点', 18, scoringTitleY + 10);
-        drawScoringAnalysis(doc, reportData, scoringTitleY + 15);
+        drawReportSectionTitle(doc, '得点・失点分析', scoringTitleY);
+        drawScoringAnalysis(doc, reportData, scoringTitleY + 10);
         addReportFooters(doc, reportData);
         return doc.output('blob');
     }
@@ -5843,7 +5993,7 @@ button, input, select, textarea,
     function exportLiveReportPDF(range) {
         var button = document.getElementById('today-pdf-btn');
         var originalText = button ? button.innerText : '';
-        if (button) { button.disabled = true; button.innerText = 'PDF生成中...'; }
+        if (button) { button.disabled = true; button.innerText = 'レポート生成中...'; }
         var request = { source: 'live', range: range === 'all' ? 'all' : 'today' };
         var reportData = buildReportData(request);
         loadPdfJapaneseFontsBase64()
@@ -5854,11 +6004,11 @@ button, input, select, textarea,
                 downloadPdfBlob(pdfBlob, 'SEIMEI_VB_Report_' + rangeLabel + safePeriod + '.pdf');
             })
             .catch(function(error) {
-                console.error('PDF generation failed:', error);
-                alert('PDFを生成できませんでした。\n' + (error && error.message ? error.message : String(error)));
+                console.error('Report generation failed:', error);
+                alert('レポートを生成できませんでした。\n' + (error && error.message ? error.message : String(error)));
             })
             .then(function() {
-                if (button) { button.disabled = false; button.innerText = originalText || (request.range === 'all' ? '全通算PDF' : '今日の通算PDF'); }
+                if (button) { button.disabled = false; button.innerText = originalText || (request.range === 'all' ? '全通算レポート' : '今日のレポート'); }
                 updateReportPdfButton();
             });
     }
@@ -5890,26 +6040,26 @@ button, input, select, textarea,
         var button = document.getElementById('archive-report-pdf-btn');
         var originalText = button ? button.innerText : '';
         try {
-            if (!archiveReportSelection.range) throw new Error('PDF出力対象を選択してください。');
+            if (!archiveReportSelection.range) throw new Error('レポート出力対象を選択してください。');
             var request = archiveReportSelection.range === 'set'
                 ? { source: 'archive', range: 'set', setId: archiveReportSelection.setId }
                 : { source: 'archive', range: 'day', dateKey: archiveReportSelection.dateKey };
             var reportData = buildReportData(request);
-            if (button) { button.disabled = true; button.innerText = 'PDF生成中...'; }
+            if (button) { button.disabled = true; button.innerText = 'レポート生成中...'; }
             return loadPdfJapaneseFontsBase64()
                 .then(function(fontsBase64) {
                     downloadPdfBlob(buildReportPdfBlob(reportData, fontsBase64), buildArchiveReportFilename(reportData));
                 })
                 .catch(function(error) {
-                    console.error('Archive PDF generation failed:', error);
-                    alert('Archive PDFを生成できませんでした。\n' + (error && error.message ? error.message : String(error)));
+                    console.error('Archive report generation failed:', error);
+                    alert('Archiveレポートを生成できませんでした。\n' + (error && error.message ? error.message : String(error)));
                 })
                 .then(function() {
                     if (button) { button.disabled = false; button.innerText = originalText; }
                     updateArchiveReportPdfButton(archiveReportSelection.range, archiveReportSelection.range === 'set' ? archiveReportSelection.setId : archiveReportSelection.dateKey);
                 });
         } catch (error) {
-            if (button) { button.disabled = true; button.innerText = originalText || 'このセットのPDF'; }
+            if (button) { button.disabled = true; button.innerText = originalText || 'このセットのレポート'; }
             alert(error.message || String(error));
             return null;
         }
