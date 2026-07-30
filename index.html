@@ -1995,7 +1995,7 @@ button, input, select, textarea,
      * - Date normalization and active-set double-count prevention were added.
      * - Existing saved-data compatibility was preserved.
      */
-    const APP_VERSION = '1.4.9c';
+    const APP_VERSION = '1.4.9d';
     const APP_BUILD = '20260730';
     const APP_RELEASE_STATUS = 'Development';
     const APP_RECOMMENDATION = 'TODAY COACHING REPORT';
@@ -5063,7 +5063,7 @@ button, input, select, textarea,
     function rowsToCsv(rows) { return rows.map(function(r){ return r.map(csvEscape).join(','); }).join('\n'); }
 
     // ==========================
-    // Ver.1.4.9c Basic Stats One-page Layout Improvement
+    // Ver.1.4.9d PDF Readability - Bold Data Emphasis
     // Data -> reportData -> PDF. This path never reads or copies report DOM.
     // ==========================
     const PDF_FONT_URL = './fonts/NotoSansJP-VariableFont_wght.ttf';
@@ -5422,7 +5422,7 @@ button, input, select, textarea,
             doc.setFontSize(10.5);
             doc.setTextColor(0, 0, 0);
             doc.text(item.label, 18, y + 5.2);
-            doc.setFont(PDF_FONT_FAMILY, 'normal');
+            doc.setFont(PDF_FONT_FAMILY, 'bold');
             doc.setFontSize(10);
             doc.text(item.count + '点 / ' + item.percentage + '%', 48, y + 5.2, { align: 'right' });
             doc.setFillColor(226, 232, 240);
@@ -5484,6 +5484,7 @@ button, input, select, textarea,
             theme: 'grid',
             tableWidth: 'wrap',
             styles: { font: PDF_FONT_FAMILY, fontStyle: 'normal', fontSize: 10, cellPadding: { top: 1, right: 1.2, bottom: 1, left: 1.2 }, minCellHeight: 6.5, textColor: [0, 0, 0], lineColor: [100, 116, 139], lineWidth: 0.2 },
+            bodyStyles: { font: PDF_FONT_FAMILY, fontStyle: 'bold' },
             headStyles: { font: PDF_FONT_FAMILY, fontStyle: 'bold', fontSize: 10, fillColor: [30, 58, 138], textColor: [255, 255, 255], halign: 'center', cellPadding: { top: 1, right: 1.2, bottom: 1, left: 1.2 } },
             columnStyles: {
                 0: { cellWidth: 62, fontStyle: 'bold', fontSize: 10.5 },
@@ -5523,6 +5524,7 @@ button, input, select, textarea,
                 theme: 'grid',
                 tableWidth: 'wrap',
                 styles: { font: PDF_FONT_FAMILY, fontStyle: 'normal', fontSize: 10, cellPadding: 3.2, minCellHeight: 10, textColor: [0, 0, 0], lineColor: [100, 116, 139], lineWidth: 0.2, halign: 'center' },
+                bodyStyles: { font: PDF_FONT_FAMILY, fontStyle: 'bold' },
                 headStyles: { font: PDF_FONT_FAMILY, fontStyle: 'bold', fontSize: 10, fillColor: [15, 118, 110], textColor: [255, 255, 255], cellPadding: 3.2 },
                 columnStyles: {
                     0: { cellWidth: 61, halign: 'left', fontStyle: 'bold', fontSize: 10.5 },
@@ -5549,7 +5551,7 @@ button, input, select, textarea,
             scoringTitleY = 18;
         }
         drawReportSectionTitle(doc, '得点割合分析', scoringTitleY);
-        doc.setFont(PDF_FONT_FAMILY, 'normal');
+        doc.setFont(PDF_FONT_FAMILY, 'bold');
         doc.setFontSize(10);
         doc.setTextColor(0, 0, 0);
         doc.text('総得点 ' + reportData.scoring.totalPoints + '点', 18, scoringTitleY + 10);
