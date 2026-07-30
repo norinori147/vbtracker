@@ -5361,6 +5361,16 @@ button, input, select, textarea,
         doc.line(14, y + 2, 283, y + 2);
     }
 
+    function drawFittedReportText(doc, text, x, y, maxWidth, preferredSize, minimumSize) {
+        var fontSize = preferredSize;
+        doc.setFontSize(fontSize);
+        while (fontSize > minimumSize && doc.getTextWidth(text) > maxWidth) {
+            fontSize = Math.max(minimumSize, fontSize - 0.5);
+            doc.setFontSize(fontSize);
+        }
+        doc.text(text, x, y);
+    }
+
     function drawTeamSummary(doc, reportData, startX, startY) {
         var s = reportData.teamSummary;
         var items = [
@@ -5375,8 +5385,8 @@ button, input, select, textarea,
             ['チームAB率', s.receptionABRate.toFixed(1) + '%']
         ];
         var columns = 3;
-        var cellWidth = 51;
-        var cellHeight = 8.2;
+        var cellWidth = 46;
+        var cellHeight = 6.8;
         for (var i = 0; i < items.length; i++) {
             var col = i % columns;
             var row = Math.floor(i / columns);
@@ -5386,12 +5396,12 @@ button, input, select, textarea,
             doc.setDrawColor(100, 116, 139);
             doc.rect(x, y, cellWidth, cellHeight, 'FD');
             doc.setFont(PDF_FONT_FAMILY, 'normal');
-            doc.setFontSize(7.5);
+            doc.setFontSize(7);
             doc.setTextColor(0, 0, 0);
-            doc.text(items[i][0], x + 1.5, y + 3.2);
+            doc.text(items[i][0], x + 1.3, y + 2.6);
             doc.setFont(PDF_FONT_FAMILY, 'bold');
-            doc.setFontSize(9);
-            doc.text(items[i][1], x + cellWidth - 1.5, y + 6.5, { align: 'right' });
+            doc.setFontSize(8.5);
+            doc.text(items[i][1], x + cellWidth - 1.3, y + 5.7, { align: 'right' });
         }
         return startY + Math.ceil(items.length / columns) * cellHeight;
     }
@@ -5443,18 +5453,16 @@ button, input, select, textarea,
         doc.addFont(PDF_FONT_FILE, PDF_FONT_FAMILY, 'bold');
         doc.setFont(PDF_FONT_FAMILY, 'bold');
 
-        doc.setFontSize(18);
+        doc.setFontSize(17);
         doc.setTextColor(0, 0, 0);
         doc.text(reportData.app.name + ' コーチレポート', 14, 10);
         doc.setFont(PDF_FONT_FAMILY, 'normal');
-        doc.setFontSize(10.5);
         doc.setTextColor(0, 0, 0);
-        doc.text('対象: ' + reportData.scope.label + '　日付: ' + reportData.match.dateKey, 14, 18);
-        doc.text('試合: ' + reportData.match.matchLabel + '　対戦相手: ' + reportData.match.opponentNames.join(' / '), 14, 24);
         var progressText = reportData.teamSummary.inProgressSetCount > 0 ? ' + 進行中1セット' : '';
-        doc.text('完了: ' + reportData.scope.completedSetCount + 'セット' + progressText, 14, 30);
+        drawFittedReportText(doc, '対象: ' + reportData.scope.label + '　日付: ' + reportData.match.dateKey + '　完了: ' + reportData.scope.completedSetCount + 'セット' + progressText, 14, 17, 125, 10, 8.5);
+        drawFittedReportText(doc, '試合: ' + reportData.match.matchLabel + '　対戦相手: ' + reportData.match.opponentNames.join(' / '), 14, 23.5, 125, 10, 8.5);
 
-        drawTeamSummary(doc, reportData, 130, 6);
+        drawTeamSummary(doc, reportData, 145, 4);
         drawReportSectionTitle(doc, '基本スタッツ', 34);
 
         var tableBody = reportData.statTable.rows.map(function(row) {
