@@ -1995,7 +1995,7 @@ button, input, select, textarea,
      * - Date normalization and active-set double-count prevention were added.
      * - Existing saved-data compatibility was preserved.
      */
-    const APP_VERSION = '1.4.9b';
+    const APP_VERSION = '1.4.9c';
     const APP_BUILD = '20260730';
     const APP_RELEASE_STATUS = 'Development';
     const APP_RECOMMENDATION = 'TODAY COACHING REPORT';
@@ -5063,7 +5063,7 @@ button, input, select, textarea,
     function rowsToCsv(rows) { return rows.map(function(r){ return r.map(csvEscape).join(','); }).join('\n'); }
 
     // ==========================
-    // Ver.1.4.9b Basic Stats Density Improvement
+    // Ver.1.4.9c Basic Stats One-page Layout Improvement
     // Data -> reportData -> PDF. This path never reads or copies report DOM.
     // ==========================
     const PDF_FONT_URL = './fonts/NotoSansJP-VariableFont_wght.ttf';
@@ -5361,7 +5361,7 @@ button, input, select, textarea,
         doc.line(14, y + 2, 283, y + 2);
     }
 
-    function drawTeamSummary(doc, reportData, startY) {
+    function drawTeamSummary(doc, reportData, startX, startY) {
         var s = reportData.teamSummary;
         var items = [
             ['本日のセット数', s.setCount + 'セット'],
@@ -5374,24 +5374,24 @@ button, input, select, textarea,
             ['チームA率', s.receptionARate.toFixed(1) + '%'],
             ['チームAB率', s.receptionABRate.toFixed(1) + '%']
         ];
-        var columns = 5;
-        var cellWidth = 53.8;
-        var cellHeight = 16;
+        var columns = 3;
+        var cellWidth = 51;
+        var cellHeight = 8.2;
         for (var i = 0; i < items.length; i++) {
             var col = i % columns;
             var row = Math.floor(i / columns);
-            var x = 14 + col * cellWidth;
+            var x = startX + col * cellWidth;
             var y = startY + row * cellHeight;
             doc.setFillColor(row % 2 === 0 ? 239 : 248, row % 2 === 0 ? 246 : 250, row % 2 === 0 ? 255 : 252);
             doc.setDrawColor(100, 116, 139);
             doc.rect(x, y, cellWidth, cellHeight, 'FD');
             doc.setFont(PDF_FONT_FAMILY, 'normal');
-            doc.setFontSize(9);
+            doc.setFontSize(7.5);
             doc.setTextColor(0, 0, 0);
-            doc.text(items[i][0], x + 2.5, y + 5.3);
+            doc.text(items[i][0], x + 1.5, y + 3.2);
             doc.setFont(PDF_FONT_FAMILY, 'bold');
-            doc.setFontSize(11);
-            doc.text(items[i][1], x + 2.5, y + 12.2);
+            doc.setFontSize(9);
+            doc.text(items[i][1], x + cellWidth - 1.5, y + 6.5, { align: 'right' });
         }
         return startY + Math.ceil(items.length / columns) * cellHeight;
     }
@@ -5430,8 +5430,8 @@ button, input, select, textarea,
             doc.setFont(PDF_FONT_FAMILY, 'normal');
             doc.setFontSize(8);
             doc.setTextColor(0, 0, 0);
-            doc.text('SEIMEI VB Tracker Ver.' + reportData.app.version, 14, 203);
-            doc.text(page + ' / ' + totalPages, 283, 203, { align: 'right' });
+            doc.text('SEIMEI VB Tracker Ver.' + reportData.app.version, 14, 206);
+            doc.text(page + ' / ' + totalPages, 283, 206, { align: 'right' });
         }
     }
 
@@ -5445,18 +5445,17 @@ button, input, select, textarea,
 
         doc.setFontSize(18);
         doc.setTextColor(0, 0, 0);
-        doc.text(reportData.app.name + ' コーチレポート', 14, 16);
+        doc.text(reportData.app.name + ' コーチレポート', 14, 10);
         doc.setFont(PDF_FONT_FAMILY, 'normal');
         doc.setFontSize(10.5);
         doc.setTextColor(0, 0, 0);
-        doc.text('対象: ' + reportData.scope.label + '　日付: ' + reportData.match.dateKey, 14, 24);
-        doc.text('試合: ' + reportData.match.matchLabel + '　対戦相手: ' + reportData.match.opponentNames.join(' / '), 14, 30);
+        doc.text('対象: ' + reportData.scope.label + '　日付: ' + reportData.match.dateKey, 14, 18);
+        doc.text('試合: ' + reportData.match.matchLabel + '　対戦相手: ' + reportData.match.opponentNames.join(' / '), 14, 24);
         var progressText = reportData.teamSummary.inProgressSetCount > 0 ? ' + 進行中1セット' : '';
-        doc.text('完了: ' + reportData.scope.completedSetCount + 'セット' + progressText, 14, 36);
+        doc.text('完了: ' + reportData.scope.completedSetCount + 'セット' + progressText, 14, 30);
 
-        drawReportSectionTitle(doc, 'チームサマリー', 45);
-        var summaryEndY = drawTeamSummary(doc, reportData, 50);
-        drawReportSectionTitle(doc, '基本スタッツ', summaryEndY + 8);
+        drawTeamSummary(doc, reportData, 130, 6);
+        drawReportSectionTitle(doc, '基本スタッツ', 34);
 
         var tableBody = reportData.statTable.rows.map(function(row) {
             return [
@@ -5471,13 +5470,13 @@ button, input, select, textarea,
         });
         var drawTable = getPdfAutoTableFunction(doc);
         drawTable({
-            startY: summaryEndY + 13,
+            startY: 37,
             head: [reportData.statTable.columns],
             body: tableBody,
             theme: 'grid',
             tableWidth: 'wrap',
-            styles: { font: PDF_FONT_FAMILY, fontStyle: 'normal', fontSize: 10, cellPadding: 2.4, minCellHeight: 8.8, textColor: [0, 0, 0], lineColor: [100, 116, 139], lineWidth: 0.2 },
-            headStyles: { font: PDF_FONT_FAMILY, fontStyle: 'bold', fontSize: 10, fillColor: [30, 58, 138], textColor: [255, 255, 255], halign: 'center', cellPadding: 2.4 },
+            styles: { font: PDF_FONT_FAMILY, fontStyle: 'normal', fontSize: 10, cellPadding: { top: 1, right: 1.2, bottom: 1, left: 1.2 }, minCellHeight: 6.5, textColor: [0, 0, 0], lineColor: [100, 116, 139], lineWidth: 0.2 },
+            headStyles: { font: PDF_FONT_FAMILY, fontStyle: 'bold', fontSize: 10, fillColor: [30, 58, 138], textColor: [255, 255, 255], halign: 'center', cellPadding: { top: 1, right: 1.2, bottom: 1, left: 1.2 } },
             columnStyles: {
                 0: { cellWidth: 62, fontStyle: 'bold', fontSize: 10.5 },
                 1: { cellWidth: 22, halign: 'center' },
@@ -5487,7 +5486,7 @@ button, input, select, textarea,
                 5: { cellWidth: 25, halign: 'center' },
                 6: { cellWidth: 25, halign: 'center' }
             },
-            margin: { top: 14, left: 14, right: 14, bottom: 16 },
+            margin: { top: 14, left: 14, right: 14, bottom: 8 },
             didParseCell: function(data) {
                 if (data.section !== 'body') return;
                 var reportRow = reportData.statTable.rows[data.row.index];
