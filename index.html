@@ -1995,7 +1995,7 @@ button, input, select, textarea,
      * - Date normalization and active-set double-count prevention were added.
      * - Existing saved-data compatibility was preserved.
      */
-    const APP_VERSION = '1.4.9a';
+    const APP_VERSION = '1.4.9b';
     const APP_BUILD = '20260730';
     const APP_RELEASE_STATUS = 'Development';
     const APP_RECOMMENDATION = 'TODAY COACHING REPORT';
@@ -5063,7 +5063,7 @@ button, input, select, textarea,
     function rowsToCsv(rows) { return rows.map(function(r){ return r.map(csvEscape).join(','); }).join('\n'); }
 
     // ==========================
-    // Ver.1.4.9a Today Coaching Report
+    // Ver.1.4.9b Basic Stats Density Improvement
     // Data -> reportData -> PDF. This path never reads or copies report DOM.
     // ==========================
     const PDF_FONT_URL = './fonts/NotoSansJP-VariableFont_wght.ttf';
@@ -5476,8 +5476,8 @@ button, input, select, textarea,
             body: tableBody,
             theme: 'grid',
             tableWidth: 'wrap',
-            styles: { font: PDF_FONT_FAMILY, fontStyle: 'normal', fontSize: 10, cellPadding: 3.2, minCellHeight: 10, textColor: [0, 0, 0], lineColor: [100, 116, 139], lineWidth: 0.2 },
-            headStyles: { font: PDF_FONT_FAMILY, fontStyle: 'bold', fontSize: 10, fillColor: [30, 58, 138], textColor: [255, 255, 255], halign: 'center', cellPadding: 3.2 },
+            styles: { font: PDF_FONT_FAMILY, fontStyle: 'normal', fontSize: 10, cellPadding: 2.4, minCellHeight: 8.8, textColor: [0, 0, 0], lineColor: [100, 116, 139], lineWidth: 0.2 },
+            headStyles: { font: PDF_FONT_FAMILY, fontStyle: 'bold', fontSize: 10, fillColor: [30, 58, 138], textColor: [255, 255, 255], halign: 'center', cellPadding: 2.4 },
             columnStyles: {
                 0: { cellWidth: 62, fontStyle: 'bold', fontSize: 10.5 },
                 1: { cellWidth: 22, halign: 'center' },
