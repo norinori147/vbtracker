@@ -1980,13 +1980,7 @@ button, input, select, textarea,
 <script>
 
     /*
-     * SEIMEI VB Tracker Ver.1.4.6 Stable
-     * Build 20260725 / Stable
-     *
-     * ==========================
-     * Ver.1.4.5a
-     * Release Identifier Fix & Final Revalidation
-     * ==========================
+     * SEIMEI VB Tracker
      *
      * Main changes:
      * - Reception evaluation became optional and bypassable.
@@ -1996,10 +1990,10 @@ button, input, select, textarea,
      * - Date normalization and active-set double-count prevention were added.
      * - Existing saved-data compatibility was preserved.
      */
-    const APP_VERSION = '1.4.12c';
-    const APP_BUILD = '20260730';
+    const APP_VERSION = '1.4.13a';
+    const APP_BUILD = '20260731';
     const APP_RELEASE_STATUS = 'Development';
-    const APP_RECOMMENDATION = 'ANALYSIS LAYOUT POLISH';
+    const APP_RECOMMENDATION = 'STORAGE ENGINE FOUNDATION PHASE 2';
 
     function updateAppVersionDisplay() {
         var versionEl = document.getElementById('app-version-display');
@@ -2231,47 +2225,118 @@ button, input, select, textarea,
     ];
     var storageErrorNotified = false;
 
-    function readStorageText(key, fallbackValue) {
-        try {
-            var value = localStorage.getItem(key);
-            return value === null ? fallbackValue : value;
-        } catch (err) {
-            console.warn('Storage read failed:', key, err);
-            return fallbackValue;
+    function handleStorageWriteFailure(key, err) {
+        console.warn('Storage write failed:', key, err);
+        if (!storageErrorNotified) {
+            storageErrorNotified = true;
+            setTimeout(function(){
+                alert('端末内保存に失敗しました。空き容量を確認し、「保存・読込」から完全バックアップを書き出してください。');
+            }, 0);
         }
+        return false;
+    }
+
+    var StorageEngine = {
+        setText: function(key, value) {
+            try {
+                localStorage.setItem(key, String(value));
+                return true;
+            } catch (err) {
+                return handleStorageWriteFailure(key, err);
+            }
+        },
+
+        setJSON: function(key, value) {
+            try {
+                return this.setText(key, JSON.stringify(value));
+            } catch (err) {
+                return handleStorageWriteFailure(key, err);
+            }
+        },
+
+        getText: function(key, fallbackValue) {
+            try {
+                var value = localStorage.getItem(key);
+                return value === null ? fallbackValue : value;
+            } catch (err) {
+                console.warn('Storage read failed:', key, err);
+                return fallbackValue;
+            }
+        },
+
+        getJSON: function(key, fallbackValue) {
+            var text = this.getText(key, null);
+            if (text === null || text === '') return fallbackValue;
+            try {
+                return JSON.parse(text);
+            } catch (err) {
+                console.warn('Invalid storage JSON ignored:', key, err);
+                return fallbackValue;
+            }
+        },
+
+        remove: function(key) {
+            try {
+                localStorage.removeItem(key);
+                return true;
+            } catch (err) {
+                console.warn('Storage remove failed:', key, err);
+                return false;
+            }
+        },
+
+        has: function(key) {
+            return this.getRaw(key) !== null;
+        },
+
+        getRaw: function(key) {
+            try {
+                return localStorage.getItem(key);
+            } catch (err) {
+                console.warn('Storage read failed:', key, err);
+                return null;
+            }
+        },
+
+        keys: function() {
+            var result = [];
+            try {
+                for (var i = 0; i < localStorage.length; i++) {
+                    var key = localStorage.key(i);
+                    if (key !== null) result.push(key);
+                }
+            } catch (err) {
+                console.warn('Storage keys read failed:', err);
+                return null;
+            }
+            return result;
+        },
+
+        getBackendName: function() {
+            return 'localStorage';
+        }
+    };
+
+    function readStorageText(key, fallbackValue) {
+        return StorageEngine.getText(key, fallbackValue);
     }
 
     function readStorageJSON(key, fallbackValue) {
-        var text = readStorageText(key, null);
-        if (text === null || text === '') return fallbackValue;
-        try {
-            return JSON.parse(text);
-        } catch (err) {
-            console.warn('Invalid storage JSON ignored:', key, err);
-            return fallbackValue;
-        }
+        return StorageEngine.getJSON(key, fallbackValue);
     }
 
     function writeStorageValue(key, value, asJson) {
-        try {
-            localStorage.setItem(key, asJson ? JSON.stringify(value) : String(value));
-            return true;
-        } catch (err) {
-            console.warn('Storage write failed:', key, err);
-            if (!storageErrorNotified) {
-                storageErrorNotified = true;
-                setTimeout(function(){
-                    alert('端末内保存に失敗しました。空き容量を確認し、「保存・読込」から完全バックアップを書き出してください。');
-                }, 0);
-            }
-            return false;
-        }
+        return asJson
+            ? StorageEngine.setJSON(key, value)
+            : StorageEngine.setText(key, value);
     }
 
     function clearAppStorage() {
+        var ok = true;
         STORAGE_KEYS.forEach(function(key) {
-            try { localStorage.removeItem(key); } catch (err) { console.warn('Storage remove failed:', key, err); }
+            ok = StorageEngine.remove(key) && ok;
         });
+        return ok;
     }
 
     var STORAGE_ANALYZER_LABELS = {
@@ -2321,13 +2386,15 @@ button, input, select, textarea,
         var appBytes = 0;
         var browserBytes = 0;
         try {
-            for (var i = 0; i < localStorage.length; i++) {
-                var browserKey = localStorage.key(i) || '';
-                var browserValue = localStorage.getItem(browserKey) || '';
+            var browserKeys = StorageEngine.keys();
+            if (browserKeys === null) return { error: true, items: [], appBytes: 0, browserBytes: 0 };
+            for (var i = 0; i < browserKeys.length; i++) {
+                var browserKey = browserKeys[i] || '';
+                var browserValue = StorageEngine.getRaw(browserKey) || '';
                 browserBytes += (browserKey.length + browserValue.length) * 2;
             }
             STORAGE_KEYS.forEach(function(key) {
-                var value = localStorage.getItem(key);
+                var value = StorageEngine.getRaw(key);
                 if (value === null) return;
                 var bytes = (key.length + value.length) * 2;
                 appBytes += bytes;
@@ -2504,7 +2571,6 @@ button, input, select, textarea,
 
     function loadStorage() {
         // ========================
-        // Ver.1.4.5a
         // Storage Optimization
         // ========================
         // v1.4.4以前のlocalStorageと互換性を保つため、旧キャッシュKeyも読み込みます。
@@ -2565,7 +2631,6 @@ button, input, select, textarea,
 
     function saveStorage() {
         // ========================
-        // Ver.1.4.5a
         // Storage Optimization
         // ========================
         // 現行localStorage Keyと同期保存方式は維持したまま、保存責務を次の順に整理します。
@@ -3938,7 +4003,6 @@ button, input, select, textarea,
             };
 
             // ========================
-            // Ver.1.4.5a
             // Storage Optimization
             // ========================
             // バックアップ用ラベルは、currentSetを次へ進める前に確定します。
@@ -3993,7 +4057,6 @@ button, input, select, textarea,
 
     function rebuildDerivedDataFromArchive() {
         // ========================
-        // Ver.1.4.5a
         // Storage Optimization
         // ========================
         // todayData / allData / setResults の唯一の再生成経路です。
@@ -4065,7 +4128,7 @@ button, input, select, textarea,
         // 再生成が正常完了した後にだけ、旧版が保存した派生キャッシュを解放します。
         // Key定義と読込互換性は残すため、v1.4.4形式のデータは引き続き読み込めます。
         ['vball_todayData_s', 'vball_allData_s', 'vball_setResults_s'].forEach(function(key) {
-            try { localStorage.removeItem(key); } catch (err) { console.warn('Derived cache remove failed:', key, err); }
+            if (!StorageEngine.remove(key)) console.warn('Derived cache remove failed:', key);
         });
     }
 
@@ -6209,7 +6272,6 @@ button, input, select, textarea,
         try {
             var snapshot = buildAppDataBackup();
             // ========================
-            // Ver.1.4.5a
             // Storage Optimization
             // ========================
             // 外部JSONの完全バックアップ形式は変更せず、自動バックアップだけを軽量化します。
@@ -6319,7 +6381,6 @@ button, input, select, textarea,
 
     function applyImportedAppData(data) {
         // ========================
-        // Ver.1.4.5a
         // Storage Optimization
         // ========================
         // 旧JSONとの互換性のためキャッシュ項目は従来どおり受け入れます。

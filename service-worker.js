@@ -1,8 +1,4 @@
-// ==========================
-// Ver.1.4.5a
-// Release Identifier Fix & Final Revalidation
-// ==========================
-const CACHE_NAME = 'seimei-vb-tracker-v1-4-11-archive-report-engine-build-20260730';
+const CACHE_NAME = 'seimei-vb-tracker-v1-4-13a-storage-engine-foundation-phase-2-build-20260731';
 const ASSETS = [
   './',
   './index.html',
