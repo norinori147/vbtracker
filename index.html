@@ -1975,6 +1975,7 @@ button, input, select, textarea,
         </div>
     </div>
 
+<script src="./vendor/localforage.min.js"></script>
 <script src="./vendor/jspdf.umd.min.js"></script>
 <script src="./vendor/jspdf.plugin.autotable.min.js"></script>
 <script>
@@ -1990,10 +1991,10 @@ button, input, select, textarea,
      * - Date normalization and active-set double-count prevention were added.
      * - Existing saved-data compatibility was preserved.
      */
-    const APP_VERSION = '1.4.13a';
+    const APP_VERSION = '1.4.14';
     const APP_BUILD = '20260731';
     const APP_RELEASE_STATUS = 'Development';
-    const APP_RECOMMENDATION = 'STORAGE ENGINE FOUNDATION PHASE 2';
+    const APP_RECOMMENDATION = 'LOCALFORAGE STORAGE BACKEND';
 
     function updateAppVersionDisplay() {
         var versionEl = document.getElementById('app-version-display');
@@ -2236,107 +2237,168 @@ button, input, select, textarea,
         return false;
     }
 
+    var STORAGE_MIGRATION_KEY = 'vball_storage_migration_1_4_14';
+    var storageWriteQueue = Promise.resolve(true);
+    var storageReady = false;
+
     var StorageEngine = {
-        setText: function(key, value) {
+        instance: null,
+        emergencyFallback: false,
+        backendName: 'Unavailable',
+        migrationStatus: null,
+
+        initialize: async function() {
             try {
-                localStorage.setItem(key, String(value));
+                if (typeof localforage === 'undefined') throw new Error('localForage is not loaded');
+                this.instance = localforage.createInstance({
+                    name: 'SEIMEI_VB_Tracker',
+                    storeName: 'vb_tracker_storage',
+                    description: 'SEIMEI VB Tracker application data',
+                    driver: [localforage.INDEXEDDB, localforage.WEBSQL, localforage.LOCALSTORAGE]
+                });
+                await this.instance.ready();
+                var driver = this.instance.driver();
+                this.backendName = driver === localforage.INDEXEDDB ? 'IndexedDB (localForage)'
+                    : driver === localforage.WEBSQL ? 'WebSQL (localForage)'
+                    : 'localStorage (localForage fallback)';
+                await this.migrateFromLocalStorage();
+                storageReady = true;
                 return true;
             } catch (err) {
-                return handleStorageWriteFailure(key, err);
+                console.warn('localForage initialization failed; using emergency localStorage fallback:', err);
+                this.instance = null;
+                this.emergencyFallback = true;
+                this.backendName = 'localStorage (emergency fallback)';
+                try {
+                    localStorage.length;
+                    storageReady = true;
+                    return true;
+                } catch (fallbackErr) {
+                    console.warn('Emergency localStorage fallback unavailable:', fallbackErr);
+                    this.backendName = 'Unavailable';
+                    storageReady = false;
+                    return false;
+                }
             }
         },
 
-        setJSON: function(key, value) {
+        migrateFromLocalStorage: async function() {
+            var existingStatus = await this.instance.getItem(STORAGE_MIGRATION_KEY);
+            if (existingStatus && existingStatus.completed) {
+                this.migrationStatus = existingStatus;
+                return existingStatus;
+            }
+            var status = { version: '1.4.14', completed: false, migratedKeys: [], skippedKeys: [], failedKeys: [], migratedAt: null };
+            for (var i = 0; i < STORAGE_KEYS.length; i++) {
+                var key = STORAGE_KEYS[i];
+                try {
+                    var targetValue = await this.instance.getItem(key);
+                    if (targetValue !== null) {
+                        status.skippedKeys.push(key);
+                        continue;
+                    }
+                    var sourceValue = localStorage.getItem(key);
+                    if (sourceValue === null) continue;
+                    await this.instance.setItem(key, sourceValue);
+                    var verifiedValue = await this.instance.getItem(key);
+                    if (verifiedValue === sourceValue) status.migratedKeys.push(key);
+                    else status.failedKeys.push(key);
+                } catch (err) {
+                    console.warn('Storage migration failed:', key, err);
+                    status.failedKeys.push(key);
+                }
+            }
+            status.completed = status.failedKeys.length === 0;
+            status.migratedAt = new Date().toISOString();
+            await this.instance.setItem(STORAGE_MIGRATION_KEY, status);
+            this.migrationStatus = status;
+            if (!status.completed) throw new Error('Storage migration verification failed: ' + status.failedKeys.join(', '));
+            return status;
+        },
+
+        setText: async function(key, value) {
             try {
-                return this.setText(key, JSON.stringify(value));
-            } catch (err) {
-                return handleStorageWriteFailure(key, err);
-            }
+                if (this.emergencyFallback) localStorage.setItem(key, String(value));
+                else await this.instance.setItem(key, String(value));
+                return true;
+            } catch (err) { return handleStorageWriteFailure(key, err); }
         },
-
-        getText: function(key, fallbackValue) {
+        setJSON: async function(key, value) {
+            try { return await this.setText(key, JSON.stringify(value)); }
+            catch (err) { return handleStorageWriteFailure(key, err); }
+        },
+        getText: async function(key, fallbackValue) {
             try {
-                var value = localStorage.getItem(key);
-                return value === null ? fallbackValue : value;
-            } catch (err) {
-                console.warn('Storage read failed:', key, err);
-                return fallbackValue;
-            }
+                var value = this.emergencyFallback ? localStorage.getItem(key) : await this.instance.getItem(key);
+                return value === null ? fallbackValue : String(value);
+            } catch (err) { console.warn('Storage read failed:', key, err); return fallbackValue; }
         },
-
-        getJSON: function(key, fallbackValue) {
-            var text = this.getText(key, null);
+        getJSON: async function(key, fallbackValue) {
+            var text = await this.getText(key, null);
             if (text === null || text === '') return fallbackValue;
-            try {
-                return JSON.parse(text);
-            } catch (err) {
-                console.warn('Invalid storage JSON ignored:', key, err);
-                return fallbackValue;
-            }
+            try { return JSON.parse(text); }
+            catch (err) { console.warn('Invalid storage JSON ignored:', key, err); return fallbackValue; }
         },
-
-        remove: function(key) {
+        remove: async function(key) {
             try {
-                localStorage.removeItem(key);
+                if (this.emergencyFallback) localStorage.removeItem(key);
+                else await this.instance.removeItem(key);
                 return true;
-            } catch (err) {
-                console.warn('Storage remove failed:', key, err);
-                return false;
-            }
+            } catch (err) { console.warn('Storage remove failed:', key, err); return false; }
         },
-
-        has: function(key) {
-            return this.getRaw(key) !== null;
-        },
-
-        getRaw: function(key) {
+        has: async function(key) { return (await this.getRaw(key)) !== null; },
+        getRaw: async function(key) {
             try {
-                return localStorage.getItem(key);
-            } catch (err) {
-                console.warn('Storage read failed:', key, err);
-                return null;
-            }
+                var value = this.emergencyFallback ? localStorage.getItem(key) : await this.instance.getItem(key);
+                return value === null ? null : String(value);
+            } catch (err) { console.warn('Storage read failed:', key, err); return null; }
         },
-
-        keys: function() {
-            var result = [];
+        keys: async function() {
             try {
+                if (!this.emergencyFallback) return await this.instance.keys();
+                var result = [];
                 for (var i = 0; i < localStorage.length; i++) {
                     var key = localStorage.key(i);
                     if (key !== null) result.push(key);
                 }
-            } catch (err) {
-                console.warn('Storage keys read failed:', err);
-                return null;
-            }
-            return result;
+                return result;
+            } catch (err) { console.warn('Storage keys read failed:', err); return null; }
         },
-
-        getBackendName: function() {
-            return 'localStorage';
-        }
+        getBackendName: async function() { return this.backendName; },
+        isReady: function() { return storageReady; },
+        getMigrationStatus: function() { return this.migrationStatus; }
     };
 
-    function readStorageText(key, fallbackValue) {
-        return StorageEngine.getText(key, fallbackValue);
-    }
-
-    function readStorageJSON(key, fallbackValue) {
-        return StorageEngine.getJSON(key, fallbackValue);
-    }
-
-    function writeStorageValue(key, value, asJson) {
-        return asJson
-            ? StorageEngine.setJSON(key, value)
-            : StorageEngine.setText(key, value);
-    }
-
-    function clearAppStorage() {
-        var ok = true;
-        STORAGE_KEYS.forEach(function(key) {
-            ok = StorageEngine.remove(key) && ok;
+    function queueStorageWrite(task) {
+        storageWriteQueue = storageWriteQueue.then(async function() {
+            if (!StorageEngine.isReady()) return false;
+            return await task();
+        }, async function(err) {
+            console.warn('Previous storage write failed:', err);
+            if (!StorageEngine.isReady()) return false;
+            return await task();
+        }).catch(function(err) {
+            console.warn('Storage write queue task failed:', err);
+            return false;
         });
-        return ok;
+        return storageWriteQueue;
+    }
+
+    function flushStorageWrites() { return storageWriteQueue; }
+    async function readStorageText(key, fallbackValue) { return await StorageEngine.getText(key, fallbackValue); }
+    async function readStorageJSON(key, fallbackValue) { return await StorageEngine.getJSON(key, fallbackValue); }
+    function writeStorageValue(key, value, asJson) {
+        var text;
+        try { text = asJson ? JSON.stringify(value) : String(value); }
+        catch (err) { return Promise.resolve(handleStorageWriteFailure(key, err)); }
+        return queueStorageWrite(function() { return StorageEngine.setText(key, text); });
+    }
+    function clearAppStorage() {
+        return queueStorageWrite(async function() {
+            var ok = true;
+            for (var i = 0; i < STORAGE_KEYS.length; i++) ok = (await StorageEngine.remove(STORAGE_KEYS[i])) && ok;
+            return ok;
+        });
     }
 
     var STORAGE_ANALYZER_LABELS = {
@@ -2381,25 +2443,26 @@ button, input, select, textarea,
         return '設定・その他';
     }
 
-    function analyzeStorageUsage() {
+    async function analyzeStorageUsage() {
         var items = [];
         var appBytes = 0;
         var browserBytes = 0;
         try {
-            var browserKeys = StorageEngine.keys();
+            var browserKeys = await StorageEngine.keys();
             if (browserKeys === null) return { error: true, items: [], appBytes: 0, browserBytes: 0 };
             for (var i = 0; i < browserKeys.length; i++) {
                 var browserKey = browserKeys[i] || '';
-                var browserValue = StorageEngine.getRaw(browserKey) || '';
+                var browserValue = await StorageEngine.getRaw(browserKey) || '';
                 browserBytes += (browserKey.length + browserValue.length) * 2;
             }
-            STORAGE_KEYS.forEach(function(key) {
-                var value = StorageEngine.getRaw(key);
-                if (value === null) return;
+            for (var j = 0; j < STORAGE_KEYS.length; j++) {
+                var key = STORAGE_KEYS[j];
+                var value = await StorageEngine.getRaw(key);
+                if (value === null) continue;
                 var bytes = (key.length + value.length) * 2;
                 appBytes += bytes;
                 items.push({ key: key, label: STORAGE_ANALYZER_LABELS[key] || key, bytes: bytes, category: getStorageCategory(key) });
-            });
+            }
         } catch (err) {
             console.warn('Storage analysis failed:', err);
             return { error: true, items: [], appBytes: 0, browserBytes: 0 };
@@ -2408,25 +2471,22 @@ button, input, select, textarea,
         return { error: false, items: items, appBytes: appBytes, browserBytes: browserBytes };
     }
 
-    function updateStorageAnalyzer() {
+    async function updateStorageAnalyzer() {
         var summary = document.getElementById('storage-analyzer-summary');
         var categoriesEl = document.getElementById('storage-analyzer-categories');
         var detailsEl = document.getElementById('storage-analyzer-details');
         if (!summary || !categoriesEl || !detailsEl) return;
-        var result = analyzeStorageUsage();
+        var result = await analyzeStorageUsage();
         if (result.error) {
             summary.innerHTML = '<span style="color:#fca5a5;">保存容量を取得できませんでした。</span>';
             categoriesEl.innerHTML = '';
             detailsEl.innerHTML = '';
             return;
         }
-        var referenceLimit = 5 * 1024 * 1024;
-        var percent = Math.min(999, result.appBytes / referenceLimit * 100);
-        var level = percent >= 80 ? '注意' : percent >= 50 ? 'やや多い' : '余裕あり';
-        var levelColor = percent >= 80 ? '#fca5a5' : percent >= 50 ? '#fde68a' : '#86efac';
-        summary.innerHTML = 'VB Tracker使用量：<strong>' + formatStorageBytes(result.appBytes) + '</strong><br>' +
-            '5MB参考使用率：<strong>' + percent.toFixed(1) + '%</strong>　<span style="color:' + levelColor + ';font-weight:bold;">' + level + '</span><br>' +
-            '<span style="font-size:0.78rem;color:#94a3b8;">このサイト全体：' + formatStorageBytes(result.browserBytes) + ' ／ 保存項目：' + result.items.length + '件</span>';
+        var backendName = await StorageEngine.getBackendName();
+        summary.innerHTML = '保存データ概算量：<strong>' + formatStorageBytes(result.appBytes) + '</strong><br>' +
+            '保存方式：<strong>' + backendName + '</strong><br>' +
+            '<span style="font-size:0.78rem;color:#94a3b8;">データ量の参考値：' + formatStorageBytes(result.browserBytes) + ' ／ 保存項目：' + result.items.length + '件</span>';
         var categories = {};
         result.items.forEach(function(item) { categories[item.category] = (categories[item.category] || 0) + item.bytes; });
         var categoryRows = Object.keys(categories).sort(function(a,b){ return categories[b] - categories[a]; }).map(function(name) {
@@ -2440,14 +2500,14 @@ button, input, select, textarea,
         }).join('') || '<div style="color:#64748b;text-align:center;">保存データなし</div>';
     }
 
-    function updateStorageMonitor() {
+    async function updateStorageMonitor() {
         var monitor = document.getElementById('storage-monitor');
         var fill = document.getElementById('storage-monitor-fill');
         var value = document.getElementById('storage-monitor-value');
         var message = document.getElementById('storage-monitor-message');
         if (!monitor || !fill || !value || !message) return;
 
-        var result = analyzeStorageUsage();
+        var result = await analyzeStorageUsage();
         if (result.error) {
             monitor.className = 'storage-monitor warning';
             fill.style.width = '100%';
@@ -2456,18 +2516,10 @@ button, input, select, textarea,
             return;
         }
 
-        var referenceLimit = 5 * 1024 * 1024;
-        var percent = result.appBytes / referenceLimit * 100;
-        var displayPercent = Math.min(100, percent);
         monitor.className = 'storage-monitor';
-        if (percent >= 80) monitor.classList.add('warning');
-        else if (percent >= 50) monitor.classList.add('caution');
-
-        fill.style.width = displayPercent.toFixed(1) + '%';
-        value.textContent = formatStorageBytes(result.appBytes) + ' / ' + percent.toFixed(1) + '%';
-        if (percent >= 80) message.textContent = '⚠ バックアップと整理を推奨';
-        else if (percent >= 50) message.textContent = '△ 容量増加に注意';
-        else message.textContent = '';
+        fill.style.width = '0%';
+        value.textContent = '保存データ概算量：' + formatStorageBytes(result.appBytes);
+        message.textContent = '保存方式：' + await StorageEngine.getBackendName();
     }
 
     var storageOptimizationPlan = null;
@@ -2542,7 +2594,7 @@ button, input, select, textarea,
         if (!hasWork) box.innerHTML += '<br><strong style="color:#93c5fd;">現在、整理が必要なデータはありません。</strong>';
     }
 
-    function runStorageOptimization() {
+    async function runStorageOptimization() {
         var plan = storageOptimizationPlan || calculateStorageOptimizationPlan();
         if (!plan || (plan.savedBytes === 0 && plan.beforeCount === plan.afterCount)) {
             previewStorageOptimization();
@@ -2556,7 +2608,7 @@ button, input, select, textarea,
 
         var previous = autoBackups;
         autoBackups = plan.optimized;
-        if (!writeStorageValue('vball_autoBackups_s', autoBackups, true)) {
+        if (!await writeStorageValue('vball_autoBackups_s', autoBackups, true)) {
             autoBackups = previous;
             alert('最適化を保存できませんでした。データは変更されていません。');
             return;
@@ -2569,37 +2621,37 @@ button, input, select, textarea,
         alert('最適化が完了しました。\n削減容量：' + formatStorageBytes(plan.savedBytes) + '\n自動バックアップ：' + plan.beforeCount + '件 → ' + plan.afterCount + '件');
     }
 
-    function loadStorage() {
+    async function loadStorage() {
         // ========================
         // Storage Optimization
         // ========================
         // v1.4.4以前のlocalStorageと互換性を保つため、旧キャッシュKeyも読み込みます。
         // todayData / allData / setResults は、この関数の後半で globalArchive と
         // 現在の setData から必ず再生成されるため、読み込んだ値を正本にはしません。
-        if (readStorageText('vball_currentSet_s', null) !== null) {
-            currentSet = parseInt(readStorageText('vball_currentSet_s', currentSet), 10) || 1;
-            historyLog = readStorageJSON('vball_historyLog_s', historyLog) || [];
-            timeoutCount = readStorageJSON('vball_timeoutCount_s', timeoutCount) || { us: 0, them: 0 };
-            subCount = readStorageJSON('vball_subCount_s', subCount) || { us: 0, them: 0 };
-            setResults = readStorageJSON('vball_setResults_s', setResults) || [];
-            playerNames = normalizePlayerNames(readStorageJSON('vball_playerNames_s', null));
-            playerNumbers = normalizePlayerNumbers(readStorageJSON('vball_playerNumbers_s', null));
-            playerVisible = normalizePlayerVisible(readStorageJSON('vball_playerVisible_s', null));
-            setData = readStorageJSON('vball_setData_s', setData);
-            todayData = readStorageJSON('vball_todayData_s', todayData);
-            allData = readStorageJSON('vball_allData_s', allData);
-            selectedPlayer = readStorageText('vball_selectedPlayer_s', selectedPlayer || 'p1');
-            startingLineup = readStorageJSON('vball_startingLineup_s', startingLineup) || { 1: 'p1', 2: 'p2', 3: 'p3', 4: 'p4', 5: 'p5', 6: 'p6' };
-            startSideSetting = readStorageText('vball_startSideSetting_s', startSideSetting || 'S');
-            hasServeAuthority = readStorageText('vball_hasServeAuthority_s', 'true') !== 'false';
-            oppTeamName = readStorageText('vball_oppTeamName_s', oppTeamName || '相手');
-            appTitlePrefix = readStorageText('vball_appTitlePrefix_s', appTitlePrefix);
-            selfTeamName = readStorageText('vball_selfTeamName_s', selfTeamName);
-            matchType = readStorageText('vball_matchType_s', matchType);
-            officialMatchNumber = parseInt(readStorageText('vball_officialMatchNumber_s', officialMatchNumber), 10) || 1;
-            matchDateKey = readStorageText('vball_matchDateKey_s', matchDateKey);
-            startedAt = readStorageJSON('vball_startedAt_s', null);
-            endedAt = readStorageJSON('vball_endedAt_s', null);
+        if (await readStorageText('vball_currentSet_s', null) !== null) {
+            currentSet = parseInt(await readStorageText('vball_currentSet_s', currentSet), 10) || 1;
+            historyLog = await readStorageJSON('vball_historyLog_s', historyLog) || [];
+            timeoutCount = await readStorageJSON('vball_timeoutCount_s', timeoutCount) || { us: 0, them: 0 };
+            subCount = await readStorageJSON('vball_subCount_s', subCount) || { us: 0, them: 0 };
+            setResults = await readStorageJSON('vball_setResults_s', setResults) || [];
+            playerNames = normalizePlayerNames(await readStorageJSON('vball_playerNames_s', null));
+            playerNumbers = normalizePlayerNumbers(await readStorageJSON('vball_playerNumbers_s', null));
+            playerVisible = normalizePlayerVisible(await readStorageJSON('vball_playerVisible_s', null));
+            setData = await readStorageJSON('vball_setData_s', setData);
+            todayData = await readStorageJSON('vball_todayData_s', todayData);
+            allData = await readStorageJSON('vball_allData_s', allData);
+            selectedPlayer = await readStorageText('vball_selectedPlayer_s', selectedPlayer || 'p1');
+            startingLineup = await readStorageJSON('vball_startingLineup_s', startingLineup) || { 1: 'p1', 2: 'p2', 3: 'p3', 4: 'p4', 5: 'p5', 6: 'p6' };
+            startSideSetting = await readStorageText('vball_startSideSetting_s', startSideSetting || 'S');
+            hasServeAuthority = await readStorageText('vball_hasServeAuthority_s', 'true') !== 'false';
+            oppTeamName = await readStorageText('vball_oppTeamName_s', oppTeamName || '相手');
+            appTitlePrefix = await readStorageText('vball_appTitlePrefix_s', appTitlePrefix);
+            selfTeamName = await readStorageText('vball_selfTeamName_s', selfTeamName);
+            matchType = await readStorageText('vball_matchType_s', matchType);
+            officialMatchNumber = parseInt(await readStorageText('vball_officialMatchNumber_s', officialMatchNumber), 10) || 1;
+            matchDateKey = await readStorageText('vball_matchDateKey_s', matchDateKey);
+            startedAt = await readStorageJSON('vball_startedAt_s', null);
+            endedAt = await readStorageJSON('vball_endedAt_s', null);
         }
         startedAt = typeof startedAt === 'string' && startedAt ? startedAt : null;
         endedAt = typeof endedAt === 'string' && endedAt ? endedAt : null;
@@ -2613,14 +2665,14 @@ button, input, select, textarea,
         setData = ensureStatsDataShape(setData);
         todayData = ensureStatsDataShape(todayData);
         allData = ensureStatsDataShape(allData);
-        globalArchive = readStorageJSON('vball_globalArchive_s', []) || [];
+        globalArchive = await readStorageJSON('vball_globalArchive_s', []) || [];
         globalArchive.forEach(function(item) {
             if (!item || typeof item !== 'object') return;
             item.startedAt = typeof item.startedAt === 'string' && item.startedAt ? item.startedAt : null;
             item.endedAt = typeof item.endedAt === 'string' && item.endedAt ? item.endedAt : null;
         });
-        autoBackups = readStorageJSON('vball_autoBackups_s', []) || [];
-        pendingReception = readStorageJSON('vball_pendingReception_s', null);
+        autoBackups = await readStorageJSON('vball_autoBackups_s', []) || [];
+        pendingReception = await readStorageJSON('vball_pendingReception_s', null);
         if (!pendingReception || typeof pendingReception !== 'object' || !pendingReception.receiver || !isReceptionGrade(pendingReception.grade)) {
             pendingReception = null;
         }
@@ -2637,41 +2689,38 @@ button, input, select, textarea,
         // 1. 試合中データ  2. 選手・表示設定  3. 試合設定  4. Archive等
         // todayData / allData / setResults は globalArchive + setData から再生成できる
         // キャッシュのため、新規書き込みを停止します。旧Keyは互換読込のため削除しません。
-        var ok = true;
-
-        // 試合中データ（ラリー、セット進行、現在配置）
-        ok = writeStorageValue('vball_currentSet_s', currentSet, false) && ok;
-        ok = writeStorageValue('vball_historyLog_s', historyLog, true) && ok;
-        ok = writeStorageValue('vball_timeoutCount_s', timeoutCount, true) && ok;
-        ok = writeStorageValue('vball_subCount_s', subCount, true) && ok;
-        ok = writeStorageValue('vball_setData_s', setData, true) && ok;
-        ok = writeStorageValue('vball_selectedPlayer_s', selectedPlayer, false) && ok;
-        ok = writeStorageValue('vball_startingLineup_s', startingLineup, true) && ok;
-        ok = writeStorageValue('vball_startSideSetting_s', startSideSetting, false) && ok;
-        ok = writeStorageValue('vball_hasServeAuthority_s', hasServeAuthority, false) && ok;
-        ok = writeStorageValue('vball_pendingReception_s', pendingReception, true) && ok;
-
-        // 選手・表示設定
-        ok = writeStorageValue('vball_playerNames_s', playerNames, true) && ok;
-        ok = writeStorageValue('vball_playerNumbers_s', playerNumbers, true) && ok;
-        ok = writeStorageValue('vball_playerVisible_s', playerVisible, true) && ok;
-
-        // 試合・アプリ設定
-        ok = writeStorageValue('vball_oppTeamName_s', oppTeamName, false) && ok;
-        ok = writeStorageValue('vball_appTitlePrefix_s', appTitlePrefix, false) && ok;
-        ok = writeStorageValue('vball_selfTeamName_s', selfTeamName, false) && ok;
-        ok = writeStorageValue('vball_matchType_s', matchType, false) && ok;
-        ok = writeStorageValue('vball_officialMatchNumber_s', officialMatchNumber, false) && ok;
-        ok = writeStorageValue('vball_matchDateKey_s', matchDateKey, false) && ok;
-        ok = writeStorageValue('vball_startedAt_s', startedAt, true) && ok;
-        ok = writeStorageValue('vball_endedAt_s', endedAt, true) && ok;
-
-        // 終了セットの正本と自動バックアップ
-        ok = writeStorageValue('vball_globalArchive_s', globalArchive, true) && ok;
-        ok = writeStorageValue('vball_autoBackups_s', autoBackups, true) && ok;
+        var values = [
+            ['vball_currentSet_s', String(currentSet)],
+            ['vball_historyLog_s', JSON.stringify(historyLog)],
+            ['vball_timeoutCount_s', JSON.stringify(timeoutCount)],
+            ['vball_subCount_s', JSON.stringify(subCount)],
+            ['vball_setData_s', JSON.stringify(setData)],
+            ['vball_selectedPlayer_s', String(selectedPlayer)],
+            ['vball_startingLineup_s', JSON.stringify(startingLineup)],
+            ['vball_startSideSetting_s', String(startSideSetting)],
+            ['vball_hasServeAuthority_s', String(hasServeAuthority)],
+            ['vball_pendingReception_s', JSON.stringify(pendingReception)],
+            ['vball_playerNames_s', JSON.stringify(playerNames)],
+            ['vball_playerNumbers_s', JSON.stringify(playerNumbers)],
+            ['vball_playerVisible_s', JSON.stringify(playerVisible)],
+            ['vball_oppTeamName_s', String(oppTeamName)],
+            ['vball_appTitlePrefix_s', String(appTitlePrefix)],
+            ['vball_selfTeamName_s', String(selfTeamName)],
+            ['vball_matchType_s', String(matchType)],
+            ['vball_officialMatchNumber_s', String(officialMatchNumber)],
+            ['vball_matchDateKey_s', String(matchDateKey)],
+            ['vball_startedAt_s', JSON.stringify(startedAt)],
+            ['vball_endedAt_s', JSON.stringify(endedAt)],
+            ['vball_globalArchive_s', JSON.stringify(globalArchive)],
+            ['vball_autoBackups_s', JSON.stringify(autoBackups)]
+        ];
         updateAutoBackupUI();
         updateStorageMonitor();
-        return ok;
+        return queueStorageWrite(async function() {
+            var ok = true;
+            for (var i = 0; i < values.length; i++) ok = (await StorageEngine.setText(values[i][0], values[i][1])) && ok;
+            return ok;
+        });
     }
 
     function getTodayKey() {
@@ -2788,7 +2837,6 @@ button, input, select, textarea,
     }
 
     function initSetup() {
-        loadStorage();
         checkAndRefreshMatchDate();
         updateBaseDataUI();
         document.getElementById('opp-team-name-input').value = oppTeamName;
@@ -4127,8 +4175,16 @@ button, input, select, textarea,
 
         // 再生成が正常完了した後にだけ、旧版が保存した派生キャッシュを解放します。
         // Key定義と読込互換性は残すため、v1.4.4形式のデータは引き続き読み込めます。
-        ['vball_todayData_s', 'vball_allData_s', 'vball_setResults_s'].forEach(function(key) {
-            if (!StorageEngine.remove(key)) console.warn('Derived cache remove failed:', key);
+        queueStorageWrite(async function() {
+            var keys = ['vball_todayData_s', 'vball_allData_s', 'vball_setResults_s'];
+            var ok = true;
+            for (var i = 0; i < keys.length; i++) {
+                if (!await StorageEngine.remove(keys[i])) {
+                    console.warn('Derived cache remove failed:', keys[i]);
+                    ok = false;
+                }
+            }
+            return ok;
         });
     }
 
@@ -6296,7 +6352,7 @@ button, input, select, textarea,
         }
     }
 
-    function clearAutoBackupsOnly() {
+    async function clearAutoBackupsOnly() {
         var previous = Array.isArray(autoBackups) ? autoBackups.slice() : [];
         var beforeBytes = ('vball_autoBackups_s'.length + JSON.stringify(previous).length) * 2;
         var message = '自動バックアップをすべて削除しますか？\n\n' +
@@ -6306,7 +6362,7 @@ button, input, select, textarea,
         if (!confirm(message)) return;
 
         autoBackups = [];
-        if (!writeStorageValue('vball_autoBackups_s', autoBackups, true)) {
+        if (!await writeStorageValue('vball_autoBackups_s', autoBackups, true)) {
             autoBackups = previous;
             alert('自動バックアップの削除を保存できませんでした。データは変更されていません。');
             return;
@@ -6379,7 +6435,7 @@ button, input, select, textarea,
         return base;
     }
 
-    function applyImportedAppData(data) {
+    async function applyImportedAppData(data) {
         // ========================
         // Storage Optimization
         // ========================
@@ -6426,7 +6482,7 @@ button, input, select, textarea,
         currentView = data.currentView || 'set';
 
         rebuildDerivedDataFromArchive();
-        saveStorage();
+        await saveStorage();
         initSetup();
         switchView(currentView);
         updateUI();
@@ -6441,10 +6497,10 @@ button, input, select, textarea,
         if (!confirm('現在のブラウザ内データを、選択したファイルの内容で上書きします。よろしいですか？')) return;
 
         var reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = async function(e) {
             try {
                 var data = JSON.parse(e.target.result);
-                applyImportedAppData(data);
+                await applyImportedAppData(data);
             } catch (err) {
                 alert('読み込みに失敗しました。JSONファイルの形式を確認してください。\n' + err.message);
             }
@@ -6535,9 +6591,13 @@ button, input, select, textarea,
         reader.readAsText(file, 'utf-8');
     }
 
-    function resetAll() {
+    async function resetAll() {
         if (confirm('⚠️【完全にリセットします】選手名、現在のデータ、過去のすべてのアーカイブが消去されます。よろしいですか？')) {
-            clearAppStorage(); currentSet = 1; document.getElementById('current-set-num').innerText = currentSet;
+            if (!await clearAppStorage()) {
+                alert('保存データを削除できませんでした。端末内データを保護するため、リセットを中止します。');
+                return;
+            }
+            currentSet = 1; document.getElementById('current-set-num').innerText = currentSet;
             setData = createEmptyStats(); todayData = createEmptyStats(); allData = createEmptyStats();
             startingLineup = { 1: 'p1', 2: 'p2', 3: 'p3', 4: 'p4', 5: 'p5', 6: 'p6' };
             startSideSetting = 'S'; hasServeAuthority = true; oppTeamName = '相手'; appTitlePrefix = 'SEIMEI HS'; selfTeamName = '清明'; matchType = 'practice'; officialMatchNumber = 1; matchDateKey = getTodayKey(); startedAt = null; endedAt = null;
@@ -6559,7 +6619,23 @@ button, input, select, textarea,
     }
     registerPWAServiceWorker();
 
-    initSetup(); updateUI(); updateStorageMonitor();
+    async function initializeApplication() {
+        document.documentElement.style.pointerEvents = 'none';
+        var initialized = await StorageEngine.initialize();
+        if (!initialized) {
+            alert('保存システムの初期化に失敗しました。\n端末内データを保護するため、保存処理を停止しています。');
+            return;
+        }
+        if (StorageEngine.emergencyFallback) {
+            alert('保存システムに問題が発生したため、端末内の従来ストレージで起動しました。\n既存データは削除されていません。');
+        }
+        await loadStorage();
+        initSetup();
+        updateUI();
+        await updateStorageMonitor();
+        document.documentElement.style.pointerEvents = '';
+    }
+    initializeApplication();
 </script>
 </body>
 </html><!-- Ver.1.4.2 Live Reception Dashboard -->

@@ -1,8 +1,10 @@
-const CACHE_NAME = 'seimei-vb-tracker-v1-4-13a-storage-engine-foundation-phase-2-build-20260731';
+const CACHE_NAME = 'seimei-vb-tracker-v1-4-14-localforage-storage-backend-build-20260731';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
+  './vendor/localforage.min.js',
+  './vendor/LICENSE-localForage.txt',
   './vendor/jspdf.umd.min.js',
   './vendor/jspdf.plugin.autotable.min.js',
   './fonts/NotoSansJP-Regular.ttf',
