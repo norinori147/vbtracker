@@ -1991,7 +1991,7 @@ button, input, select, textarea,
      * - Date normalization and active-set double-count prevention were added.
      * - Existing saved-data compatibility was preserved.
      */
-    const APP_VERSION = '1.4.14a';
+    const APP_VERSION = '1.4.14b';
     const APP_BUILD = '20260731';
     const APP_RELEASE_STATUS = 'Development';
     const APP_RECOMMENDATION = 'LOCALFORAGE STORAGE BACKEND';
@@ -5662,6 +5662,74 @@ button, input, select, textarea,
         return { scoring: scoring, conceding: conceding };
     }
 
+    function summarizeScoreAdjustments(historyItems) {
+        var result = { us: 0, them: 0 };
+        (historyItems || []).forEach(function(action) {
+            if (!action || action.type !== 'score_adjust') return;
+            result.us += safeStatNumber(action.toUs) - safeStatNumber(action.fromUs);
+            result.them += safeStatNumber(action.toThem) - safeStatNumber(action.fromThem);
+        });
+        return result;
+    }
+
+    function getScoreFromHistory(historyItems) {
+        var score = { us: 0, them: 0 };
+        (historyItems || []).forEach(function(action) {
+            if (!action) return;
+            if (action.type === 'stat') {
+                var isUsAction = action.player !== 'team';
+                var isPositive = ['attack_kill', 'block_kill', 'serve_ace'].indexOf(action.item) !== -1;
+                if (isUsAction ? isPositive : !isPositive) score.us++;
+                else score.them++;
+            } else if (action.type === 'score_adjust') {
+                score.us = safeStatNumber(action.toUs);
+                score.them = safeStatNumber(action.toThem);
+            }
+        });
+        return score;
+    }
+
+    function buildTodayScoreAdjustment(reportSource, scoringAnalysis) {
+        var adjustment = { us: 0, them: 0 };
+        (reportSource.archiveItems || []).forEach(function(item) {
+            var setAdjustment = summarizeScoreAdjustments(item && item.historyLogSnap);
+            adjustment.us += setAdjustment.us;
+            adjustment.them += setAdjustment.them;
+        });
+        if (reportSource.includeInProgress) {
+            var liveAdjustment = summarizeScoreAdjustments(historyLog);
+            adjustment.us += liveAdjustment.us;
+            adjustment.them += liveAdjustment.them;
+        }
+
+        var actual = (reportSource.setScores || []).reduce(function(total, setScore) {
+            total.us += safeStatNumber(setScore.us);
+            total.them += safeStatNumber(setScore.them);
+            return total;
+        }, { us: 0, them: 0 });
+        if (reportSource.includeInProgress) {
+            var liveScore = getScoreFromHistory(historyLog);
+            actual.us += liveScore.us;
+            actual.them += liveScore.them;
+        }
+
+        var playRecordedPointsUs = scoringAnalysis.scoring.total;
+        var playRecordedPointsThem = scoringAnalysis.conceding.total;
+        var finalPointsUs = playRecordedPointsUs + adjustment.us;
+        var finalPointsThem = playRecordedPointsThem + adjustment.them;
+        return {
+            scoreAdjustmentUs: adjustment.us,
+            scoreAdjustmentThem: adjustment.them,
+            playRecordedPointsUs: playRecordedPointsUs,
+            playRecordedPointsThem: playRecordedPointsThem,
+            finalPointsUs: finalPointsUs,
+            finalPointsThem: finalPointsThem,
+            recordedFinalPointsUs: actual.us,
+            recordedFinalPointsThem: actual.them,
+            matchesRecordedScore: finalPointsUs === actual.us && finalPointsThem === actual.them
+        };
+    }
+
     function buildReportTeamSummary(reportSource, statsData, setScoresForReport, reception, scoring) {
         var wins = 0, losses = 0, draws = 0;
         setScoresForReport.forEach(function(setScore) {
@@ -5744,6 +5812,9 @@ button, input, select, textarea,
             scoring: scoringForReport,
             scoringAnalysis: scoringAnalysisForReport
         };
+        if (reportData.reportType === 'live-today') {
+            reportData.scoreAdjustment = buildTodayScoreAdjustment(reportSource, scoringAnalysisForReport);
+        }
         var progressText = reportData.teamSummary.inProgressSetCount > 0 ? ' + 進行中1セット' : '';
         reportData.header = {
             primary: '対象: ' + reportData.scope.label + '　日付: ' + reportData.match.dateKey,
@@ -5966,15 +6037,35 @@ button, input, select, textarea,
             return item.label;
         }
 
-        function drawAnalysisTotal(totalDisplay, x, valueX, y) {
+        function formatSignedPoints(value) {
+            return (value > 0 ? '+' : '') + value + '点';
+        }
+
+        function drawAnalysisTotal(totalDisplay, x, valueX, y, side) {
             doc.setFillColor(241, 245, 249);
             doc.setDrawColor(148, 163, 184);
             doc.setLineWidth(0.25);
-            doc.roundedRect(x, y - 5, valueX - x, 8, 1, 1, 'FD');
+            var adjustment = reportData.scoreAdjustment;
+            var detailed = useDetailedTodayDisplay && adjustment;
+            doc.roundedRect(x, y - 5, valueX - x, detailed ? 20 : 8, 1, 1, 'FD');
             doc.setFont(PDF_FONT_FAMILY, 'bold');
-            doc.setFontSize(10.5);
+            doc.setFontSize(detailed ? 8.5 : 10.5);
             doc.setTextColor(0, 0, 0);
-            doc.text(totalDisplay, valueX - 3, y, { align: 'right' });
+            if (!detailed) {
+                doc.text(totalDisplay, valueX - 3, y, { align: 'right' });
+                return;
+            }
+            var isUs = side === 'us';
+            var playPoints = isUs ? adjustment.playRecordedPointsUs : adjustment.playRecordedPointsThem;
+            var adjustmentPoints = isUs ? adjustment.scoreAdjustmentUs : adjustment.scoreAdjustmentThem;
+            var finalPoints = isUs ? adjustment.finalPointsUs : adjustment.finalPointsThem;
+            var finalLabel = isUs ? '最終得点' : '最終失点';
+            doc.text('プレー記録合計', x + 3, y);
+            doc.text(playPoints + '点', valueX - 3, y, { align: 'right' });
+            doc.text('得点修正', x + 3, y + 6);
+            doc.text(formatSignedPoints(adjustmentPoints), valueX - 3, y + 6, { align: 'right' });
+            doc.text(finalLabel, x + 3, y + 12);
+            doc.text(finalPoints + '点', valueX - 3, y + 12, { align: 'right' });
         }
 
         doc.setFont(PDF_FONT_FAMILY, 'bold');
@@ -5988,7 +6079,7 @@ button, input, select, textarea,
         var detailFirstY = useDetailedTodayDisplay ? startY + 41 : startY + 31;
         var detailTotalY = useDetailedTodayDisplay ? startY + 82 : startY + 72;
         drawAlignedCounts(analysis.scoring.items, 22, 134, detailFirstY, 4.8);
-        drawAnalysisTotal(analysis.scoring.totalDisplay, 18, 137, detailTotalY);
+        drawAnalysisTotal(analysis.scoring.totalDisplay, 18, 137, detailTotalY, 'us');
 
         doc.setFont(PDF_FONT_FAMILY, 'bold');
         doc.setFontSize(11.5);
@@ -5999,7 +6090,7 @@ button, input, select, textarea,
         var concedingItems = analysis.conceding.opponentItems.concat(analysis.conceding.ownErrorItems);
         drawPercentageBand(concedingItems, analysis.conceding.total, 152, startY + 5, 131, concedingColors);
         drawAlignedCounts(concedingItems, 156, 280, detailFirstY, 4.8);
-        drawAnalysisTotal(analysis.conceding.totalDisplay, 152, 283, detailTotalY);
+        drawAnalysisTotal(analysis.conceding.totalDisplay, 152, 283, detailTotalY, 'them');
     }
 
     function addReportFooters(doc, reportData) {
