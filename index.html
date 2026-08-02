@@ -1991,7 +1991,7 @@ button, input, select, textarea,
      * - Date normalization and active-set double-count prevention were added.
      * - Existing saved-data compatibility was preserved.
      */
-    const APP_VERSION = '1.4.14';
+    const APP_VERSION = '1.4.14a';
     const APP_BUILD = '20260731';
     const APP_RELEASE_STATUS = 'Development';
     const APP_RECOMMENDATION = 'LOCALFORAGE STORAGE BACKEND';
@@ -5875,6 +5875,7 @@ button, input, select, textarea,
 
     function drawScoringAnalysis(doc, reportData, startY) {
         var analysis = reportData.scoringAnalysis;
+        var useDetailedTodayDisplay = reportData.reportType === 'live-today';
         var scoringColors = {
             spike: [37, 99, 235], block: [234, 88, 12], ace: [202, 138, 4], opponentError: [100, 116, 139]
         };
@@ -5894,9 +5895,10 @@ button, input, select, textarea,
                 doc.text('記録なし', x + width / 2, y + 11, { align: 'center' });
                 return false;
             }
-            var displayedPercentages = allocateStackedBandPercentages(items, total);
             var cursorX = x;
             var lastActiveItem = activeItems[activeItems.length - 1];
+            var outsideLabels = [];
+            var legacyPercentages = useDetailedTodayDisplay ? null : allocateStackedBandPercentages(items, total);
             items.forEach(function(item, index) {
                 if (item.count <= 0) return;
                 var segmentWidth = item === lastActiveItem ? x + width - cursorX : width * item.count / total;
@@ -5905,20 +5907,41 @@ button, input, select, textarea,
                 doc.rect(cursorX, y, segmentWidth, height, 'F');
                 doc.setFont(PDF_FONT_FAMILY, 'bold');
                 doc.setTextColor(255, 255, 255);
-                var nameText = item.label;
-                var percentageText = displayedPercentages[index] + '%';
+                var nameText = getAnalysisItemLabel(item);
+                var percentageText = useDetailedTodayDisplay ? item.percentageText : legacyPercentages[index] + '%';
                 doc.setFontSize(7);
                 if (segmentWidth >= 15 && doc.getTextWidth(nameText) <= segmentWidth - 2 && doc.getTextWidth(percentageText) <= segmentWidth - 2) {
                     doc.text(nameText, cursorX + segmentWidth / 2, y + 7.2, { align: 'center' });
                     doc.text(percentageText, cursorX + segmentWidth / 2, y + 14.1, { align: 'center' });
                 } else if (segmentWidth >= 8 && doc.getTextWidth(percentageText) <= segmentWidth - 1.5) {
                     doc.text(percentageText, cursorX + segmentWidth / 2, y + 10.8, { align: 'center' });
+                } else if (useDetailedTodayDisplay) {
+                    outsideLabels.push({
+                        item: item,
+                        anchorX: cursorX + segmentWidth / 2,
+                        text: nameText + ' ' + percentageText
+                    });
                 }
                 cursorX += segmentWidth;
             });
             doc.setDrawColor(71, 85, 105);
             doc.setLineWidth(0.25);
             doc.rect(x, y, width, height);
+            if (useDetailedTodayDisplay) {
+                outsideLabels.forEach(function(label, index) {
+                    var level = index % 3;
+                    var labelX = x + width * (index + 0.5) / outsideLabels.length;
+                    var labelY = y + height + 4 + level * 4;
+                    doc.setDrawColor(71, 85, 105);
+                    doc.setLineWidth(0.2);
+                    doc.line(label.anchorX, y + height, label.anchorX, labelY - 1.5);
+                    doc.line(label.anchorX, labelY - 1.5, labelX, labelY - 1.5);
+                    doc.setFont(PDF_FONT_FAMILY, 'normal');
+                    doc.setFontSize(6.5);
+                    doc.setTextColor(30, 41, 59);
+                    doc.text(label.text, labelX, labelY, { align: 'center' });
+                });
+            }
             return true;
         }
 
@@ -5928,11 +5951,19 @@ button, input, select, textarea,
             doc.setTextColor(0, 0, 0);
             items.forEach(function(item, index) {
                 var y = firstY + index * rowStep;
-                doc.text(item.label, labelX, y);
+                doc.text(getAnalysisItemLabel(item), labelX, y);
                 doc.setFont(PDF_FONT_FAMILY, 'bold');
-                doc.text(item.count + '点', valueX, y, { align: 'right' });
+                doc.text(useDetailedTodayDisplay ? item.display : item.count + '点', valueX, y, { align: 'right' });
                 doc.setFont(PDF_FONT_FAMILY, 'normal');
             });
+        }
+
+        function getAnalysisItemLabel(item) {
+            if (!useDetailedTodayDisplay) return item.label;
+            if (item.key === 'spikeMiss') return 'スパイクミス';
+            if (item.key === 'blockMiss') return 'ブロックミス';
+            if (item.key === 'serveMiss') return 'サーブミス';
+            return item.label;
         }
 
         function drawAnalysisTotal(totalDisplay, x, valueX, y) {
@@ -5954,8 +5985,10 @@ button, input, select, textarea,
         doc.setLineWidth(0.3);
         doc.line(18, startY + 2, 137, startY + 2);
         drawPercentageBand(analysis.scoring.items, analysis.scoring.total, 18, startY + 5, 119, scoringColors);
-        drawAlignedCounts(analysis.scoring.items, 22, 134, startY + 31, 4.8);
-        drawAnalysisTotal(analysis.scoring.totalDisplay, 18, 137, startY + 72);
+        var detailFirstY = useDetailedTodayDisplay ? startY + 41 : startY + 31;
+        var detailTotalY = useDetailedTodayDisplay ? startY + 82 : startY + 72;
+        drawAlignedCounts(analysis.scoring.items, 22, 134, detailFirstY, 4.8);
+        drawAnalysisTotal(analysis.scoring.totalDisplay, 18, 137, detailTotalY);
 
         doc.setFont(PDF_FONT_FAMILY, 'bold');
         doc.setFontSize(11.5);
@@ -5965,8 +5998,8 @@ button, input, select, textarea,
         doc.line(152, startY + 2, 283, startY + 2);
         var concedingItems = analysis.conceding.opponentItems.concat(analysis.conceding.ownErrorItems);
         drawPercentageBand(concedingItems, analysis.conceding.total, 152, startY + 5, 131, concedingColors);
-        drawAlignedCounts(concedingItems, 156, 280, startY + 31, 4.8);
-        drawAnalysisTotal(analysis.conceding.totalDisplay, 152, 283, startY + 72);
+        drawAlignedCounts(concedingItems, 156, 280, detailFirstY, 4.8);
+        drawAnalysisTotal(analysis.conceding.totalDisplay, 152, 283, detailTotalY);
     }
 
     function addReportFooters(doc, reportData) {
