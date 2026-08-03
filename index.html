@@ -216,6 +216,11 @@
         .stats-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
         .stats-table th, .stats-table td { padding: 9px 7px; text-align: left; border-bottom: 1px solid #e5e7eb; }
         .stats-table th { background-color: var(--gray); position: sticky; top: 0; z-index: 10; }
+        .numeric-stats-table th:not(:first-child), .numeric-stats-table td:not(:first-child),
+        .reception-analysis-table th:not(:first-child), .reception-analysis-table td:not(:first-child) {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
         
         /* 得点割合分析のスタイル */
         .analysis-box { margin-top: 15px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.8rem; }
@@ -228,6 +233,10 @@
         .rotation-analysis-table th, .rotation-analysis-table td { padding: 7px 6px; border-bottom: 1px solid #334155; text-align: center; }
         .rotation-analysis-table th { background: #1e293b; color: #dbeafe; position: sticky; top: 0; }
         .rotation-analysis-table td:first-child, .rotation-analysis-table th:first-child { text-align: left; font-weight: 900; }
+        .rotation-analysis-table th:nth-child(n+3), .rotation-analysis-table td:nth-child(n+3) {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
         .rotation-diff-plus { color: #86efac; font-weight: 900; }
         .rotation-diff-minus { color: #fca5a5; font-weight: 900; }
         .rotation-diff-zero { color: #e5e7eb; font-weight: 900; }
@@ -1601,7 +1610,7 @@ button, input, select, textarea,
             </div>
             <div class="stats-note">※ ○＝得点・決定　×＝ミス　／　得点順で表示</div>
             <div class="table-container stats-aggregation-container">
-                <table class="stats-table">
+                <table class="stats-table numeric-stats-table">
                     <thead>
                         <tr>
                             <th>選手名</th>
@@ -1620,7 +1629,7 @@ button, input, select, textarea,
             <div class="analysis-box" id="reception-analytics-box">
                 <div class="analysis-title">レセプション分析</div>
                 <div class="table-container reception-aggregation-container">
-                    <table class="stats-table">
+                    <table class="stats-table reception-analysis-table">
                         <thead>
                             <tr>
                                 <th>対象</th>
@@ -1647,7 +1656,7 @@ button, input, select, textarea,
                 <div class="ratio-bar-container">
                     <div class="ratio-bar-labels">
                         <span style="color:var(--primary);"><span class="self-team-text-label">清明</span>の得点内訳</span>
-                        <span id="analysis-us-summary">0点 (自力 0% : 相手ミス 0%)</span>
+                        <span id="analysis-us-summary">0点 (自力 0.0% : 相手ミス 0.0%)</span>
                     </div>
                     <div class="ratio-bar">
                         <div id="bar-us-own" class="ratio-fill-own" style="width: 0%;"></div>
@@ -1658,7 +1667,7 @@ button, input, select, textarea,
                 <div class="ratio-bar-container" style="margin-top:10px;">
                     <div class="ratio-bar-labels">
                         <span style="color:var(--danger);"><span class="opp-team-text-label">相手</span>の得点内訳</span>
-                        <span id="analysis-them-summary">0点 (自力 0% : <span class="self-team-text-label">清明</span>ミス 0%)</span>
+                        <span id="analysis-them-summary">0点 (自力 0.0% : <span class="self-team-text-label">清明</span>ミス 0.0%)</span>
                     </div>
                     <div class="ratio-bar">
                         <div id="bar-them-opp" class="ratio-fill-opp" style="width: 0%;"></div>
@@ -1892,7 +1901,7 @@ button, input, select, textarea,
                 <h5 style="margin: 5px 0; color: var(--dark);">📊 スタッツ集計</h5>
                 <div class="stats-note">※ ○＝得点・決定　×＝ミス　／　得点順で表示</div>
                 <div class="table-container stats-aggregation-container" style="background:white;">
-                    <table class="stats-table">
+                    <table class="stats-table numeric-stats-table">
                             <thead>
                                 <tr>
                                     <th>選手名</th>
@@ -1910,7 +1919,7 @@ button, input, select, textarea,
             <div class="analysis-box archive-reception-analytics-box" id="archive-reception-analytics-box" style="margin-top:15px;">
                 <div class="analysis-title">レセプション分析</div>
                 <div class="table-container reception-aggregation-container" style="background:white;">
-                    <table class="stats-table">
+                    <table class="stats-table reception-analysis-table">
                         <thead>
                             <tr>
                                 <th>対象</th>
@@ -1936,7 +1945,7 @@ button, input, select, textarea,
                 <div class="ratio-bar-container">
                     <div class="ratio-bar-labels">
                         <span style="color:var(--primary);"><span class="self-team-text-label">清明</span>の得点内訳</span>
-                        <span id="archive-analysis-us-summary">0点 (自力 0% : 相手ミス 0%)</span>
+                        <span id="archive-analysis-us-summary">0点 (自力 0.0% : 相手ミス 0.0%)</span>
                     </div>
                     <div class="ratio-bar">
                         <div id="archive-bar-us-own" class="ratio-fill-own" style="width: 0%;"></div>
@@ -1946,7 +1955,7 @@ button, input, select, textarea,
                 <div class="ratio-bar-container" style="margin-top:10px;">
                     <div class="ratio-bar-labels">
                         <span style="color:var(--danger);"><span id="archive-analysis-opp-label">相手</span>の得点内訳</span>
-                        <span id="archive-analysis-them-summary">0点 (自力 0% : 清明ミス 0%)</span>
+                        <span id="archive-analysis-them-summary">0点 (自力 0.0% : 清明ミス 0.0%)</span>
                     </div>
                     <div class="ratio-bar">
                         <div id="archive-bar-them-opp" class="ratio-fill-opp" style="width: 0%;"></div>
@@ -1991,8 +2000,8 @@ button, input, select, textarea,
      * - Date normalization and active-set double-count prevention were added.
      * - Existing saved-data compatibility was preserved.
      */
-    const APP_VERSION = '1.4.14b';
-    const APP_BUILD = '20260731';
+    const APP_VERSION = '1.4.14c';
+    const APP_BUILD = '20260803';
     const APP_RELEASE_STATUS = 'Development';
     const APP_RECOMMENDATION = 'LOCALFORAGE STORAGE BACKEND';
 
@@ -4504,6 +4513,19 @@ button, input, select, textarea,
         return isFinite(n) ? n : 0;
     }
 
+    function formatPercentDisplay(value) {
+        var percentage = Number(value);
+        return (isFinite(percentage) ? percentage : 0).toFixed(1) + '%';
+    }
+
+    function formatComplementaryPercentDisplay(primaryPercentage) {
+        var primaryDisplayValue = Number((isFinite(primaryPercentage) ? primaryPercentage : 0).toFixed(1));
+        return {
+            primary: primaryDisplayValue.toFixed(1) + '%',
+            complement: (100 - primaryDisplayValue).toFixed(1) + '%'
+        };
+    }
+
     function getOwnTeamTotalStats(statsData) {
         statsData = statsData || {};
         var total = {};
@@ -4858,7 +4880,7 @@ button, input, select, textarea,
             return;
         }
         tbody.innerHTML = rows.map(function(r, idx) {
-            var pct = r.total > 0 ? Math.round((r.us / r.total) * 100) + '%' : '-';
+            var pct = r.total > 0 ? formatPercentDisplay((r.us / r.total) * 100) : '-';
             var diffClass = r.diff > 0 ? 'rotation-diff-plus' : (r.diff < 0 ? 'rotation-diff-minus' : 'rotation-diff-zero');
             var trClass = '';
             if (r.total > 0 && r.diff === maxDiff && maxDiff > 0) trClass = 'rotation-best-row';
@@ -4898,11 +4920,11 @@ button, input, select, textarea,
         var totalUsScore = usOwnPoint + usPointFromOppErr;
         var usOwnPct = 0; var usOppErrPct = 0;
         if (totalUsScore > 0) {
-            usOwnPct = Math.round((usOwnPoint / totalUsScore) * 100);
+            usOwnPct = (usOwnPoint / totalUsScore) * 100;
             usOppErrPct = 100 - usOwnPct;
         }
-
-        document.getElementById('analysis-us-summary').innerText = totalUsScore + '点 (自力 ' + usOwnPct + '% : 相手ミス ' + usOppErrPct + '%)';
+        var usDisplayPct = formatComplementaryPercentDisplay(usOwnPct);
+        document.getElementById('analysis-us-summary').innerText = totalUsScore + '点 (自力 ' + usDisplayPct.primary + ' : 相手ミス ' + usDisplayPct.complement + ')';
         document.getElementById('bar-us-own').style.width = usOwnPct + '%';
         document.getElementById('bar-us-opp-err').style.width = usOppErrPct + '%';
 
@@ -4922,11 +4944,11 @@ button, input, select, textarea,
         var totalThemScore = themOwnPoint + themPointFromUsErr;
         var themOwnPct = 0; var themUsErrPct = 0;
         if (totalThemScore > 0) {
-            themOwnPct = Math.round((themOwnPoint / totalThemScore) * 100);
+            themOwnPct = (themOwnPoint / totalThemScore) * 100;
             themUsErrPct = 100 - themOwnPct;
         }
-
-        document.getElementById('analysis-them-summary').innerText = totalThemScore + '点 (自力 ' + themOwnPct + '% : ' + (selfTeamName || '清明') + 'ミス ' + themUsErrPct + '%)';
+        var themDisplayPct = formatComplementaryPercentDisplay(themOwnPct);
+        document.getElementById('analysis-them-summary').innerText = totalThemScore + '点 (自力 ' + themDisplayPct.primary + ' : ' + (selfTeamName || '清明') + 'ミス ' + themDisplayPct.complement + ')';
         document.getElementById('bar-them-opp').style.width = themOwnPct + '%';
         document.getElementById('bar-them-own-err').style.width = themUsErrPct + '%';
         renderReceptionAnalyticsRows(activeData, getCurrentStatsNameMap(), playerNumbers);
@@ -4950,13 +4972,14 @@ button, input, select, textarea,
                                 (oppData.reception_error || 0) + (oppData.dig_error || 0) + (oppData.chanceball_error || 0) + (oppData.toss_error || 0) + (oppData.miscommunication_error || 0) + (oppData.blockfollow_error || 0) + (oppData.other_error || 0) +
                                 (oppData.v_dribble || 0) + (oppData.v_net || 0) + (oppData.v_over || 0) + (oppData.v_passing || 0) + (oppData.v_positional || 0) + (oppData.v_hold || 0) + (oppData.v_backrow || 0);
         var totalUsScore = usOwnPoint + usPointFromOppErr;
-        var usOwnPct = totalUsScore > 0 ? Math.round((usOwnPoint / totalUsScore) * 100) : 0;
+        var usOwnPct = totalUsScore > 0 ? (usOwnPoint / totalUsScore) * 100 : 0;
         var usOppErrPct = totalUsScore > 0 ? 100 - usOwnPct : 0;
+        var usDisplayPct = formatComplementaryPercentDisplay(usOwnPct);
 
         var usSummary = document.getElementById('archive-analysis-us-summary');
         var usOwnBar = document.getElementById('archive-bar-us-own');
         var usErrBar = document.getElementById('archive-bar-us-opp-err');
-        if (usSummary) usSummary.innerText = totalUsScore + '点 (自力 ' + usOwnPct + '% : 相手ミス ' + usOppErrPct + '%)';
+        if (usSummary) usSummary.innerText = totalUsScore + '点 (自力 ' + usDisplayPct.primary + ' : 相手ミス ' + usDisplayPct.complement + ')';
         if (usOwnBar) usOwnBar.style.width = usOwnPct + '%';
         if (usErrBar) usErrBar.style.width = usOppErrPct + '%';
 
@@ -4973,13 +4996,14 @@ button, input, select, textarea,
                               (usTeamData.v_dribble || 0) + (usTeamData.v_net || 0) + (usTeamData.v_over || 0) + (usTeamData.v_passing || 0) + (usTeamData.v_positional || 0) + (usTeamData.v_hold || 0) + (usTeamData.v_backrow || 0);
 
         var totalThemScore = themOwnPoint + themPointFromUsErr;
-        var themOwnPct = totalThemScore > 0 ? Math.round((themOwnPoint / totalThemScore) * 100) : 0;
+        var themOwnPct = totalThemScore > 0 ? (themOwnPoint / totalThemScore) * 100 : 0;
         var themUsErrPct = totalThemScore > 0 ? 100 - themOwnPct : 0;
+        var themDisplayPct = formatComplementaryPercentDisplay(themOwnPct);
 
         var themSummary = document.getElementById('archive-analysis-them-summary');
         var themOwnBar = document.getElementById('archive-bar-them-opp');
         var themErrBar = document.getElementById('archive-bar-them-own-err');
-        if (themSummary) themSummary.innerText = totalThemScore + '点 (自力 ' + themOwnPct + '% : ' + (selfTeamName || '清明') + 'ミス ' + themUsErrPct + '%)';
+        if (themSummary) themSummary.innerText = totalThemScore + '点 (自力 ' + themDisplayPct.primary + ' : ' + (selfTeamName || '清明') + 'ミス ' + themDisplayPct.complement + ')';
         if (themOwnBar) themOwnBar.style.width = themOwnPct + '%';
         if (themErrBar) themErrBar.style.width = themUsErrPct + '%';
     }
