@@ -1618,7 +1618,7 @@
     }
 
     function statPairHtml(good, bad) {
-        return '<div class="stat-pair"><span class="stat-good">○' + good + '</span><span class="stat-bad">×' + bad + '</span></div>';
+        return '<div class="stat-pair"><span class="stat-good">' + good + '</span><span class="stat-bad">' + bad + '</span></div>';
     }
 
     function getSortedStatSummaries(statsData, nameMap, numberMap) {
