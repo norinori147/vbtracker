@@ -27,8 +27,7 @@
         .container { max-width: 1200px; margin: 0 auto; }
         
         .title-bar { 
-            display: grid;
-            grid-template-columns: minmax(0, 3fr) minmax(190px, 1fr);
+            display: block;
             align-items: center;
             gap: 10px;
             margin-bottom: 4px;
@@ -43,7 +42,7 @@
         }
 
         .storage-monitor {
-            display: grid;
+            display: none !important;
             grid-template-columns: auto minmax(48px, 1fr) auto;
             align-items: center;
             gap: 5px;
@@ -70,12 +69,10 @@
         .storage-monitor.caution .storage-monitor-label::before { content: '△ '; }
         .storage-monitor.warning .storage-monitor-label::before { content: '⚠ '; }
         @media (max-width: 700px) {
-            .title-bar { grid-template-columns: minmax(0, 2.4fr) minmax(145px, 1fr); gap: 6px; }
             .storage-monitor { grid-template-columns: minmax(40px, 1fr) auto; padding: 4px 6px; }
             .storage-monitor-label { display: none; }
         }
         @media (max-width: 480px) {
-            .title-bar { grid-template-columns: minmax(0, 2fr) minmax(125px, 1fr); gap: 5px; }
             .title-bar h1 { font-size: 1rem; }
             .storage-monitor-value { font-size: 0.6rem; }
         }
@@ -221,6 +218,7 @@
             text-align: right;
             font-variant-numeric: tabular-nums;
         }
+        .legacy-print-button { display: none !important; }
         
         /* 得点割合分析のスタイル */
         .analysis-box { margin-top: 15px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.8rem; }
@@ -563,10 +561,12 @@
         .tab.active { color: #93c5fd; border-bottom-color: #60a5fa; }
         .table-container { border-color: #334155; background: #020617; }
         .stats-table th { background: #1e293b; color: #dbeafe; }
-        .stats-table th small { display:block; font-size:0.68rem; font-weight:700; color:#93c5fd; margin-top:2px; white-space:nowrap; }
+        .numeric-stats-table th.stat-pair-column { text-align:center; }
+        .stat-pair-header { margin-top:3px; font-size:0.68rem; font-weight:700; color:#93c5fd; }
         .point-total { font-size:1.05rem; font-weight:900; color:#facc15; text-align:center; }
-        .stat-pair { display:flex; gap:8px; align-items:center; justify-content:flex-start; font-weight:900; white-space:nowrap; }
-        .stat-good, .stat-bad { display:inline-flex; align-items:center; justify-content:center; min-width:42px; padding:3px 6px; border-radius:999px; font-size:0.98rem; }
+        .stat-pair { display:grid; grid-template-columns:repeat(2, minmax(42px, 1fr)); gap:6px; align-items:center; width:100%; min-width:90px; font-weight:900; white-space:nowrap; }
+        .stat-pair > * { min-width:0; text-align:center; }
+        .stat-good, .stat-bad { display:flex; align-items:center; justify-content:center; padding:3px 6px; border-radius:999px; font-size:0.98rem; font-variant-numeric:tabular-nums; white-space:nowrap; }
         .stat-good { color:#dcfce7; background:rgba(34,197,94,0.18); border:1px solid rgba(34,197,94,0.35); }
         .stat-bad { color:#fecaca; background:rgba(239,68,68,0.18); border:1px solid rgba(239,68,68,0.35); }
         .stats-note { font-size:0.82rem; color:#bfdbfe; text-align:right; margin:4px 0 8px; font-weight:bold; }
@@ -1608,16 +1608,16 @@ button, input, select, textarea,
                 <div class="tab" id="tab-today" onclick="switchView('today')">本日通算</div>
                 <div class="tab" id="tab-all" onclick="switchView('all')">全通算</div>
             </div>
-            <div class="stats-note">※ ○＝得点・決定　×＝ミス　／　得点順で表示</div>
+            <div class="stats-note">※ 得点順で表示</div>
             <div class="table-container stats-aggregation-container">
                 <table class="stats-table numeric-stats-table">
                     <thead>
                         <tr>
                             <th>選手名</th>
                             <th>得点</th>
-                            <th>スパイク<br><small>○得点 ×ミス</small></th>
-                            <th>ブロック<br><small>○決定 ×ミス</small></th>
-                            <th>サーブ<br><small>○エース ×ミス</small></th>
+                            <th class="stat-pair-column">スパイク<div class="stat-pair stat-pair-header"><span>得点</span><span>ミス</span></div></th>
+                            <th class="stat-pair-column">ブロック<div class="stat-pair stat-pair-header"><span>決定</span><span>ミス</span></div></th>
+                            <th class="stat-pair-column">サーブ<div class="stat-pair stat-pair-header"><span>エース</span><span>ミス</span></div></th>
                             <th>ミス</th>
                             <th>反則</th>
                         </tr>
@@ -1691,7 +1691,7 @@ button, input, select, textarea,
 
             <div class="footer-btns">
                 <button class="action-btn csv-btn" onclick="exportActiveStatsCSV()">CSV出力</button>
-                <button class="action-btn print-btn" onclick="openPrintView()">印刷/レポート</button>
+                <button class="action-btn print-btn legacy-print-button" onclick="openPrintView()">印刷/レポート</button>
                 <button class="action-btn pdf-direct-btn" id="today-pdf-btn" onclick="exportCurrentViewReportPDF()">今日のレポート</button>
             </div>
         </div>
@@ -1884,7 +1884,7 @@ button, input, select, textarea,
                 <button class="archive-btn" style="background-color:#059669;" id="archive-day-total-btn" onclick="viewArchiveDayTotal()" disabled>📅 この日の合計データを見る</button>
                 <button class="archive-btn" id="archive-report-pdf-btn" onclick="exportArchiveReportPDF()" disabled>このセットのレポート</button>
                 <button class="archive-btn csv-btn" onclick="exportArchiveDayCSV()">CSV出力</button>
-                <button class="archive-btn print-btn" onclick="openArchivePrintView()">印刷/レポート</button>
+                <button class="archive-btn print-btn legacy-print-button" onclick="openArchivePrintView()">印刷/レポート</button>
             </div>
             
         </div>
@@ -1899,16 +1899,16 @@ button, input, select, textarea,
 
             <div style="margin-top:15px;">
                 <h5 style="margin: 5px 0; color: var(--dark);">📊 スタッツ集計</h5>
-                <div class="stats-note">※ ○＝得点・決定　×＝ミス　／　得点順で表示</div>
+                <div class="stats-note">※ 得点順で表示</div>
                 <div class="table-container stats-aggregation-container" style="background:white;">
                     <table class="stats-table numeric-stats-table">
                             <thead>
                                 <tr>
                                     <th>選手名</th>
                                     <th>得点</th>
-                                    <th>スパイク<br><small>○得点 ×ミス</small></th>
-                                    <th>ブロック<br><small>○決定 ×ミス</small></th>
-                                    <th>サーブ<br><small>○エース ×ミス</small></th>
+                                    <th class="stat-pair-column">スパイク<div class="stat-pair stat-pair-header"><span>得点</span><span>ミス</span></div></th>
+                                    <th class="stat-pair-column">ブロック<div class="stat-pair stat-pair-header"><span>決定</span><span>ミス</span></div></th>
+                                    <th class="stat-pair-column">サーブ<div class="stat-pair stat-pair-header"><span>エース</span><span>ミス</span></div></th>
                                     <th>ミス</th>
                                     <th>反則</th>
                                 </tr>
@@ -2000,8 +2000,8 @@ button, input, select, textarea,
      * - Date normalization and active-set double-count prevention were added.
      * - Existing saved-data compatibility was preserved.
      */
-    const APP_VERSION = '1.4.14c';
-    const APP_BUILD = '20260803';
+    const APP_VERSION = '1.4.14d';
+    const APP_BUILD = '20260808';
     const APP_RELEASE_STATUS = 'Development';
     const APP_RECOMMENDATION = 'LOCALFORAGE STORAGE BACKEND';
 
@@ -4505,7 +4505,7 @@ button, input, select, textarea,
     }
 
     function statPairHtml(good, bad) {
-        return '<div class="stat-pair"><span class="stat-good">○' + good + '</span><span class="stat-bad">×' + bad + '</span></div>';
+        return '<div class="stat-pair"><span class="stat-good">' + good + '</span><span class="stat-bad">' + bad + '</span></div>';
     }
 
     function safeStatNumber(value) {
