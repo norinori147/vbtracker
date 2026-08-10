@@ -1124,6 +1124,13 @@
             color: #e5e7eb;
         }
         .reception-panel.active { display: block; }
+        .reception-panel.serve-effect-mode {
+            border-color: #1e4f78;
+            background: rgba(15, 55, 88, 0.32);
+        }
+        .reception-panel.serve-effect-mode .reception-title {
+            color: #bfdbfe;
+        }
         .reception-panel.collapsed .reception-expanded { display: none; }
         .reception-panel:not(.collapsed) .reception-collapsed { display: none; }
         .reception-header {
@@ -1169,7 +1176,7 @@
         }
         .reception-grade-row {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(6, 1fr);
             gap: 6px;
         }
         .reception-grade-btn {
@@ -1186,7 +1193,9 @@
         .reception-grade-btn.grade-b { background: #84cc16; }
         .reception-grade-btn.grade-c { background: #f59e0b; }
         .reception-grade-btn.grade-d { background: #f97316; }
+        .reception-grade-btn.grade-p { background: #38bdf8; }
         .reception-grade-btn.grade-m { background: #ef4444; color: #fff; }
+        .reception-grade-btn.grade-placeholder { visibility: hidden; }
         .reception-grade-btn:disabled {
             opacity: 0.45;
             cursor: not-allowed;
@@ -1482,7 +1491,7 @@ button, input, select, textarea,
                 <div class="reception-expanded">
                     <div class="reception-header">
                         <div>
-                            <div class="reception-title">レセプション</div>
+                            <div id="serve-reception-title" class="reception-title">レセプション</div>
                         </div>
                     </div>
                     <div class="reception-grade-row">
@@ -1490,6 +1499,7 @@ button, input, select, textarea,
                         <button type="button" class="reception-grade-btn grade-b" onclick="selectReceptionGrade('B')">B</button>
                         <button type="button" class="reception-grade-btn grade-c" onclick="selectReceptionGrade('C')">C</button>
                         <button type="button" class="reception-grade-btn grade-d" onclick="selectReceptionGrade('D')">D</button>
+                        <button id="serve-effect-grade-p" type="button" class="reception-grade-btn grade-p grade-placeholder" onclick="selectServeEffectGrade('P')">P</button>
                         <button type="button" class="reception-grade-btn grade-m" onclick="selectReceptionGrade('M')">M</button>
                     </div>
                 </div>
@@ -2000,10 +2010,10 @@ button, input, select, textarea,
      * - Date normalization and active-set double-count prevention were added.
      * - Existing saved-data compatibility was preserved.
      */
-    const APP_VERSION = '1.4.14d';
-    const APP_BUILD = '20260808';
+    const APP_VERSION = '1.4.15a';
+    const APP_BUILD = '20260810';
     const APP_RELEASE_STATUS = 'Development';
-    const APP_RECOMMENDATION = 'LOCALFORAGE STORAGE BACKEND';
+    const APP_RECOMMENDATION = 'SERVE EFFECT FOUNDATION';
 
     function updateAppVersionDisplay() {
         var versionEl = document.getElementById('app-version-display');
@@ -2159,6 +2169,9 @@ button, input, select, textarea,
     var startSideSetting = 'S'; 
     var hasServeAuthority = true; 
     var pendingReception = null;
+    var pendingServeEffect = null;
+    var serveEffectSelectedServer = null;
+    var serveEffectRallyState = null;
 
     function createEmptyStats() {
         var obj = {};
@@ -2231,7 +2244,7 @@ button, input, select, textarea,
         'vball_oppTeamName_s', 'vball_appTitlePrefix_s', 'vball_selfTeamName_s',
         'vball_matchType_s', 'vball_officialMatchNumber_s', 'vball_matchDateKey_s',
         'vball_startedAt_s', 'vball_endedAt_s',
-        'vball_globalArchive_s', 'vball_autoBackups_s', 'vball_pendingReception_s'
+        'vball_globalArchive_s', 'vball_autoBackups_s', 'vball_pendingReception_s', 'vball_pendingServeEffect_s'
     ];
     var storageErrorNotified = false;
 
@@ -2685,6 +2698,8 @@ button, input, select, textarea,
         if (!pendingReception || typeof pendingReception !== 'object' || !pendingReception.receiver || !isReceptionGrade(pendingReception.grade)) {
             pendingReception = null;
         }
+        pendingServeEffect = await readStorageJSON('vball_pendingServeEffect_s', null);
+        if (!isValidServeEffect(pendingServeEffect) || !isServeEffectPointGrade(pendingServeEffect.grade)) pendingServeEffect = null;
         normalizeMatchManagementOnLoad();
         rebuildDerivedDataFromArchive();
         renderPendingReceptionUI();
@@ -2709,6 +2724,7 @@ button, input, select, textarea,
             ['vball_startSideSetting_s', String(startSideSetting)],
             ['vball_hasServeAuthority_s', String(hasServeAuthority)],
             ['vball_pendingReception_s', JSON.stringify(pendingReception)],
+            ['vball_pendingServeEffect_s', JSON.stringify(pendingServeEffect)],
             ['vball_playerNames_s', JSON.stringify(playerNames)],
             ['vball_playerNumbers_s', JSON.stringify(playerNumbers)],
             ['vball_playerVisible_s', JSON.stringify(playerVisible)],
@@ -2770,6 +2786,7 @@ button, input, select, textarea,
         startSideSetting = 'S';
         hasServeAuthority = true;
         clearPendingReception();
+        clearPendingServeEffect();
         rebuildDerivedDataFromArchive();
         closeLineupPlayerPicker();
         updateSideToggleUI();
@@ -2789,6 +2806,7 @@ button, input, select, textarea,
         startSideSetting = 'S';
         hasServeAuthority = true;
         clearPendingReception();
+        clearPendingServeEffect();
         closeLineupPlayerPicker();
         updateSideToggleUI();
     }
@@ -3336,6 +3354,13 @@ button, input, select, textarea,
 
     function selectPlayer(id) {
         selectedPlayer = id;
+        if (hasServeAuthority && id !== 'team' && id !== 'us_team' && isPlayerVisible(id)) {
+            // A deliberate server selection starts a new serve-effect input.
+            // Without this boundary, consecutive P/M entries by the same server
+            // can be mistaken for a duplicate tap from the previous rally.
+            serveEffectRallyState = null;
+            serveEffectSelectedServer = id;
+        }
         var buttons = document.getElementsByClassName('p-btn');
         for (var i = 0; i < buttons.length; i++) { buttons[i].classList.remove('active'); }
         document.getElementById('btn-' + id).classList.add('active');
@@ -3349,6 +3374,80 @@ button, input, select, textarea,
 
     function isReceptionGrade(value) {
         return ['A', 'B', 'C', 'D', 'M'].includes(String(value || '').toUpperCase());
+    }
+
+    function isServeEffectGrade(value) {
+        return ['A', 'B', 'C', 'D', 'P', 'M'].includes(String(value || '').toUpperCase());
+    }
+
+    function isServeEffectPointGrade(value) {
+        return ['A', 'B', 'C', 'D'].includes(String(value || '').toUpperCase());
+    }
+
+    function isValidServeEffect(value) {
+        return !!(value && typeof value === 'object' && value.server && isServeEffectGrade(value.grade));
+    }
+
+    function selectServeEffectGrade(grade) {
+        grade = String(grade || '').toUpperCase();
+        if (!isServeEffectGrade(grade) || !hasServeAuthority) return;
+        var server = serveEffectSelectedServer;
+        if (!server || server === 'team' || server === 'us_team' || !isPlayerVisible(server)) {
+            alert('サーバーを選択してください。');
+            return;
+        }
+        checkAndRefreshMatchDate();
+        ensureMatchStarted();
+        var effect = { server: server, grade: grade, createdAt: Date.now() };
+        if (grade === 'P' || grade === 'M') {
+            var item = grade === 'P' ? 'serve_ace' : 'serve_error';
+            var linked = serveEffectRallyState && serveEffectRallyState.item === item &&
+                serveEffectRallyState.player === server && historyLog[serveEffectRallyState.historyIndex];
+            if (linked) {
+                var existing = historyLog[serveEffectRallyState.historyIndex];
+                if (!existing.serveEffect) existing.serveEffect = effect;
+                serveEffectRallyState.serveEffectRecorded = true;
+                serveEffectSelectedServer = null;
+                updateUI();
+                return;
+            }
+            addStat(item, { player: server, serveEffect: effect });
+            return;
+        }
+        pendingServeEffect = effect;
+        collapseReceptionInput();
+        renderServeReceptionUI();
+        saveStorage();
+    }
+
+    function clearPendingServeEffect() {
+        pendingServeEffect = null;
+        serveEffectSelectedServer = null;
+        writeStorageValue('vball_pendingServeEffect_s', null, true);
+    }
+
+    function renderServeReceptionUI() {
+        var panel = document.getElementById('reception-panel');
+        if (!panel) return;
+        var serving = !isOpponentServing();
+        panel.classList.toggle('serve-effect-mode', serving);
+        var title = document.getElementById('serve-reception-title');
+        if (title) title.innerText = serving ? 'サーブ効果' : 'レセプション';
+        var p = document.getElementById('serve-effect-grade-p');
+        if (p) p.classList.toggle('grade-placeholder', !serving);
+        var buttons = panel.getElementsByClassName('reception-grade-btn');
+        for (var i = 0; i < buttons.length; i++) {
+            var buttonGrade = String(buttons[i].innerText || '').trim();
+            buttons[i].onclick = serving
+                ? (function(g){ return function(){ selectServeEffectGrade(g); }; })(buttonGrade)
+                : (function(g){ return function(){ if (g !== 'P') selectReceptionGrade(g); }; })(buttonGrade);
+            buttons[i].disabled = serving ? !serveEffectSelectedServer : !getReceptionSelectedReceiver();
+        }
+        panel.classList.add('active');
+        var complete = serving ? isValidServeEffect(pendingServeEffect) : !!(pendingReception && pendingReception.receiver && pendingReception.grade);
+        panel.classList.toggle('collapsed', complete);
+        var summary = document.getElementById('pending-reception-summary');
+        if (summary && serving) summary.innerText = complete ? ('#' + getPlayerNumber(pendingServeEffect.server) + ' ' + pendingServeEffect.grade) : '';
     }
 
     function isReceptionPointGrade(value) {
@@ -3437,6 +3536,7 @@ button, input, select, textarea,
     function renderPendingReceptionUI() {
         var panel = document.getElementById('reception-panel');
         if (!panel) return;
+        if (!isOpponentServing()) { renderServeReceptionUI(); return; }
         var shouldShow = isOpponentServing();
         panel.classList.toggle('active', shouldShow);
         var gradeButtons = panel.getElementsByClassName('reception-grade-btn');
@@ -3895,6 +3995,13 @@ button, input, select, textarea,
         options = options || {};
         var statPlayer = options.player || selectedPlayer;
         var receptionForAction = options.reception || null;
+        var serveEffectForAction = options.serveEffect || (isServeEffectPointGrade(pendingServeEffect && pendingServeEffect.grade) ? pendingServeEffect : null);
+        if ((item === 'serve_ace' || item === 'serve_error') && serveEffectRallyState &&
+            serveEffectRallyState.item === item && serveEffectRallyState.player === statPlayer && serveEffectRallyState.serveEffectRecorded) {
+            serveEffectRallyState = null;
+            updateUI();
+            return;
+        }
         var bypassOpponentServeErrorReception = isOpponentServeErrorReceptionBypass(statPlayer, item);
         if (bypassOpponentServeErrorReception) receptionForAction = null;
         if (isOpponentServing()) {
@@ -3919,11 +4026,18 @@ button, input, select, textarea,
         allData[statPlayer][item] = (allData[statPlayer][item] || 0) + 1;
 
         var action = { type: 'stat', player: statPlayer, item: item };
+        if (serveEffectForAction) action.serveEffect = serveEffectForAction;
         if (receptionForAction) {
             action.reception = receptionForAction;
             applyReceptionToStats(receptionForAction, 1);
         }
         historyLog.push(action);
+        if (item === 'serve_ace' || item === 'serve_error') {
+            serveEffectRallyState = { historyIndex: historyLog.length - 1, item: item, player: statPlayer, serveEffectRecorded: !!action.serveEffect };
+        } else {
+            serveEffectRallyState = null;
+        }
+        if (serveEffectForAction) clearPendingServeEffect();
         if (receptionForAction || bypassOpponentServeErrorReception) clearPendingReception();
         updateUI();
     }
@@ -3965,6 +4079,7 @@ button, input, select, textarea,
         } else if (target.type === 'substitution') {
             if (subCount[target.team] > 0) subCount[target.team]--;
         }
+        serveEffectRallyState = null;
         updateUI();
     }
 
@@ -4080,6 +4195,8 @@ button, input, select, textarea,
             subCount = { us: 0, them: 0 };
             startSideSetting = 'S'; 
             hasServeAuthority = true;
+            clearPendingReception();
+            clearPendingServeEffect();
             // Rebuild after clearing the completed set so the live set and its
             // archived snapshot cannot both be included in the totals.
             rebuildDerivedDataFromArchive();
@@ -5182,6 +5299,7 @@ button, input, select, textarea,
         document.getElementById('score-them').innerText = scoreThem;
         updateSetFinishButtonState(scoreUs, scoreThem);
         renderPendingReceptionUI();
+        renderServeReceptionUI();
         updateLiveReceptionDashboard();
         logContainer.scrollTop = logContainer.scrollHeight;
 
@@ -6464,6 +6582,7 @@ button, input, select, textarea,
             startingLineup: startingLineup,
             startSideSetting: startSideSetting,
             hasServeAuthority: hasServeAuthority,
+            pendingServeEffect: pendingServeEffect,
             setData: setData,
             todayData: todayData,
             allData: allData,
@@ -6624,6 +6743,9 @@ button, input, select, textarea,
         startingLineup = data.startingLineup || { 1: 'p1', 2: 'p2', 3: 'p3', 4: 'p4', 5: 'p5', 6: 'p6' };
         startSideSetting = data.startSideSetting || 'S';
         hasServeAuthority = data.hasServeAuthority !== false;
+        pendingServeEffect = isValidServeEffect(data.pendingServeEffect) && isServeEffectPointGrade(data.pendingServeEffect.grade) ? data.pendingServeEffect : null;
+        serveEffectSelectedServer = null;
+        serveEffectRallyState = null;
         setData = normalizeImportedStats(data.setData);
         todayData = normalizeImportedStats(data.todayData);
         allData = normalizeImportedStats(data.allData);
@@ -6750,7 +6872,7 @@ button, input, select, textarea,
             startingLineup = { 1: 'p1', 2: 'p2', 3: 'p3', 4: 'p4', 5: 'p5', 6: 'p6' };
             startSideSetting = 'S'; hasServeAuthority = true; oppTeamName = '相手'; appTitlePrefix = 'SEIMEI HS'; selfTeamName = '清明'; matchType = 'practice'; officialMatchNumber = 1; matchDateKey = getTodayKey(); startedAt = null; endedAt = null;
             playerVisible = normalizePlayerVisible(null);
-            historyLog = []; setResults = []; timeoutCount = { us: 0, them: 0 }; subCount = { us: 0, them: 0 }; globalArchive = []; autoBackups = []; pendingReception = null;
+            historyLog = []; setResults = []; timeoutCount = { us: 0, them: 0 }; subCount = { us: 0, them: 0 }; globalArchive = []; autoBackups = []; pendingReception = null; pendingServeEffect = null; serveEffectSelectedServer = null; serveEffectRallyState = null;
             switchView('set'); initSetup(); updateUI(); updateStorageMonitor();
         }
     }
