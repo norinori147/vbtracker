@@ -1630,6 +1630,7 @@ button, input, select, textarea,
                 <div class="tab" id="tab-today" onclick="switchView('today')">本日通算</div>
                 <div class="tab" id="tab-all" onclick="switchView('all')">全通算</div>
             </div>
+            <div class="analysis-title">スタッツ</div>
             <div class="stats-note">※ 得点順で表示</div>
             <div class="table-container stats-aggregation-container">
                 <table class="stats-table numeric-stats-table">
@@ -1650,6 +1651,7 @@ button, input, select, textarea,
 
             <div class="analysis-box" id="reception-analytics-box">
                 <div class="analysis-title">レセプション分析</div>
+                <div class="stats-note">※ AB率順</div>
                 <div class="table-container reception-aggregation-container">
                     <table class="stats-table reception-analysis-table">
                         <thead>
@@ -1674,6 +1676,7 @@ button, input, select, textarea,
 
             <div class="analysis-box" id="serve-effect-analytics-box">
                 <div class="analysis-title">サーブ効果分析</div>
+                <div class="stats-note">※ 効果率順（打数1本は参考値）</div>
                 <div class="table-container serve-effect-aggregation-container">
                     <table class="stats-table serve-effect-analysis-table">
                         <thead>
@@ -2045,7 +2048,7 @@ button, input, select, textarea,
      * - Existing saved-data compatibility was preserved.
      */
     const APP_VERSION = '1.4.15b';
-    const APP_BUILD = '20260810';
+    const APP_BUILD = '20260811';
     const APP_RELEASE_STATUS = 'Development';
     const APP_RECOMMENDATION = 'SERVE EFFECT ANALYTICS';
 
@@ -4827,14 +4830,7 @@ button, input, select, textarea,
             var summary = getPlayerStatSummary('p' + i, statsData, nameMap, numberMap);
             if (summary.recTotal > 0) list.push(summary);
         }
-        list.sort(function(a, b) {
-            var aNum = parseInt(String(a.number || '').replace(/[^0-9]/g, ''), 10);
-            var bNum = parseInt(String(b.number || '').replace(/[^0-9]/g, ''), 10);
-            if (!isNaN(aNum) && !isNaN(bNum) && aNum !== bNum) return aNum - bNum;
-            if (!isNaN(aNum) && isNaN(bNum)) return -1;
-            if (isNaN(aNum) && !isNaN(bNum)) return 1;
-            return a.id.localeCompare(b.id, 'ja');
-        });
+        list.sort(compareReceptionAnalyticsSummaries);
         for (var i = 0; i < list.length; i++) {
             rows.push(receptionAnalyticsCellHtml(list[i]));
         }
@@ -4844,6 +4840,24 @@ button, input, select, textarea,
 
     function renderReceptionAnalyticsRows(statsData, nameMap, numberMap) {
         renderReceptionAnalyticsRowsToTbody(document.getElementById('reception-analytics-tbody'), statsData, nameMap, numberMap);
+    }
+
+    function compareReceptionAnalyticsSummaries(a, b) {
+        var aRate = Number(a && a.recABPct);
+        var bRate = Number(b && b.recABPct);
+        var aValid = isFinite(aRate);
+        var bValid = isFinite(bRate);
+        if (aValid !== bValid) return aValid ? -1 : 1;
+        if (aValid && aRate !== bRate) return bRate - aRate;
+        var aTotal = Number(a && a.recTotal) || 0;
+        var bTotal = Number(b && b.recTotal) || 0;
+        if (aTotal !== bTotal) return bTotal - aTotal;
+        var aNumber = parseInt(String((a && a.number) || '').replace(/[^0-9]/g, ''), 10);
+        var bNumber = parseInt(String((b && b.number) || '').replace(/[^0-9]/g, ''), 10);
+        if (!isNaN(aNumber) && !isNaN(bNumber) && aNumber !== bNumber) return aNumber - bNumber;
+        if (!isNaN(aNumber) && isNaN(bNumber)) return -1;
+        if (isNaN(aNumber) && !isNaN(bNumber)) return 1;
+        return String((a && a.id) || '').localeCompare(String((b && b.id) || ''), 'ja');
     }
 
     function collectServeEffectRecordsFromHistory(logs) {
@@ -4918,14 +4932,7 @@ button, input, select, textarea,
             tbody.innerHTML = '<tr><td colspan="7" class="serve-effect-empty">サーブ効果データなし</td></tr>';
             return;
         }
-        aggregate.players.sort(function(a, b) {
-            var aNumber = parseInt(String(getPlayerNumber(a.id) || '').replace(/[^0-9]/g, ''), 10);
-            var bNumber = parseInt(String(getPlayerNumber(b.id) || '').replace(/[^0-9]/g, ''), 10);
-            if (!isNaN(aNumber) && !isNaN(bNumber) && aNumber !== bNumber) return aNumber - bNumber;
-            if (!isNaN(aNumber) && isNaN(bNumber)) return -1;
-            if (isNaN(aNumber) && !isNaN(bNumber)) return 1;
-            return String(a.id).localeCompare(String(b.id), 'ja');
-        });
+        aggregate.players.sort(compareServeEffectSummaries);
         function rowHtml(summary, teamRow) {
             var classNames = teamRow ? 'team-total-row' : (summary.attempts === 1 ? 'serve-effect-reference-row' : '');
             var number = teamRow ? '' : getPlayerNumber(summary.id);
@@ -4943,6 +4950,25 @@ button, input, select, textarea,
         var rows = aggregate.players.map(function(summary){ return rowHtml(summary, false); });
         rows.push(rowHtml(aggregate.team, true));
         tbody.innerHTML = rows.join('');
+    }
+
+    function compareServeEffectSummaries(a, b) {
+        var aReference = Number(a && a.attempts) === 1;
+        var bReference = Number(b && b.attempts) === 1;
+        if (aReference !== bReference) return aReference ? 1 : -1;
+        var aRate = a && typeof a.rate === 'number' && isFinite(a.rate) ? a.rate : null;
+        var bRate = b && typeof b.rate === 'number' && isFinite(b.rate) ? b.rate : null;
+        if ((aRate !== null) !== (bRate !== null)) return aRate !== null ? -1 : 1;
+        if (aRate !== null && aRate !== bRate) return bRate - aRate;
+        var aAttempts = Number(a && a.attempts) || 0;
+        var bAttempts = Number(b && b.attempts) || 0;
+        if (aAttempts !== bAttempts) return bAttempts - aAttempts;
+        var aNumber = parseInt(String(getPlayerNumber((a && a.id) || '') || '').replace(/[^0-9]/g, ''), 10);
+        var bNumber = parseInt(String(getPlayerNumber((b && b.id) || '') || '').replace(/[^0-9]/g, ''), 10);
+        if (!isNaN(aNumber) && !isNaN(bNumber) && aNumber !== bNumber) return aNumber - bNumber;
+        if (!isNaN(aNumber) && isNaN(bNumber)) return -1;
+        if (isNaN(aNumber) && !isNaN(bNumber)) return 1;
+        return String((a && a.id) || '').localeCompare(String((b && b.id) || ''), 'ja');
     }
 
     function hasArchiveReceptionAnalyticsData(statsData) {
