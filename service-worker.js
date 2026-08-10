@@ -1,4 +1,4 @@
-const CACHE_NAME = 'seimei-vb-tracker-v1-4-15a-serve-effect-foundation-finish-ui-build-20260810';
+const CACHE_NAME = 'seimei-vb-tracker-v1-4-15b-serve-effect-analytics-build-20260810';
 const ASSETS = [
   './',
   './index.html',

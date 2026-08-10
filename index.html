@@ -210,6 +210,7 @@
         .table-container { max-height: 400px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 6px; }
         .stats-aggregation-container { height: auto; max-height: none; overflow-x: auto; overflow-y: visible; }
         .reception-aggregation-container { height: auto; max-height: none; overflow-x: auto; overflow-y: visible; }
+        .serve-effect-aggregation-container { height: auto; max-height: none; overflow-x: auto; overflow-y: visible; }
         .stats-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
         .stats-table th, .stats-table td { padding: 9px 7px; text-align: left; border-bottom: 1px solid #e5e7eb; }
         .stats-table th { background-color: var(--gray); position: sticky; top: 0; z-index: 10; }
@@ -218,6 +219,17 @@
             text-align: right;
             font-variant-numeric: tabular-nums;
         }
+        .serve-effect-analysis-table th:nth-child(n+3),
+        .serve-effect-analysis-table td:nth-child(n+3) {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        .serve-effect-analysis-table .serve-effect-reference-row {
+            background: rgba(234, 179, 8, 0.14);
+            box-shadow: inset 3px 0 0 rgba(250, 204, 21, 0.72);
+        }
+        .serve-effect-analysis-table .serve-effect-rate { font-weight: 900; }
+        .serve-effect-empty { text-align: center !important; color: #94a3b8; }
         .legacy-print-button { display: none !important; }
         
         /* 得点割合分析のスタイル */
@@ -1660,6 +1672,28 @@ button, input, select, textarea,
                 </div>
             </div>
 
+            <div class="analysis-box" id="serve-effect-analytics-box">
+                <div class="analysis-title">サーブ効果分析</div>
+                <div class="table-container serve-effect-aggregation-container">
+                    <table class="stats-table serve-effect-analysis-table">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>選手名</th>
+                                <th>打数</th>
+                                <th>P</th>
+                                <th>効果</th>
+                                <th>ミス</th>
+                                <th>効果率</th>
+                            </tr>
+                        </thead>
+                        <tbody id="serve-effect-analytics-tbody">
+                            <tr><td colspan="7" class="serve-effect-empty">サーブ効果データなし</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <div class="analysis-box">
                 <div class="analysis-title">📈 得点割合分析 (選択中タブの集計)</div>
                 
@@ -2010,10 +2044,10 @@ button, input, select, textarea,
      * - Date normalization and active-set double-count prevention were added.
      * - Existing saved-data compatibility was preserved.
      */
-    const APP_VERSION = '1.4.15a';
+    const APP_VERSION = '1.4.15b';
     const APP_BUILD = '20260810';
     const APP_RELEASE_STATUS = 'Development';
-    const APP_RECOMMENDATION = 'SERVE EFFECT FOUNDATION';
+    const APP_RECOMMENDATION = 'SERVE EFFECT ANALYTICS';
 
     function updateAppVersionDisplay() {
         var versionEl = document.getElementById('app-version-display');
@@ -4812,6 +4846,105 @@ button, input, select, textarea,
         renderReceptionAnalyticsRowsToTbody(document.getElementById('reception-analytics-tbody'), statsData, nameMap, numberMap);
     }
 
+    function collectServeEffectRecordsFromHistory(logs) {
+        var records = [];
+        logs = Array.isArray(logs) ? logs : [];
+        for (var i = 0; i < logs.length; i++) {
+            var effect = logs[i] && logs[i].serveEffect;
+            if (!isValidServeEffect(effect)) continue;
+            records.push({ server: effect.server, grade: String(effect.grade).toUpperCase(), createdAt: effect.createdAt });
+        }
+        return records;
+    }
+
+    function collectServeEffectRecordsForView(view) {
+        var records = [];
+        var scope = view === 'today' || view === 'all' ? view : 'set';
+        if (scope !== 'set') {
+            var selectedDateKey = normalizeArchiveDateString(matchDateKey || getTodayKey());
+            var items = Array.isArray(globalArchive) ? globalArchive : [];
+            for (var i = 0; i < items.length; i++) {
+                var item = items[i];
+                if (!item) continue;
+                if (scope === 'today' && normalizeArchiveDateString(item.date) !== selectedDateKey) continue;
+                records = records.concat(collectServeEffectRecordsFromHistory(item.historyLogSnap));
+            }
+        }
+        return records.concat(collectServeEffectRecordsFromHistory(historyLog));
+    }
+
+    function createEmptyServeEffectSummary(id) {
+        return { id: id || '', A: 0, B: 0, C: 0, D: 0, P: 0, M: 0, attempts: 0, effects: 0, points: 0, misses: 0, rate: null };
+    }
+
+    function finalizeServeEffectSummary(summary) {
+        summary.attempts = summary.A + summary.B + summary.C + summary.D + summary.P + summary.M;
+        summary.effects = summary.C + summary.D;
+        summary.points = summary.P;
+        summary.misses = summary.M;
+        summary.rate = summary.attempts > 0
+            ? ((summary.P * 100) + (summary.effects * 25) - (summary.M * 25)) / summary.attempts
+            : null;
+        return summary;
+    }
+
+    function aggregateServeEffectRecords(records) {
+        var byPlayer = {};
+        var team = createEmptyServeEffectSummary('team_total');
+        records = Array.isArray(records) ? records : [];
+        for (var i = 0; i < records.length; i++) {
+            var record = records[i];
+            if (!record || !record.server || !isServeEffectGrade(record.grade)) continue;
+            var grade = String(record.grade).toUpperCase();
+            if (!byPlayer[record.server]) byPlayer[record.server] = createEmptyServeEffectSummary(record.server);
+            byPlayer[record.server][grade]++;
+            team[grade]++;
+        }
+        var playersList = [];
+        for (var id in byPlayer) playersList.push(finalizeServeEffectSummary(byPlayer[id]));
+        finalizeServeEffectSummary(team);
+        return { byPlayer: byPlayer, players: playersList, team: team, recordCount: team.attempts };
+    }
+
+    function formatServeEffectRate(rate) {
+        return typeof rate === 'number' && isFinite(rate) ? rate.toFixed(1) + '%' : '－';
+    }
+
+    function renderServeEffectAnalytics(view) {
+        var tbody = document.getElementById('serve-effect-analytics-tbody');
+        if (!tbody) return;
+        var aggregate = aggregateServeEffectRecords(collectServeEffectRecordsForView(view));
+        if (aggregate.recordCount === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="serve-effect-empty">サーブ効果データなし</td></tr>';
+            return;
+        }
+        aggregate.players.sort(function(a, b) {
+            var aNumber = parseInt(String(getPlayerNumber(a.id) || '').replace(/[^0-9]/g, ''), 10);
+            var bNumber = parseInt(String(getPlayerNumber(b.id) || '').replace(/[^0-9]/g, ''), 10);
+            if (!isNaN(aNumber) && !isNaN(bNumber) && aNumber !== bNumber) return aNumber - bNumber;
+            if (!isNaN(aNumber) && isNaN(bNumber)) return -1;
+            if (isNaN(aNumber) && !isNaN(bNumber)) return 1;
+            return String(a.id).localeCompare(String(b.id), 'ja');
+        });
+        function rowHtml(summary, teamRow) {
+            var classNames = teamRow ? 'team-total-row' : (summary.attempts === 1 ? 'serve-effect-reference-row' : '');
+            var number = teamRow ? '' : getPlayerNumber(summary.id);
+            var name = teamRow ? 'チーム全体' : (playerNames[summary.id] || summary.id);
+            return '<tr class="' + classNames + '">' +
+                '<td>' + escapeHtml(number) + '</td>' +
+                '<td>' + escapeHtml(name) + '</td>' +
+                '<td>' + summary.attempts + '</td>' +
+                '<td>' + summary.points + '</td>' +
+                '<td>' + summary.effects + '</td>' +
+                '<td>' + summary.misses + '</td>' +
+                '<td class="serve-effect-rate">' + formatServeEffectRate(summary.rate) + '</td>' +
+                '</tr>';
+        }
+        var rows = aggregate.players.map(function(summary){ return rowHtml(summary, false); });
+        rows.push(rowHtml(aggregate.team, true));
+        tbody.innerHTML = rows.join('');
+    }
+
     function hasArchiveReceptionAnalyticsData(statsData) {
         if (!statsData || typeof statsData !== 'object') return false;
         var keys = ['reception_a', 'reception_b', 'reception_c', 'reception_d'];
@@ -5313,6 +5446,7 @@ button, input, select, textarea,
 
         // 割合分析表示を更新
         calculateAndDrawAnalysis(activeData, getCurrentAnalysisOpponentLabel());
+        renderServeEffectAnalytics(currentView);
         updateCurrentRotationAnalysisVisibility();
         updateReportPdfButton();
 
