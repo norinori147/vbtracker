@@ -1,4 +1,4 @@
-const CACHE_NAME = 'seimei-vb-tracker-v1-4-16b-set-history-5-column-layout-build-20260811';
+const CACHE_NAME = 'seimei-vb-tracker-v1-4-16b-set-history-grid-1-2-1-1-1-build-20260811';
 const ASSETS = [
   './',
   './index.html',
