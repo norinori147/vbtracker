@@ -89,11 +89,18 @@
         }
         
         .scoreboard { position: relative; display: flex; justify-content: space-between; align-items: center; gap: 8px; background: linear-gradient(135deg, var(--primary), #3b82f6); color: white; padding: 10px 12px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 170px; box-sizing: border-box; }
-        .live-reception-dashboard { flex: 0 0 86px; width: 86px; padding: 7px 8px; border-radius: 8px; background: rgba(15,23,42,0.62); border: 1px solid rgba(255,255,255,0.24); font-size: 0.8rem; line-height: 1.38; font-weight: 800; text-align: left; color: #e0f2fe; box-sizing: border-box; }
-        .live-reception-dashboard div { display: flex; justify-content: space-between; gap: 4px; white-space: nowrap; }
-        .live-reception-dashboard .live-reception-title { display: block; margin: 0 0 4px 0; padding-bottom: 4px; border-bottom: 1px solid rgba(186,230,253,0.24); color: #bae6fd; font-size: 0.68rem; font-weight: 900; line-height: 1.1; text-align: center; }
-        .live-reception-dashboard .live-rec-label { flex: 0 0 18px; color: #bfdbfe; }
-        .live-reception-dashboard .live-rec-value { color: #fff; font-weight: 950; font-variant-numeric: tabular-nums; text-align: right; }
+        .live-dashboard-stack { flex: 0 0 86px; width: 86px; display: flex; flex-direction: column; gap: 3px; }
+        .live-reception-dashboard,
+        .live-serve-effect-dashboard { width: 100%; padding: 4px 8px; border-radius: 8px; background: rgba(15,23,42,0.62); border: 1px solid rgba(255,255,255,0.24); font-family: inherit; font-size: 0.76rem; line-height: 1.28; font-weight: 800; text-align: left; color: #e0f2fe; box-sizing: border-box; }
+        .live-dashboard-stack .live-reception-dashboard { flex: none; width: 100%; }
+        .live-reception-dashboard div,
+        .live-serve-effect-dashboard div { display: flex; justify-content: space-between; gap: 4px; white-space: nowrap; }
+        .live-reception-dashboard .live-reception-title,
+        .live-serve-effect-dashboard .live-serve-effect-title { display: block; margin: 0 0 2px 0; padding-bottom: 2px; border-bottom: 1px solid rgba(186,230,253,0.24); color: #bae6fd; font-size: 0.62rem; font-weight: 900; line-height: 1.05; text-align: center; white-space: nowrap; }
+        .live-reception-dashboard .live-rec-label,
+        .live-serve-effect-dashboard .live-serve-effect-label { flex: 0 0 18px; color: #bfdbfe; }
+        .live-reception-dashboard .live-rec-value,
+        .live-serve-effect-dashboard .live-serve-effect-value { color: #fff; font-size: inherit; font-weight: 950; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
         .team-score { text-align: center; display: flex; flex: 0 1 130px; flex-direction: column; align-items: center; justify-content: center; }
         .score-num { font-size: 4.2rem; font-weight: bold; font-family: monospace; line-height: 1; margin: 2px 0; }
         .score-num.set-winner-ready { color: #fde047 !important; text-shadow: 0 0 10px rgba(253, 224, 71, 0.9), 0 2px 3px rgba(0,0,0,0.65); }
@@ -669,8 +676,11 @@
         @media (max-width: 1023px) {
             body { padding: 8px; }
             .scoreboard { height: auto; min-height: 160px; padding: 10px 8px; gap: 7px; }
-            .live-reception-dashboard { flex-basis: 82px; width: 82px; padding: 6px 7px; font-size: 0.7rem; }
-            .live-reception-title { font-size: 0.62rem; margin-bottom: 3px; padding-bottom: 3px; }
+            .live-dashboard-stack { flex-basis: 82px; width: 82px; }
+            .live-reception-dashboard,
+            .live-serve-effect-dashboard { padding: 4px 7px; font-size: 0.68rem; line-height: 1.24; }
+            .live-reception-dashboard .live-reception-title,
+            .live-serve-effect-dashboard .live-serve-effect-title { font-size: 0.58rem; }
             .score-num { font-size: clamp(3rem, 10vw, 4.2rem); }
             .grid { grid-template-columns: 1fr; }
             .main-action-strip { grid-template-columns: 1fr 1fr; }
@@ -884,8 +894,11 @@
 
         .header-panel { gap: 8px !important; margin-bottom: 8px !important; }
         .scoreboard { height: 132px; min-height: 132px; padding: 7px 10px; border-radius: 10px; }
-        .live-reception-dashboard { flex-basis: 80px; width: 80px; padding: 5px 6px; font-size: 0.66rem; }
-        .live-reception-title { font-size: 0.58rem; }
+        .live-dashboard-stack { flex-basis: 80px; width: 80px; gap: 2px; }
+        .live-reception-dashboard,
+        .live-serve-effect-dashboard { padding: 3px 6px; font-size: 0.64rem; line-height: 1.18; }
+        .live-reception-dashboard .live-reception-title,
+        .live-serve-effect-dashboard .live-serve-effect-title { font-size: 0.56rem; }
         .score-num { font-size: clamp(2.65rem, 5.8vw, 3.45rem); }
         .set-info { font-size: 0.92rem; padding: 6px 8px; min-width: 66px; }
         .set-info button { margin-top: 5px !important; padding: 3px 8px !important; font-size: 0.74rem !important; }
@@ -1380,11 +1393,18 @@ button, input, select, textarea,
     <div class="header-panel">
         <div class="scoreboard-box">
             <div class="scoreboard">
-                <div class="live-reception-dashboard" id="live-reception-dashboard">
-                    <div class="live-reception-title">レセプション</div>
-                    <div><span class="live-rec-label">受</span><span class="live-rec-value" id="live-rec-total">0</span></div>
-                    <div><span class="live-rec-label">A</span><span class="live-rec-value" id="live-rec-a-rate">0.0%</span></div>
-                    <div><span class="live-rec-label">AB</span><span class="live-rec-value" id="live-rec-ab-rate">0.0%</span></div>
+                <div class="live-dashboard-stack">
+                    <div class="live-reception-dashboard" id="live-reception-dashboard">
+                        <div class="live-reception-title">レセプション</div>
+                        <div><span class="live-rec-label">受</span><span class="live-rec-value" id="live-rec-total">0</span></div>
+                        <div><span class="live-rec-label">A</span><span class="live-rec-value" id="live-rec-a-rate">0.0%</span></div>
+                        <div><span class="live-rec-label">AB</span><span class="live-rec-value" id="live-rec-ab-rate">0.0%</span></div>
+                    </div>
+                    <div class="live-serve-effect-dashboard" id="live-serve-effect-dashboard">
+                        <div class="live-serve-effect-title">S効果率</div>
+                        <div><span class="live-serve-effect-label">打</span><span class="live-serve-effect-value" id="live-serve-effect-attempts">0</span></div>
+                        <div><span class="live-serve-effect-label">率</span><span class="live-serve-effect-value" id="live-serve-effect-rate">－</span></div>
+                    </div>
                 </div>
                 <div class="scoreboard-left-setup">
                     <span style="font-size:0.65rem; color:rgba(255,255,255,0.8); font-weight:bold;">セット開始時</span>
@@ -2073,10 +2093,10 @@ button, input, select, textarea,
      * - Date normalization and active-set double-count prevention were added.
      * - Existing saved-data compatibility was preserved.
      */
-    const APP_VERSION = '1.4.15d';
+    const APP_VERSION = '1.4.16a';
     const APP_BUILD = '20260811';
     const APP_RELEASE_STATUS = 'Development';
-    const APP_RECOMMENDATION = 'SERVE EFFECT REPORT INTEGRATION';
+    const APP_RECOMMENDATION = 'LIVE SERVE EFFECT DASHBOARD';
 
     function updateAppVersionDisplay() {
         var versionEl = document.getElementById('app-version-display');
@@ -4849,6 +4869,15 @@ button, input, select, textarea,
         abRateEl.innerText = s.recABPct + '%';
     }
 
+    function updateLiveServeEffectDashboard() {
+        var attemptsEl = document.getElementById('live-serve-effect-attempts');
+        var rateEl = document.getElementById('live-serve-effect-rate');
+        if (!attemptsEl || !rateEl) return;
+        var aggregate = aggregateServeEffectRecords(collectServeEffectRecordsFromHistory(historyLog));
+        attemptsEl.innerText = aggregate.team.attempts;
+        rateEl.innerText = formatServeEffectRate(aggregate.team.rate);
+    }
+
     function renderReceptionAnalyticsRowsToTbody(tbody, statsData, nameMap, numberMap) {
         if (!tbody) return;
         var teamSummary = getPlayersReceptionTeamTotal(statsData);
@@ -5515,6 +5544,7 @@ button, input, select, textarea,
         renderPendingReceptionUI();
         renderServeReceptionUI();
         updateLiveReceptionDashboard();
+        updateLiveServeEffectDashboard();
         logContainer.scrollTop = logContainer.scrollHeight;
 
         drawCourt(currentRotationState);
