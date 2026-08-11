@@ -130,8 +130,10 @@
         .set-history-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
         .set-history-toolbar label { display: flex; align-items: center; gap: 6px; color: #cbd5e1; font-size: 0.78rem; font-weight: 800; white-space: nowrap; }
         .set-history-date-select { min-width: 132px; padding: 5px 8px; border: 1px solid #475569; border-radius: 6px; background: #0f172a; color: #e5e7eb; font: inherit; }
-        .set-history-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(76px, 90px) minmax(76px, 90px); align-items: center; gap: 8px; padding: 7px 4px; }
-        .set-history-main { min-width: 0; overflow-wrap: anywhere; }
+        .set-history-row { display: grid; grid-template-columns: minmax(145px, 180px) minmax(0, 1fr) 96px 96px 96px; align-items: center; column-gap: 6px; padding: 7px 4px; }
+        .set-history-match { min-width: 0; white-space: nowrap; }
+        .set-history-opponent { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .set-history-score { white-space: nowrap; font-variant-numeric: tabular-nums; text-align: center; }
         .set-history-metric { display: flex; justify-content: space-between; gap: 5px; min-width: 0; white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 900; text-align: right; }
         .set-history-metric-label { color: #94a3b8; font-size: 0.74rem; font-weight: 800; }
         .set-history-metric-value { color: #e0f2fe; }
@@ -4513,9 +4515,11 @@ button, input, select, textarea,
         container.innerHTML = items.map(function(item) {
             var summary = buildSetHistorySummary(item);
             return '<div class="history-item set-history-row" data-archive-id="' + escapeHtml(summary.id) + '">' +
-                '<div class="set-history-main">' + escapeHtml(summary.matchLabel) + '　第' + summary.setNumber + 'S　vs ' + escapeHtml(summary.opponent) + '　<b>[' + summary.ourScore + '-' + summary.opponentScore + ']</b>　' + summary.result + '</div>' +
-                '<div class="set-history-metric"><span class="set-history-metric-label">返球</span><span class="set-history-metric-value">' + summary.receptionABRate + '</span></div>' +
-                '<div class="set-history-metric"><span class="set-history-metric-label">S効果</span><span class="set-history-metric-value">' + summary.serveEffectRate + '</span></div>' +
+                '<div class="set-history-match">' + escapeHtml(summary.matchLabel) + '　第' + summary.setNumber + 'S</div>' +
+                '<div class="set-history-opponent">vs ' + escapeHtml(summary.opponent) + '</div>' +
+                '<div class="set-history-score"><b>[' + summary.ourScore + '-' + summary.opponentScore + ']</b>　' + summary.result + '</div>' +
+                '<div class="set-history-metric set-history-reception"><span class="set-history-metric-label">返球</span><span class="set-history-metric-value">' + summary.receptionABRate + '</span></div>' +
+                '<div class="set-history-metric set-history-serve-effect"><span class="set-history-metric-label">S効果</span><span class="set-history-metric-value">' + summary.serveEffectRate + '</span></div>' +
                 '</div>';
         }).join('');
     }
