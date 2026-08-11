@@ -4539,6 +4539,35 @@ button, input, select, textarea,
         };
     }
 
+    function buildReportAllTimeSummary(items, receptionSection, serveEffectSection) {
+        var setSummary = buildReportSetSummaries(items);
+        var wins = 0;
+        var losses = 0;
+        setSummary.rows.forEach(function(row) {
+            if (row.result === '○') wins++;
+            else if (row.result === '●') losses++;
+        });
+        var receptionRate = '－';
+        if (receptionSection && receptionSection.available && receptionSection.teamTotal && receptionSection.teamTotal.total > 0) {
+            receptionRate = safeStatNumber(receptionSection.teamTotal.abRate).toFixed(1) + '%';
+        }
+        var serveEffectRate = '－';
+        var serveRows = serveEffectSection && Array.isArray(serveEffectSection.rows) ? serveEffectSection.rows : [];
+        for (var i = 0; i < serveRows.length; i++) {
+            if (serveRows[i].teamTotal) {
+                serveEffectRate = serveRows[i].rateText;
+                break;
+            }
+        }
+        return {
+            totalSets: setSummary.rows.length,
+            wins: wins,
+            losses: losses,
+            receptionABRate: receptionRate,
+            serveEffectRate: serveEffectRate
+        };
+    }
+
     function renderSetHistoryRows(items, container) {
         if (!container) return;
         items = Array.isArray(items) ? items : [];
@@ -6339,6 +6368,9 @@ button, input, select, textarea,
             : collectServeEffectRecordsForView(scope);
         var serveEffectForReport = buildReportServeEffectSection(serveEffectRecordsForReport, reportNameMap, reportSource.numberMap);
         var setSummaryForReport = buildReportSetSummaries(reportSource.archiveItems);
+        var allTimeSummaryForReport = scope === 'all'
+            ? buildReportAllTimeSummary(reportSource.archiveItems, receptionForReport, serveEffectForReport)
+            : null;
         var reportData = {
             schemaVersion: 1,
             reportType: reportSource.request.source + '-' + scope,
@@ -6367,6 +6399,7 @@ button, input, select, textarea,
             notes: reportSource.notes || [],
             teamSummary: buildReportTeamSummary(reportSource, statsData, setScoresForReport, receptionForReport, scoringForReport),
             setSummary: setSummaryForReport,
+            allTimeSummary: allTimeSummaryForReport,
             statTable: {
                 columns: ['選手名', '得点', 'スパイク', 'ブロック', 'サーブ', 'ミス', '反則'],
                 rows: buildReportStatRows(statsData, reportNameMap, reportSource.numberMap, reportSource.displayIds)
@@ -6746,6 +6779,30 @@ button, input, select, textarea,
         return doc.lastAutoTable ? doc.lastAutoTable.finalY : startY + 13;
     }
 
+    function drawReportAllTimeSummarySection(doc, drawTable, reportData, startY) {
+        drawReportSectionTitle(doc, '全通算サマリー', startY);
+        var summary = reportData.allTimeSummary || { totalSets: 0, wins: 0, losses: 0, receptionABRate: '－', serveEffectRate: '－' };
+        drawTable({
+            startY: startY + 5,
+            head: [['対象セット', '勝', '敗', '返球率', 'S効果率']],
+            body: [[String(summary.totalSets), String(summary.wins), String(summary.losses), summary.receptionABRate, summary.serveEffectRate]],
+            theme: 'grid',
+            tableWidth: 'wrap',
+            styles: { font: PDF_FONT_FAMILY, fontStyle: 'normal', fontSize: 9.5, cellPadding: 1.7, minCellHeight: 6.5, textColor: [0, 0, 0], lineColor: [100, 116, 139], lineWidth: 0.2, halign: 'center' },
+            bodyStyles: { font: PDF_FONT_FAMILY, fontStyle: 'bold' },
+            headStyles: { font: PDF_FONT_FAMILY, fontStyle: 'normal', fontSize: 9, fillColor: [30, 58, 138], textColor: [255, 255, 255], halign: 'center' },
+            columnStyles: {
+                0: { cellWidth: 48 },
+                1: { cellWidth: 38 },
+                2: { cellWidth: 38 },
+                3: { cellWidth: 52, halign: 'right' },
+                4: { cellWidth: 55, halign: 'right' }
+            },
+            margin: { top: 14, left: 14, right: 14, bottom: 12 }
+        });
+        return doc.lastAutoTable ? doc.lastAutoTable.finalY : startY + 14;
+    }
+
     function buildReportPdfBlob(reportData, fontsBase64) {
         if (!window.jspdf || typeof window.jspdf.jsPDF !== 'function') throw new Error('jsPDFを利用できません。');
         var doc = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', compress: true });
@@ -6765,8 +6822,10 @@ button, input, select, textarea,
 
         drawTeamSummary(doc, reportData, 145, 4);
         var drawTable = getPdfAutoTableFunction(doc);
-        var setSummaryEndY = drawReportSetSummarySection(doc, drawTable, reportData, 34);
-        var basicStatsTitleY = setSummaryEndY + 8;
+        var reportSummaryEndY = reportData.scope.key === 'all'
+            ? drawReportAllTimeSummarySection(doc, drawTable, reportData, 34)
+            : drawReportSetSummarySection(doc, drawTable, reportData, 34);
+        var basicStatsTitleY = reportSummaryEndY + 8;
         if (basicStatsTitleY > 178) {
             doc.addPage('a4', 'landscape');
             basicStatsTitleY = 18;
