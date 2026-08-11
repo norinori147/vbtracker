@@ -223,13 +223,18 @@
         .serve-effect-analysis-table td:nth-child(n+3) {
             text-align: right;
             font-variant-numeric: tabular-nums;
-            width: calc((70% - 64px) / 5);
+            width: 12%;
         }
-        .serve-effect-analysis-table { table-layout: fixed; min-width: 640px; }
+        .serve-effect-analysis-table { table-layout: fixed; }
         .serve-effect-analysis-table th:nth-child(1),
-        .serve-effect-analysis-table td:nth-child(1) { width: 64px; }
+        .serve-effect-analysis-table td:nth-child(1) { width: 6%; }
         .serve-effect-analysis-table th:nth-child(2),
-        .serve-effect-analysis-table td:nth-child(2) { width: 30%; }
+        .serve-effect-analysis-table td:nth-child(2) {
+            width: 34%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
         .serve-effect-analysis-table th:nth-child(7),
         .serve-effect-analysis-table td:nth-child(7) { white-space: nowrap; }
         .serve-effect-analysis-table .serve-effect-reference-row {
