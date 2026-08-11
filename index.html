@@ -127,6 +127,15 @@
         .history-scroll-box { flex: 1; overflow-y: auto; font-size: 0.75rem; color: #4b5563; padding: 2px 5px; background: #fafafa; border-radius: 4px; border: 1px solid #f0f0f0; }
         .history-item { padding: 2px 0; border-bottom: 1px dashed #e5e7eb; }
         .history-item:last-child { border-bottom: none; }
+        .set-history-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .set-history-toolbar label { display: flex; align-items: center; gap: 6px; color: #cbd5e1; font-size: 0.78rem; font-weight: 800; white-space: nowrap; }
+        .set-history-date-select { min-width: 132px; padding: 5px 8px; border: 1px solid #475569; border-radius: 6px; background: #0f172a; color: #e5e7eb; font: inherit; }
+        .set-history-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(76px, 90px) minmax(76px, 90px); align-items: center; gap: 8px; padding: 7px 4px; }
+        .set-history-main { min-width: 0; overflow-wrap: anywhere; }
+        .set-history-metric { display: flex; justify-content: space-between; gap: 5px; min-width: 0; white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 900; text-align: right; }
+        .set-history-metric-label { color: #94a3b8; font-size: 0.74rem; font-weight: 800; }
+        .set-history-metric-value { color: #e0f2fe; }
+        .set-history-empty { padding: 20px 8px; text-align: center; color: #94a3b8; }
 
         /* 右側：ローテ位置 */
         .rotation-court { background: #e0f2fe; border: 2px solid var(--primary); border-radius: 12px; padding: 8px; padding-top: 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 170px; box-sizing: border-box; }
@@ -1781,11 +1790,16 @@ button, input, select, textarea,
 
     <div class="modal-overlay" id="historyModal" onclick="closeModalOnBackdrop(event, 'historyModal')">
         <div class="modal-window">
-            <div class="modal-header"><h2>📜 本日のセット履歴</h2><button class="modal-close" onclick="closeModal('historyModal')">閉じる</button></div>
+            <div class="modal-header"><h2>📜 セット履歴</h2><button class="modal-close" onclick="closeModal('historyModal')">閉じる</button></div>
             <div class="modal-body">
         <div class="history-panel-box">
             <div class="active-player-panel">
-                <div class="active-player-title">今日のセット履歴 📜</div>
+                <div class="set-history-toolbar">
+                    <div class="active-player-title" style="margin:0; flex:1;">セット履歴 📜</div>
+                    <label>日付
+                        <select id="set-history-date-select" class="set-history-date-select" onchange="renderSelectedSetHistory()"></select>
+                    </label>
+                </div>
                 <div class="history-scroll-box" id="set-history-display"></div>
             </div>
         </div>
@@ -2093,10 +2107,10 @@ button, input, select, textarea,
      * - Date normalization and active-set double-count prevention were added.
      * - Existing saved-data compatibility was preserved.
      */
-    const APP_VERSION = '1.4.16a';
+    const APP_VERSION = '1.4.16b';
     const APP_BUILD = '20260811';
     const APP_RELEASE_STATUS = 'Development';
-    const APP_RECOMMENDATION = 'LIVE SERVE EFFECT DASHBOARD';
+    const APP_RECOMMENDATION = 'SET HISTORY ENHANCEMENT';
 
     function updateAppVersionDisplay() {
         var versionEl = document.getElementById('app-version-display');
@@ -2111,6 +2125,7 @@ button, input, select, textarea,
         document.body.style.overflow = 'hidden';
         updateUI();
         if (id === 'archiveModal') ensureArchiveModalState();
+        if (id === 'historyModal') ensureSetHistoryModalState();
         if (id === 'dataModal') { updateStorageAnalyzer(); previewStorageOptimization(); }
     }
 
@@ -4436,6 +4451,98 @@ button, input, select, textarea,
         }
     }
 
+    function getSetHistoryDateOptions() {
+        var today = normalizeArchiveDateString(getTodayKey());
+        var dates = today ? [today] : [];
+        var items = Array.isArray(globalArchive) ? globalArchive : [];
+        for (var i = 0; i < items.length; i++) {
+            var dateKey = normalizeArchiveDateString(items[i] && items[i].date);
+            if (dateKey && dates.indexOf(dateKey) === -1) dates.push(dateKey);
+        }
+        return dates.sort().reverse();
+    }
+
+    function getSetHistoryArchiveItems(dateKey) {
+        var normalizedDate = normalizeArchiveDateString(dateKey);
+        var items = Array.isArray(globalArchive) ? globalArchive : [];
+        var seenIds = {};
+        return items.filter(function(item) {
+            if (!item || normalizeArchiveDateString(item.date) !== normalizedDate) return false;
+            var archiveId = String(item.id || '');
+            if (archiveId && seenIds[archiveId]) return false;
+            if (archiveId) seenIds[archiveId] = true;
+            return true;
+        }).sort(function(a, b) {
+            var matchDiff = safeStatNumber(a.matchNumber) - safeStatNumber(b.matchNumber);
+            if (matchDiff) return matchDiff;
+            var setDiff = safeStatNumber(a.setNum) - safeStatNumber(b.setNum);
+            if (setDiff) return setDiff;
+            return String(a.endedAt || a.timestamp || a.id || '').localeCompare(String(b.endedAt || b.timestamp || b.id || ''));
+        });
+    }
+
+    function buildSetHistorySummary(item) {
+        item = item || {};
+        var displayValues = getArchiveItemDisplayValues(item);
+        var reception = hasArchiveReceptionAnalyticsData(item.statsSnap)
+            ? getTeamReceptionSummary(item.statsSnap)
+            : null;
+        var serveEffect = aggregateServeEffectRecords(collectServeEffectRecordsFromHistory(item.historyLogSnap));
+        var usScore = safeStatNumber(displayValues.usScore);
+        var themScore = safeStatNumber(displayValues.themScore);
+        return {
+            id: String(item.id || ''),
+            matchLabel: item.matchLabel || (item.matchType === 'official' ? '公式戦 第' + (item.matchNumber || 1) + '試合' : '練習試合'),
+            setNumber: item.setNum || 1,
+            opponent: item.oppName || '相手',
+            ourScore: usScore,
+            opponentScore: themScore,
+            result: usScore > themScore ? '○' : (usScore < themScore ? '●' : '-'),
+            receptionABRate: reception && reception.recTotal > 0 ? reception.recABPct + '%' : '－',
+            serveEffectRate: formatServeEffectRate(serveEffect.team.rate)
+        };
+    }
+
+    function renderSetHistoryRows(items, container) {
+        if (!container) return;
+        items = Array.isArray(items) ? items : [];
+        if (items.length === 0) {
+            container.innerHTML = '<div class="set-history-empty">この日のセット履歴はありません</div>';
+            return;
+        }
+        container.innerHTML = items.map(function(item) {
+            var summary = buildSetHistorySummary(item);
+            return '<div class="history-item set-history-row" data-archive-id="' + escapeHtml(summary.id) + '">' +
+                '<div class="set-history-main">' + escapeHtml(summary.matchLabel) + '　第' + summary.setNumber + 'S　vs ' + escapeHtml(summary.opponent) + '　<b>[' + summary.ourScore + '-' + summary.opponentScore + ']</b>　' + summary.result + '</div>' +
+                '<div class="set-history-metric"><span class="set-history-metric-label">返球</span><span class="set-history-metric-value">' + summary.receptionABRate + '</span></div>' +
+                '<div class="set-history-metric"><span class="set-history-metric-label">S効果</span><span class="set-history-metric-value">' + summary.serveEffectRate + '</span></div>' +
+                '</div>';
+        }).join('');
+    }
+
+    function renderSelectedSetHistory() {
+        var select = document.getElementById('set-history-date-select');
+        var container = document.getElementById('set-history-display');
+        var selectedDate = select && select.value ? select.value : normalizeArchiveDateString(getTodayKey());
+        renderSetHistoryRows(getSetHistoryArchiveItems(selectedDate), container);
+    }
+
+    function ensureSetHistoryModalState() {
+        var select = document.getElementById('set-history-date-select');
+        if (!select) return;
+        var today = normalizeArchiveDateString(getTodayKey());
+        var dates = getSetHistoryDateOptions();
+        select.innerHTML = '';
+        for (var i = 0; i < dates.length; i++) {
+            var option = document.createElement('option');
+            option.value = dates[i];
+            option.innerText = dates[i];
+            select.appendChild(option);
+        }
+        select.value = dates.indexOf(today) !== -1 ? today : (dates[0] || '');
+        renderSelectedSetHistory();
+    }
+
     function getArchiveItemDisplayValues(item) {
         var scoreText = item && item.score !== null && item.score !== undefined ? String(item.score) : '';
         var scoreParts = scoreText.split('-');
@@ -5443,17 +5550,10 @@ button, input, select, textarea,
         subThemEl.classList.toggle('count-alert', subCount.them >= 5);
 
         var historyDisplay = document.getElementById('set-history-display');
-        if (setResults && setResults.length > 0) {
-            historyDisplay.innerHTML = setResults.map(function(r) { 
-                var mark = '-';
-                if (r.us > r.them) { mark = '○'; } else if (r.us < r.them) { mark = '●'; }
-                var rLabel = r.matchLabel ? (r.matchLabel + ' ') : '';
-                return '<div class="history-item">' + rLabel + '第' + r.set + 'S vs' + r.opp + ' <b>[' + r.us + '-' + r.them + ']</b> ' + mark + '</div>'; 
-            }).join('');
-            historyDisplay.scrollTop = historyDisplay.scrollHeight;
-        } else { 
-            historyDisplay.innerHTML = '<div style="color:#aaa; text-align:center; padding-top:10px;">履歴なし</div>'; 
-        }
+        var historyDateSelect = document.getElementById('set-history-date-select');
+        var historyDate = historyDateSelect && historyDateSelect.value ? historyDateSelect.value : normalizeArchiveDateString(getTodayKey());
+        renderSetHistoryRows(getSetHistoryArchiveItems(historyDate), historyDisplay);
+        historyDisplay.scrollTop = historyDisplay.scrollHeight;
 
         var currentRotationState = Object.assign({}, startingLineup);
         var currentServerState = (startSideSetting === 'S'); 
