@@ -2073,10 +2073,10 @@ button, input, select, textarea,
      * - Date normalization and active-set double-count prevention were added.
      * - Existing saved-data compatibility was preserved.
      */
-    const APP_VERSION = '1.4.15c';
+    const APP_VERSION = '1.4.15d';
     const APP_BUILD = '20260811';
     const APP_RELEASE_STATUS = 'Development';
-    const APP_RECOMMENDATION = 'ARCHIVE SERVE EFFECT ANALYTICS';
+    const APP_RECOMMENDATION = 'SERVE EFFECT REPORT INTEGRATION';
 
     function updateAppVersionDisplay() {
         var versionEl = document.getElementById('app-version-display');
@@ -4900,8 +4900,8 @@ button, input, select, textarea,
     }
 
     function collectServeEffectRecordsForView(view) {
-        var records = [];
         var scope = view === 'today' || view === 'all' ? view : 'set';
+        var archiveItems = [];
         if (scope !== 'set') {
             var selectedDateKey = normalizeArchiveDateString(matchDateKey || getTodayKey());
             var items = Array.isArray(globalArchive) ? globalArchive : [];
@@ -4909,10 +4909,10 @@ button, input, select, textarea,
                 var item = items[i];
                 if (!item) continue;
                 if (scope === 'today' && normalizeArchiveDateString(item.date) !== selectedDateKey) continue;
-                records = records.concat(collectServeEffectRecordsFromHistory(item.historyLogSnap));
+                archiveItems.push(item);
             }
         }
-        return records.concat(collectServeEffectRecordsFromHistory(historyLog));
+        return collectArchiveServeEffectRecords(archiveItems).concat(collectServeEffectRecordsFromHistory(historyLog));
     }
 
     function createEmptyServeEffectSummary(id) {
@@ -5914,6 +5914,38 @@ button, input, select, textarea,
         };
     }
 
+    function buildReportServeEffectSection(records, nameMap, numberMap) {
+        var aggregate = aggregateServeEffectRecords(records);
+        nameMap = nameMap || playerNames;
+        numberMap = numberMap || playerNumbers;
+        for (var i = 0; i < aggregate.players.length; i++) {
+            aggregate.players[i].number = numberMap[aggregate.players[i].id] || '';
+        }
+        aggregate.players.sort(compareServeEffectSummaries);
+        function reportRow(summary, teamRow) {
+            return {
+                id: summary.id,
+                number: teamRow ? '' : (numberMap[summary.id] || ''),
+                name: teamRow ? 'チーム全体' : (nameMap[summary.id] || summary.id),
+                attempts: summary.attempts,
+                points: summary.points,
+                effects: summary.effects,
+                misses: summary.misses,
+                rateText: formatServeEffectRate(summary.rate),
+                reference: !teamRow && summary.attempts === 1,
+                teamTotal: !!teamRow
+            };
+        }
+        var rows = aggregate.players.map(function(summary) { return reportRow(summary, false); });
+        if (aggregate.recordCount > 0) rows.push(reportRow(aggregate.team, true));
+        return {
+            available: aggregate.recordCount > 0,
+            emptyMessage: 'サーブ効果データなし',
+            columns: ['No', '選手名', '打数', 'P', '効果', 'ミス', '効果率'],
+            rows: rows
+        };
+    }
+
     function getOpponentErrorPointTotal(statsData) {
         var d = (statsData && statsData.team) || {};
         return safeStatNumber(d.attack_error) + safeStatNumber(d.block_error) + safeStatNumber(d.serve_error) +
@@ -6134,6 +6166,10 @@ button, input, select, textarea,
         }
         var scoringForReport = buildReportScoringSection(statsData);
         var scoringAnalysisForReport = buildScoringAnalysis(statsData);
+        var serveEffectRecordsForReport = reportSource.request.source === 'archive'
+            ? collectArchiveServeEffectRecords(reportSource.archiveItems)
+            : collectServeEffectRecordsForView(scope);
+        var serveEffectForReport = buildReportServeEffectSection(serveEffectRecordsForReport, reportNameMap, reportSource.numberMap);
         var reportData = {
             schemaVersion: 1,
             reportType: reportSource.request.source + '-' + scope,
@@ -6166,6 +6202,7 @@ button, input, select, textarea,
                 rows: buildReportStatRows(statsData, reportNameMap, reportSource.numberMap, reportSource.displayIds)
             },
             reception: receptionForReport,
+            serveEffect: serveEffectForReport,
             scoring: scoringForReport,
             scoringAnalysis: scoringAnalysisForReport
         };
@@ -6462,6 +6499,48 @@ button, input, select, textarea,
         }
     }
 
+    function drawReportServeEffectSection(doc, drawTable, reportData, startY) {
+        drawReportSectionTitle(doc, 'サーブ効果分析', startY);
+        if (!reportData.serveEffect.available) {
+            doc.setFont(PDF_FONT_FAMILY, 'normal');
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            doc.text(reportData.serveEffect.emptyMessage, 18, startY + 14);
+            return startY + 18;
+        }
+        var serveRows = reportData.serveEffect.rows.map(function(row) {
+            return [row.number, row.reference ? row.name + '（参考）' : row.name, String(row.attempts), String(row.points), String(row.effects), String(row.misses), row.rateText];
+        });
+        drawTable({
+            startY: startY + 6,
+            head: [reportData.serveEffect.columns],
+            body: serveRows,
+            theme: 'grid',
+            tableWidth: 'wrap',
+            styles: { font: PDF_FONT_FAMILY, fontStyle: 'normal', fontSize: 10, cellPadding: 2.4, minCellHeight: 8.5, textColor: [0, 0, 0], lineColor: [100, 116, 139], lineWidth: 0.2 },
+            bodyStyles: { font: PDF_FONT_FAMILY, fontStyle: 'bold' },
+            headStyles: { font: PDF_FONT_FAMILY, fontStyle: 'normal', fontSize: 10, fillColor: [30, 58, 138], textColor: [255, 255, 255], halign: 'center' },
+            columnStyles: {
+                0: { cellWidth: 20, halign: 'center' },
+                1: { cellWidth: 81, halign: 'left', fontStyle: 'bold', fontSize: 10.5 },
+                2: { cellWidth: 28, halign: 'right' },
+                3: { cellWidth: 28, halign: 'right' },
+                4: { cellWidth: 28, halign: 'right' },
+                5: { cellWidth: 28, halign: 'right' },
+                6: { cellWidth: 34, halign: 'right' }
+            },
+            margin: { top: 14, left: 14, right: 14, bottom: 16 },
+            didParseCell: function(data) {
+                if (data.section !== 'body') return;
+                var reportRow = reportData.serveEffect.rows[data.row.index];
+                if (!reportRow) return;
+                if (reportRow.reference) data.cell.styles.fillColor = [254, 249, 195];
+                if (reportRow.teamTotal) data.cell.styles.fillColor = [219, 234, 254];
+            }
+        });
+        return doc.lastAutoTable ? doc.lastAutoTable.finalY : startY + 18;
+    }
+
     function buildReportPdfBlob(reportData, fontsBase64) {
         if (!window.jspdf || typeof window.jspdf.jsPDF !== 'function') throw new Error('jsPDFを利用できません。');
         var doc = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', compress: true });
@@ -6568,7 +6647,13 @@ button, input, select, textarea,
         }
 
         var receptionEndY = reportData.reception.available && doc.lastAutoTable ? doc.lastAutoTable.finalY : 36;
-        var scoringTitleY = receptionEndY + 14;
+        var serveEffectTitleY = receptionEndY + 14;
+        if (serveEffectTitleY > 170) {
+            doc.addPage('a4', 'landscape');
+            serveEffectTitleY = 18;
+        }
+        var serveEffectEndY = drawReportServeEffectSection(doc, drawTable, reportData, serveEffectTitleY);
+        var scoringTitleY = serveEffectEndY + 14;
         if (scoringTitleY > 118) {
             doc.addPage('a4', 'landscape');
             scoringTitleY = 18;
