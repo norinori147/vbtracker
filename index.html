@@ -135,6 +135,7 @@
         .set-history-opponent { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .set-history-score { white-space: nowrap; font-variant-numeric: tabular-nums; text-align: center; }
         .set-history-metric { display: flex; justify-content: space-between; gap: 5px; min-width: 0; white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 900; text-align: right; }
+        .set-history-reception, .set-history-serve-effect { padding-right: 1em; box-sizing: border-box; }
         .set-history-metric-label { color: #94a3b8; font-size: 0.74rem; font-weight: 800; }
         .set-history-metric-value { color: #e0f2fe; }
         .set-history-empty { padding: 20px 8px; text-align: center; color: #94a3b8; }
@@ -4518,8 +4519,8 @@ button, input, select, textarea,
                 '<div class="set-history-match">' + escapeHtml(summary.matchLabel) + '　第' + summary.setNumber + 'S</div>' +
                 '<div class="set-history-opponent">vs ' + escapeHtml(summary.opponent) + '</div>' +
                 '<div class="set-history-score"><b>[' + summary.ourScore + '-' + summary.opponentScore + ']</b>　' + summary.result + '</div>' +
-                '<div class="set-history-metric set-history-reception"><span class="set-history-metric-label">返球</span><span class="set-history-metric-value">' + summary.receptionABRate + '</span></div>' +
-                '<div class="set-history-metric set-history-serve-effect"><span class="set-history-metric-label">S効果</span><span class="set-history-metric-value">' + summary.serveEffectRate + '</span></div>' +
+                '<div class="set-history-metric set-history-reception"><span class="set-history-metric-label">返球率</span><span class="set-history-metric-value">' + summary.receptionABRate + '</span></div>' +
+                '<div class="set-history-metric set-history-serve-effect"><span class="set-history-metric-label">S効果率</span><span class="set-history-metric-value">' + summary.serveEffectRate + '</span></div>' +
                 '</div>';
         }).join('');
     }
