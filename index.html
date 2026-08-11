@@ -2110,10 +2110,10 @@ button, input, select, textarea,
      * - Date normalization and active-set double-count prevention were added.
      * - Existing saved-data compatibility was preserved.
      */
-    const APP_VERSION = '1.4.16b';
+    const APP_VERSION = '1.4.16c';
     const APP_BUILD = '20260811';
     const APP_RELEASE_STATUS = 'Development';
-    const APP_RECOMMENDATION = 'SET HISTORY ENHANCEMENT';
+    const APP_RECOMMENDATION = 'SET SUMMARY REPORT INTEGRATION';
 
     function updateAppVersionDisplay() {
         var versionEl = document.getElementById('app-version-display');
@@ -4506,6 +4506,39 @@ button, input, select, textarea,
         };
     }
 
+    function buildReportSetSummaries(items) {
+        var seenIds = {};
+        var uniqueItems = (Array.isArray(items) ? items : []).filter(function(item) {
+            if (!item) return false;
+            var archiveId = String(item.id || '');
+            if (archiveId && seenIds[archiveId]) return false;
+            if (archiveId) seenIds[archiveId] = true;
+            return true;
+        });
+        uniqueItems = sortArchiveItemsOldestFirst(uniqueItems);
+        return {
+            available: uniqueItems.length > 0,
+            emptyMessage: 'セットデータなし',
+            columns: ['セット', '対戦相手', 'スコア', '結果', '返球率', 'S効果率'],
+            rows: uniqueItems.map(function(item) {
+                var summary = buildSetHistorySummary(item);
+                var setLabel = '第' + summary.setNumber + 'S';
+                if (item.matchType === 'official' && item.matchNumber) {
+                    setLabel = '第' + item.matchNumber + '試合 ' + setLabel;
+                }
+                return {
+                    id: summary.id,
+                    setLabel: setLabel,
+                    opponent: summary.opponent,
+                    score: summary.ourScore + '-' + summary.opponentScore,
+                    result: summary.result,
+                    receptionABRate: summary.receptionABRate,
+                    serveEffectRate: summary.serveEffectRate
+                };
+            })
+        };
+    }
+
     function renderSetHistoryRows(items, container) {
         if (!container) return;
         items = Array.isArray(items) ? items : [];
@@ -6305,6 +6338,7 @@ button, input, select, textarea,
             ? collectArchiveServeEffectRecords(reportSource.archiveItems)
             : collectServeEffectRecordsForView(scope);
         var serveEffectForReport = buildReportServeEffectSection(serveEffectRecordsForReport, reportNameMap, reportSource.numberMap);
+        var setSummaryForReport = buildReportSetSummaries(reportSource.archiveItems);
         var reportData = {
             schemaVersion: 1,
             reportType: reportSource.request.source + '-' + scope,
@@ -6332,6 +6366,7 @@ button, input, select, textarea,
             },
             notes: reportSource.notes || [],
             teamSummary: buildReportTeamSummary(reportSource, statsData, setScoresForReport, receptionForReport, scoringForReport),
+            setSummary: setSummaryForReport,
             statTable: {
                 columns: ['選手名', '得点', 'スパイク', 'ブロック', 'サーブ', 'ミス', '反則'],
                 rows: buildReportStatRows(statsData, reportNameMap, reportSource.numberMap, reportSource.displayIds)
@@ -6676,6 +6711,41 @@ button, input, select, textarea,
         return doc.lastAutoTable ? doc.lastAutoTable.finalY : startY + 18;
     }
 
+    function drawReportSetSummarySection(doc, drawTable, reportData, startY) {
+        drawReportSectionTitle(doc, 'セットサマリー', startY);
+        var section = reportData.setSummary || { available: false, emptyMessage: 'セットデータなし', columns: [], rows: [] };
+        if (!section.available) {
+            doc.setFont(PDF_FONT_FAMILY, 'normal');
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+            doc.text(section.emptyMessage || 'セットデータなし', 18, startY + 9);
+            return startY + 13;
+        }
+        var summaryRows = section.rows.map(function(row) {
+            return [row.setLabel, row.opponent, row.score, row.result, row.receptionABRate, row.serveEffectRate];
+        });
+        drawTable({
+            startY: startY + 5,
+            head: [section.columns],
+            body: summaryRows,
+            theme: 'grid',
+            tableWidth: 'wrap',
+            styles: { font: PDF_FONT_FAMILY, fontStyle: 'normal', fontSize: 8.5, cellPadding: 1.4, minCellHeight: 6, textColor: [0, 0, 0], lineColor: [100, 116, 139], lineWidth: 0.2 },
+            bodyStyles: { font: PDF_FONT_FAMILY, fontStyle: 'bold' },
+            headStyles: { font: PDF_FONT_FAMILY, fontStyle: 'normal', fontSize: 8.5, fillColor: [30, 58, 138], textColor: [255, 255, 255], halign: 'center' },
+            columnStyles: {
+                0: { cellWidth: 38, halign: 'center' },
+                1: { cellWidth: 88, halign: 'left' },
+                2: { cellWidth: 34, halign: 'center' },
+                3: { cellWidth: 22, halign: 'center' },
+                4: { cellWidth: 34, halign: 'right' },
+                5: { cellWidth: 37, halign: 'right' }
+            },
+            margin: { top: 14, left: 14, right: 14, bottom: 12 }
+        });
+        return doc.lastAutoTable ? doc.lastAutoTable.finalY : startY + 13;
+    }
+
     function buildReportPdfBlob(reportData, fontsBase64) {
         if (!window.jspdf || typeof window.jspdf.jsPDF !== 'function') throw new Error('jsPDFを利用できません。');
         var doc = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', compress: true });
@@ -6694,7 +6764,14 @@ button, input, select, textarea,
         drawFittedReportText(doc, reportData.header.summary, 14, 23.5, 125, 10, 8.5);
 
         drawTeamSummary(doc, reportData, 145, 4);
-        drawReportSectionTitle(doc, '基本スタッツ', 34);
+        var drawTable = getPdfAutoTableFunction(doc);
+        var setSummaryEndY = drawReportSetSummarySection(doc, drawTable, reportData, 34);
+        var basicStatsTitleY = setSummaryEndY + 8;
+        if (basicStatsTitleY > 178) {
+            doc.addPage('a4', 'landscape');
+            basicStatsTitleY = 18;
+        }
+        drawReportSectionTitle(doc, '基本スタッツ', basicStatsTitleY);
 
         var tableBody = reportData.statTable.rows.map(function(row) {
             return [
@@ -6707,9 +6784,8 @@ button, input, select, textarea,
                 String(row.violations)
             ];
         });
-        var drawTable = getPdfAutoTableFunction(doc);
         drawTable({
-            startY: 37,
+            startY: basicStatsTitleY + 3,
             head: [reportData.statTable.columns],
             body: tableBody,
             theme: 'grid',
