@@ -1,4 +1,4 @@
-const CACHE_NAME = 'seimei-vb-tracker-v1-4-16c-all-time-summary-final-build-20260811';
+const CACHE_NAME = 'seimei-vb-tracker-v1-4-16d-set-time-correction-build-20260812';
 const ASSETS = [
   './',
   './index.html',

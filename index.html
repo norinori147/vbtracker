@@ -2110,10 +2110,10 @@ button, input, select, textarea,
      * - Date normalization and active-set double-count prevention were added.
      * - Existing saved-data compatibility was preserved.
      */
-    const APP_VERSION = '1.4.16c';
-    const APP_BUILD = '20260811';
+    const APP_VERSION = '1.4.16d';
+    const APP_BUILD = '20260812';
     const APP_RELEASE_STATUS = 'Development';
-    const APP_RECOMMENDATION = 'SET SUMMARY REPORT INTEGRATION';
+    const APP_RECOMMENDATION = 'SET START / END TIME CORRECTION';
 
     function updateAppVersionDisplay() {
         var versionEl = document.getElementById('app-version-display');
@@ -4247,6 +4247,7 @@ button, input, select, textarea,
         if (confirm('第 ' + currentSet + ' セットを終了し、データを保存して次のセットに進みますか？\n対戦相手: ' + oppTeamName + '\nスコア: ' + scoreUs + ' - ' + scoreThem)) {
             
             var now = new Date();
+            endedAt = now.toISOString();
             var weeks = ['日', '月', '火', '水', '木', '金', '土'];
             var dateString = normalizeArchiveDateString(matchDateKey || getTodayKey());
             var dayString = '（' + weeks[now.getDay()] + '）';
@@ -4294,6 +4295,8 @@ button, input, select, textarea,
             historyLog = []; 
             timeoutCount = { us: 0, them: 0 }; 
             subCount = { us: 0, them: 0 };
+            startedAt = null;
+            endedAt = null;
             startSideSetting = 'S'; 
             hasServeAuthority = true;
             clearPendingReception();
@@ -4495,6 +4498,7 @@ button, input, select, textarea,
         var themScore = safeStatNumber(displayValues.themScore);
         return {
             id: String(item.id || ''),
+            timeRangeText: displayValues.timeRangeText,
             matchLabel: item.matchLabel || (item.matchType === 'official' ? '公式戦 第' + (item.matchNumber || 1) + '試合' : '練習試合'),
             setNumber: item.setNum || 1,
             opponent: item.oppName || '相手',
@@ -4578,7 +4582,7 @@ button, input, select, textarea,
         container.innerHTML = items.map(function(item) {
             var summary = buildSetHistorySummary(item);
             return '<div class="history-item set-history-row" data-archive-id="' + escapeHtml(summary.id) + '">' +
-                '<div class="set-history-match">' + escapeHtml(summary.matchLabel) + '　第' + summary.setNumber + 'S</div>' +
+                '<div class="set-history-match">' + (summary.timeRangeText ? escapeHtml(summary.timeRangeText) + '<br>' : '') + escapeHtml(summary.matchLabel) + '　第' + summary.setNumber + 'S</div>' +
                 '<div class="set-history-opponent">vs ' + escapeHtml(summary.opponent) + '</div>' +
                 '<div class="set-history-score"><b>[' + summary.ourScore + '-' + summary.opponentScore + ']</b>　' + summary.result + '</div>' +
                 '<div class="set-history-metric set-history-reception"><span class="set-history-metric-label">返球率</span><span class="set-history-metric-value">' + summary.receptionABRate + '</span></div>' +
@@ -4615,12 +4619,34 @@ button, input, select, textarea,
         var scoreParts = scoreText.split('-');
         var timestampText = item && item.timestamp !== null && item.timestamp !== undefined ? String(item.timestamp) : '';
         var timestampParts = timestampText.split(' ');
+        function formatTime(value) {
+            if (!value) return '';
+            var date = new Date(value);
+            if (isNaN(date.getTime())) return '';
+            return String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0');
+        }
+        function getTimestampEndTime() {
+            var match = timestampText.match(/(?:^|\s)(\d{1,2}:\d{2})\s*$/);
+            return match ? match[1].padStart(5, '0') : '';
+        }
+        var startTimeText = formatTime(item && item.startedAt);
+        var endTimeText = formatTime(item && item.endedAt);
+        if (!endTimeText) endTimeText = getTimestampEndTime();
+        var timeRangeText = startTimeText
+            ? startTimeText + '〜' + endTimeText
+            : (endTimeText ? '〜' + endTimeText : '');
+        var dateText = item && item.date ? String(item.date) : (timestampParts.length > 1 ? timestampParts[0] : '');
         return {
             scoreText: scoreText,
             usScore: item && item.usScore !== null && item.usScore !== undefined ? item.usScore : parseInt(scoreParts[0], 10),
             themScore: item && item.themScore !== null && item.themScore !== undefined ? item.themScore : parseInt(scoreParts[1], 10),
             timestampText: timestampText,
-            timeText: timestampParts[1] || timestampText
+            timeText: timeRangeText,
+            startTimeText: startTimeText,
+            endTimeText: endTimeText,
+            timeRangeText: timeRangeText,
+            dateText: dateText,
+            dateTimeText: (dateText + (timeRangeText ? ' ' + timeRangeText : '')).trim()
         };
     }
 
@@ -4678,7 +4704,7 @@ button, input, select, textarea,
             if (uS > tS) { resultMark = '○'; } else if (uS < tS) { resultMark = '●'; }
 
             var itemLabel = item.matchLabel ? (item.matchLabel + ' ') : '';
-            opt.innerText = displayValues.timeText + '〜 ' + itemLabel + 'vs ' + item.oppName + ' (第' + item.setNum + 'S: ' + displayValues.scoreText + ') ' + resultMark;
+            opt.innerText = (displayValues.timeRangeText ? displayValues.timeRangeText + ' ' : '') + itemLabel + 'vs ' + item.oppName + ' (第' + item.setNum + 'S: ' + displayValues.scoreText + ') ' + resultMark;
             setSelect.appendChild(opt);
         }
 
@@ -4711,7 +4737,7 @@ button, input, select, textarea,
         if (uS > tS) { resultMark = '○'; } else if (uS < tS) { resultMark = '●'; }
 
         var matchedLabel = matched.matchLabel ? (matched.matchLabel + ' ') : '';
-        titleEl.innerText = '📑 【1セット記録】 ' + displayValues.timestampText + ' ' + matchedLabel + 'vs ' + matched.oppName + ' (第' + matched.setNum + 'S: ' + displayValues.scoreText + ') ' + resultMark;
+        titleEl.innerText = '📑 【1セット記録】 ' + displayValues.dateTimeText + ' ' + matchedLabel + 'vs ' + matched.oppName + ' (第' + matched.setNum + 'S: ' + displayValues.scoreText + ') ' + resultMark;
         var matchedStats = matched.statsSnap || createEmptyStats();
         renderTableRows(tbody, matchedStats, matched.playerNamesSnap, matched.playerNumbersSnap);
         renderArchiveReceptionAnalyticsRows(matched.statsSnap || null, matched.playerNamesSnap, matched.playerNumbersSnap);
