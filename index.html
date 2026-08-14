@@ -1362,6 +1362,52 @@
   max-width: 95%;
 }
 
+/* Record Analysis Phase 3: new UI only; Legacy analysis/archive styles remain unchanged. */
+.record-analysis-scope-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.record-analysis-scope-btn{flex:1;min-width:120px;padding:9px 8px;border:1px solid #475569;border-radius:9px;background:#1e293b;color:#cbd5e1;font-weight:800;cursor:pointer;}
+.record-analysis-scope-btn.active{background:#1d4ed8;border-color:#60a5fa;color:#fff;}
+.record-analysis-archive-controls{display:none;grid-template-columns:1fr 2fr;gap:10px;margin:8px 0 12px;}
+.record-analysis-archive-controls.active{display:grid;}
+.record-analysis-select{width:100%;padding:9px;border:1px solid #475569;border-radius:8px;background:#0f172a;color:#f8fafc;}
+.record-analysis-status{padding:8px 10px;margin-bottom:10px;border:1px solid #334155;border-radius:8px;background:#020617;color:#93c5fd;font-size:.82rem;}
+.record-analysis-context{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:9px 11px;margin-bottom:10px;border:1px solid #475569;border-radius:9px;background:linear-gradient(90deg,#0f172a,#111827);color:#e2e8f0;}
+.record-analysis-context-main{min-width:260px;line-height:1.45;}
+.record-analysis-context-primary{font-weight:900;color:#f8fafc;}
+.record-analysis-context-secondary{font-size:.82rem;color:#cbd5e1;}
+.record-analysis-opponents{margin-top:5px;max-width:min(520px,100%);}
+.record-analysis-opponents summary{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:4px 8px;border:1px solid #334155;border-radius:8px;background:#020617;color:#bfdbfe;font-size:.82rem;font-weight:800;cursor:pointer;list-style:none;user-select:none;}
+.record-analysis-opponents summary::-webkit-details-marker{display:none;}
+.record-analysis-opponents summary::after{content:'▼';font-size:.68rem;color:#94a3b8;}
+.record-analysis-opponents[open] summary::after{content:'▲';}
+.record-analysis-opponent-list{max-height:180px;overflow-y:auto;margin-top:5px;padding:6px 9px;border-left:2px solid #475569;color:#cbd5e1;font-size:.82rem;line-height:1.55;}
+.record-analysis-opponent-empty{margin-top:5px;color:#94a3b8;font-size:.82rem;}
+.record-analysis-context-metrics{display:flex;gap:8px;flex-wrap:wrap;}
+.record-analysis-context-chip{padding:5px 8px;border:1px solid #334155;border-radius:999px;background:#020617;color:#bfdbfe;font-size:.78rem;font-weight:800;white-space:nowrap;}
+.record-analysis-team-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0;}
+.record-analysis-summary-card{padding:9px;border:1px solid #334155;border-radius:8px;background:#0f172a;color:#e2e8f0;text-align:center;font-size:.82rem;}
+.record-analysis-tabs{display:flex;gap:7px;flex-wrap:nowrap;overflow-x:auto;margin:10px 0;}
+.record-analysis-tab{flex:1 1 0;min-width:112px;padding:8px 7px;border:1px solid #475569;border-radius:8px;background:#1e293b;color:#cbd5e1;font-weight:800;cursor:pointer;white-space:nowrap;}
+.record-analysis-tab.active{background:#0f766e;border-color:#5eead4;color:#fff;}
+.record-analysis-section{display:none;}
+.record-analysis-section.active{display:block;}
+.record-analysis-point-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+.record-analysis-point-card{padding:10px;border:1px solid #334155;border-radius:9px;background:#0f172a;color:#e2e8f0;}
+.record-analysis-point-card h4{margin:0 0 8px;color:#f8fafc;}
+.record-analysis-point-row{display:grid;grid-template-columns:1fr 64px 72px;gap:8px;padding:5px 0;border-bottom:1px solid #1e293b;align-items:center;}
+.record-analysis-point-row span:not(:first-child){text-align:right;font-variant-numeric:tabular-nums;}
+.record-analysis-point-total{margin-top:8px;text-align:right;font-weight:800;}
+.record-analysis-basic-table{min-width:700px;font-variant-numeric:tabular-nums;}
+.record-analysis-basic-table th:nth-child(2),.record-analysis-basic-table td:nth-child(2){min-width:112px;text-align:left!important;}
+.record-analysis-basic-table th.stat-pair-column{text-align:center!important;}
+.record-analysis-basic-table .stat-pair{min-width:82px;grid-template-columns:repeat(2,minmax(36px,1fr));gap:4px;}
+#recordAnalysisModal.active{align-items:flex-start;}
+.record-analysis-running-score{max-height:520px;overflow-y:auto;padding:8px;border:1px solid #334155;border-radius:8px;background:#020617;}
+.record-analysis-running-score .log-item{cursor:default;}
+.record-analysis-running-score .running-score-unknown{color:#94a3b8;border-left:3px solid #64748b;}
+.record-analysis-running-score .running-score-detail{color:#cbd5e1;}
+#recordAnalysisModal .stats-table th:not(:first-child),#recordAnalysisModal .stats-table td:not(:first-child){text-align:right;}
+@media(max-width:900px){.record-analysis-archive-controls{grid-template-columns:1fr}.record-analysis-team-summary,.record-analysis-point-grid{grid-template-columns:1fr}.record-analysis-context{align-items:flex-start}.record-analysis-context-main{min-width:0;flex:1 1 100%}}
+
 
 /* Ver.1.3.9: iPad Safari ダブルタップズーム抑制（CSS/viewport中心・JS preventDefaultなし） */
 html, body {
@@ -1398,6 +1444,7 @@ button, input, select, textarea,
         <button class="tool-btn" onclick="openModal('historyModal')">📜 セット履歴</button>
         <button class="tool-btn" onclick="openModal('statsModal')">📊 集計・分析</button>
         <button class="tool-btn" onclick="openModal('archiveModal')">📂 過去の記録</button>
+        <button class="tool-btn" onclick="openModal('recordAnalysisModal')">📊 記録分析</button>
         <button class="tool-btn" onclick="openModal('playersModal')">👥 基礎データ管理</button>
         <button class="tool-btn" onclick="openModal('dataModal')">💾 保存・読込</button>
     </div>
@@ -1658,6 +1705,75 @@ button, input, select, textarea,
                     <div class="match-summary-box" id="match-management-summary">現在の設定を表示します。</div>
                     <div class="footer-btns" style="margin-top:12px;">
                         <button class="action-btn btn-plus" type="button" onclick="applyMatchSettings()">適用</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="recordAnalysisModal" onclick="closeModalOnBackdrop(event, 'recordAnalysisModal')">
+        <div class="modal-window">
+            <div class="modal-header"><h2>📊 記録分析</h2><button class="modal-close" onclick="closeModal('recordAnalysisModal')">閉じる</button></div>
+            <div class="modal-body">
+                <div class="panel">
+                    <div class="record-analysis-scope-bar">
+                        <button class="record-analysis-scope-btn active" data-record-analysis-scope="current-set" onclick="selectRecordAnalysisScope('current-set')">現在のセット</button>
+                        <button id="record-analysis-current-match-btn" class="record-analysis-scope-btn" data-record-analysis-scope="current-match" onclick="selectRecordAnalysisScope('current-match')">現在の試合</button>
+                        <button class="record-analysis-scope-btn" data-record-analysis-scope="today" onclick="selectRecordAnalysisScope('today')">当日</button>
+                        <button class="record-analysis-scope-btn" data-record-analysis-scope="all" onclick="selectRecordAnalysisScope('all')">全通算</button>
+                        <button class="record-analysis-scope-btn" data-record-analysis-scope="archive" onclick="selectRecordAnalysisScope('archive')">過去の記録</button>
+                    </div>
+                    <div id="record-analysis-archive-controls" class="record-analysis-archive-controls">
+                        <label>日付<select id="record-analysis-date-select" class="record-analysis-select" onchange="onRecordAnalysisDateChanged()"></select></label>
+                        <label>対象<select id="record-analysis-set-select" class="record-analysis-select" onchange="renderRecordAnalysis()"></select></label>
+                    </div>
+                    <div id="record-analysis-status" class="record-analysis-status">現在進行中のセットを表示します。</div>
+                    <div id="record-analysis-context" class="record-analysis-context" aria-live="polite"></div>
+                    <div id="record-analysis-team-summary" class="record-analysis-team-summary"></div>
+
+                    <div class="record-analysis-tabs">
+                        <button class="record-analysis-tab active" data-record-analysis-tab="basic" onclick="selectRecordAnalysisTab('basic')">基本スタッツ</button>
+                        <button class="record-analysis-tab" data-record-analysis-tab="reception" onclick="selectRecordAnalysisTab('reception')">レセプション</button>
+                        <button class="record-analysis-tab" data-record-analysis-tab="serve-effect" onclick="selectRecordAnalysisTab('serve-effect')">サーブ効果</button>
+                        <button class="record-analysis-tab" data-record-analysis-tab="point-breakdown" onclick="selectRecordAnalysisTab('point-breakdown')">得点割合</button>
+                        <button id="record-analysis-rotation-tab" class="record-analysis-tab" data-record-analysis-tab="rotation" onclick="selectRecordAnalysisTab('rotation')">ローテーション</button>
+                        <button id="record-analysis-running-score-tab" class="record-analysis-tab" data-record-analysis-tab="running-score" onclick="selectRecordAnalysisTab('running-score')">ランニングスコア</button>
+                    </div>
+
+                    <div id="record-analysis-section-basic" class="analysis-box record-analysis-section active">
+                        <div class="analysis-title">基本スタッツ</div>
+                        <div class="table-container"><table class="stats-table record-analysis-basic-table"><thead><tr><th>No</th><th>選手名</th><th>得点</th><th class="stat-pair-column">スパイク<div class="stat-pair stat-pair-header"><span class="stat-pair-good-label">得</span><span>ミス</span></div></th><th class="stat-pair-column">ブロック<div class="stat-pair stat-pair-header"><span class="stat-pair-good-label">決定</span><span>ミス</span></div></th><th class="stat-pair-column">サーブ<div class="stat-pair stat-pair-header"><span class="stat-pair-good-label">Ace</span><span>ミス</span></div></th><th>ミス</th><th>反則</th></tr></thead><tbody id="record-analysis-basic-tbody"></tbody></table></div>
+                    </div>
+                    <div id="record-analysis-section-reception" class="analysis-box record-analysis-section">
+                        <div class="analysis-title">レセプション</div>
+                        <div class="table-container"><table class="stats-table"><thead><tr><th>No</th><th>選手名</th><th>受数</th><th>A</th><th>B</th><th>C</th><th>D</th><th>M</th><th>A率</th><th>AB率</th></tr></thead><tbody id="record-analysis-reception-tbody"></tbody></table></div>
+                    </div>
+                    <div id="record-analysis-section-serve-effect" class="analysis-box record-analysis-section">
+                        <div class="analysis-title">サーブ効果</div>
+                        <div class="table-container"><table class="stats-table"><thead><tr><th>No</th><th>選手名</th><th>打数</th><th>P</th><th>効果</th><th>ミス</th><th>効果率</th></tr></thead><tbody id="record-analysis-serve-tbody"></tbody></table></div>
+                    </div>
+                    <div id="record-analysis-section-point-breakdown" class="analysis-box record-analysis-section">
+                        <div class="analysis-title">得点割合</div>
+                        <div id="record-analysis-point-breakdown" class="record-analysis-point-grid"></div>
+                    </div>
+                    <div id="record-analysis-section-rotation" class="analysis-box record-analysis-section">
+                        <div class="analysis-title">🔄 ローテーション分析</div>
+                        <div class="rotation-analysis-note">※ 1セットSource専用。配置図は P4-P3-P2 / P5-P6-P1 で表示します。</div>
+                        <div class="table-container" style="max-height:720px;">
+                            <table class="rotation-analysis-table">
+                                <thead><tr><th>ローテ</th><th>配置図</th><th>得点</th><th>失点</th><th>得失点</th><th>得点率</th></tr></thead>
+                                <tbody id="record-analysis-rotation-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="record-analysis-section-running-score" class="analysis-box record-analysis-section">
+                        <div class="analysis-title">📝 ランニングスコア</div>
+                        <div class="rotation-analysis-note">※ 保存済み1セットの時系列記録を閲覧専用で表示します。</div>
+                        <div id="record-analysis-running-score" class="log-container record-analysis-running-score"></div>
+                    </div>
+                    <div class="footer-btns" style="margin-top:12px;">
+                        <button id="record-analysis-csv-btn" class="action-btn csv-btn" type="button">CSV出力</button>
+                        <button id="record-analysis-report-btn" class="action-btn print-btn" type="button">レポート</button>
                     </div>
                 </div>
             </div>
@@ -2128,6 +2244,7 @@ button, input, select, textarea,
         document.body.style.overflow = 'hidden';
         updateUI();
         if (id === 'archiveModal') ensureArchiveModalState();
+        if (id === 'recordAnalysisModal') ensureRecordAnalysisModalState();
         if (id === 'historyModal') ensureSetHistoryModalState();
         if (id === 'dataModal') { updateStorageAnalyzer(); previewStorageOptimization(); }
     }
@@ -4928,6 +5045,63 @@ button, input, select, textarea,
         };
     }
 
+    // Legacy 集計分析の得点割合を、DOM に依存しない共通データへ変換する。
+    function buildLegacyPointBreakdownData(statsData) {
+        statsData = statsData || {};
+        var ownPointKeys = ['attack_kill', 'block_kill', 'serve_ace'];
+        var errorPointKeys = [
+            'attack_error', 'block_error', 'serve_error',
+            'reception_error', 'dig_error', 'chanceball_error', 'toss_error',
+            'miscommunication_error', 'blockfollow_error', 'other_error',
+            'v_dribble', 'v_net', 'v_over', 'v_passing', 'v_positional',
+            'v_hold', 'v_backrow'
+        ];
+
+        function sumKeys(row, keys) {
+            row = row || {};
+            return keys.reduce(function(total, key) {
+                return total + safeStatNumber(row[key]);
+            }, 0);
+        }
+
+        function sumPlayers(keys) {
+            var total = 0;
+            for (var i = 1; i <= MAX_PLAYERS; i++) total += sumKeys(statsData['p' + i], keys);
+            return total;
+        }
+
+        function buildPair(firstKey, firstLabel, firstCount, secondKey, secondLabel, secondCount) {
+            var total = firstCount + secondCount;
+            var firstRate = total > 0 ? (firstCount / total) * 100 : 0;
+            var secondRate = total > 0 ? 100 - firstRate : 0;
+            var display = formatComplementaryPercentDisplay(firstRate);
+            return {
+                total: total,
+                items: [
+                    { key: firstKey, label: firstLabel, count: firstCount, rate: firstRate, rateText: display.primary },
+                    { key: secondKey, label: secondLabel, count: secondCount, rate: secondRate, rateText: display.complement }
+                ]
+            };
+        }
+
+        var opponent = statsData.team || {};
+        var scoringPair = buildPair('own', '自力', sumPlayers(ownPointKeys), 'opponent-error', '相手ミス', sumKeys(opponent, errorPointKeys));
+        var concedingPair = buildPair('opponent-own', '相手自力', sumKeys(opponent, ownPointKeys), 'own-error', '自チームミス', sumPlayers(errorPointKeys));
+        return {
+            scoring: scoringPair.items,
+            conceding: concedingPair.items,
+            scoringTotal: scoringPair.total,
+            concedingTotal: concedingPair.total
+        };
+    }
+
+    function buildAnalysisPointBreakdown(source) {
+        if (!source || source.ok !== true) {
+            return { scoring: [], conceding: [], scoringTotal: 0, concedingTotal: 0 };
+        }
+        return buildLegacyPointBreakdownData(source.statsData || {});
+    }
+
     function getOwnTeamTotalStats(statsData) {
         statsData = statsData || {};
         var total = {};
@@ -5463,52 +5637,30 @@ button, input, select, textarea,
 
     function calculateAndDrawAnalysis(activeData, opponentLabel) {
         setAnalysisOpponentLabel(opponentLabel || '相手');
-
-        // 1. <span class="self-team-text-label">清明</span>の得点内訳計算
-        var usOwnPoint = 0; // 自力得点（清明のスパイク、ブロック、エース）
-        for (var i = 1; i <= MAX_PLAYERS; i++) {
-            var pd = activeData['p' + i] || {};
-            usOwnPoint += (pd.attack_kill || 0) + (pd.block_kill || 0) + (pd.serve_ace || 0);
-        }
-        
-        var oppData = activeData['team'] || {};
-        // 相手の各種ミス、反則のすべて＝清明の得点になる
-        var usPointFromOppErr = (oppData.attack_error || 0) + (oppData.block_error || 0) + (oppData.serve_error || 0) +
-                                (oppData.reception_error || 0) + (oppData.dig_error || 0) + (oppData.chanceball_error || 0) + (oppData.toss_error || 0) + (oppData.miscommunication_error || 0) + (oppData.blockfollow_error || 0) + (oppData.other_error || 0) +
-                                (oppData.v_dribble || 0) + (oppData.v_net || 0) + (oppData.v_over || 0) + (oppData.v_passing || 0) + (oppData.v_positional || 0) + (oppData.v_hold || 0) + (oppData.v_backrow || 0);
-        
-        var totalUsScore = usOwnPoint + usPointFromOppErr;
+        var pointBreakdown = buildLegacyPointBreakdownData(activeData);
+        var scoringOwn = pointBreakdown.scoring[0];
+        var scoringError = pointBreakdown.scoring[1];
+        var concedingOwn = pointBreakdown.conceding[0];
+        var concedingError = pointBreakdown.conceding[1];
+        // Keep the Legacy bar-percentage statements stable for its regression contract.
+        var usOwnPoint = scoringOwn.count;
+        var totalUsScore = pointBreakdown.scoringTotal;
         var usOwnPct = 0; var usOppErrPct = 0;
         if (totalUsScore > 0) {
             usOwnPct = (usOwnPoint / totalUsScore) * 100;
             usOppErrPct = 100 - usOwnPct;
         }
-        var usDisplayPct = formatComplementaryPercentDisplay(usOwnPct);
-        document.getElementById('analysis-us-summary').innerText = totalUsScore + '点 (自力 ' + usDisplayPct.primary + ' : 相手ミス ' + usDisplayPct.complement + ')';
-        document.getElementById('bar-us-own').style.width = usOwnPct + '%';
-        document.getElementById('bar-us-opp-err').style.width = usOppErrPct + '%';
-
-        // 2. 相手チームの得点内訳計算
-        // 相手の自力得点（相手のアタック決定、ブロック決定、エース）
-        var themOwnPoint = (oppData.attack_kill || 0) + (oppData.block_kill || 0) + (oppData.serve_ace || 0);
-        
-        // 清明の各種ミス、反則のすべて＝相手チームの得点になる
-        var themPointFromUsErr = 0;
-        for (var i = 1; i <= MAX_PLAYERS; i++) {
-            var pd = activeData['p' + i] || {};
-            themPointFromUsErr += (pd.attack_error || 0) + (pd.block_error || 0) + (pd.serve_error || 0) +
-                                  (pd.reception_error || 0) + (pd.dig_error || 0) + (pd.chanceball_error || 0) + (pd.toss_error || 0) + (pd.miscommunication_error || 0) + (pd.blockfollow_error || 0) + (pd.other_error || 0) +
-                                  (pd.v_dribble || 0) + (pd.v_net || 0) + (pd.v_over || 0) + (pd.v_passing || 0) + (pd.v_positional || 0) + (pd.v_hold || 0) + (pd.v_backrow || 0);
-        }
-
-        var totalThemScore = themOwnPoint + themPointFromUsErr;
+        var themOwnPoint = concedingOwn.count;
+        var totalThemScore = pointBreakdown.concedingTotal;
         var themOwnPct = 0; var themUsErrPct = 0;
         if (totalThemScore > 0) {
             themOwnPct = (themOwnPoint / totalThemScore) * 100;
             themUsErrPct = 100 - themOwnPct;
         }
-        var themDisplayPct = formatComplementaryPercentDisplay(themOwnPct);
-        document.getElementById('analysis-them-summary').innerText = totalThemScore + '点 (自力 ' + themDisplayPct.primary + ' : ' + (selfTeamName || '清明') + 'ミス ' + themDisplayPct.complement + ')';
+        document.getElementById('analysis-us-summary').innerText = pointBreakdown.scoringTotal + '点 (自力 ' + scoringOwn.rateText + ' : 相手ミス ' + scoringError.rateText + ')';
+        document.getElementById('bar-us-own').style.width = usOwnPct + '%';
+        document.getElementById('bar-us-opp-err').style.width = usOppErrPct + '%';
+        document.getElementById('analysis-them-summary').innerText = pointBreakdown.concedingTotal + '点 (自力 ' + concedingOwn.rateText + ' : ' + (selfTeamName || '清明') + 'ミス ' + concedingError.rateText + ')';
         document.getElementById('bar-them-opp').style.width = themOwnPct + '%';
         document.getElementById('bar-them-own-err').style.width = themUsErrPct + '%';
         renderReceptionAnalyticsRows(activeData, getCurrentStatsNameMap(), playerNumbers);
@@ -5843,7 +5995,7 @@ button, input, select, textarea,
         return aggregated;
     }
 
-    function mergeArchivePlayerSnapshots(archiveItems) {
+    function mergeArchivePlayerSnapshots(archiveItems, allowCurrentRosterFallback) {
         var names = {};
         var numbers = {};
         (archiveItems || []).forEach(function(item) {
@@ -5859,8 +6011,8 @@ button, input, select, textarea,
         });
         for (var j = 1; j <= MAX_PLAYERS; j++) {
             var playerId = 'p' + j;
-            if (!names[playerId]) names[playerId] = playerNames[playerId] || ('選手 No.' + j);
-            if (!numbers[playerId]) numbers[playerId] = playerNumbers[playerId] || String(j);
+            if (!names[playerId]) names[playerId] = allowCurrentRosterFallback === false ? ('選手 No.' + j) : (playerNames[playerId] || ('選手 No.' + j));
+            if (!numbers[playerId]) numbers[playerId] = allowCurrentRosterFallback === false ? String(j) : (playerNumbers[playerId] || String(j));
         }
         names.us_team = '自チーム(全体)';
         names.team = '相手チーム(全体)';
@@ -5913,6 +6065,1145 @@ button, input, select, textarea,
             note: detailedItems.length > 0 && legacyCount > 0 ? 'レセプション詳細を保持するセットのみ合算しています。' : '',
             emptyMessage: detailedItems.length === 0 ? '旧記録のためレセプション詳細なし' : ''
         };
+    }
+
+    // ==========================
+    // Record Analysis Phase 1
+    // DOM-independent, read-only source resolver for the future unified UI.
+    // Legacy stats/archive UI, Report, and CSV paths do not call this resolver.
+    // ==========================
+    function normalizeAnalysisRequest(request) {
+        request = request && typeof request === 'object' ? request : {};
+        var scope = String(request.scope || '').trim();
+        var allowed = ['current', 'current-match', 'today', 'date', 'archive-set', 'all'];
+        if (allowed.indexOf(scope) === -1) {
+            return { ok: false, error: { code: 'INVALID_SCOPE', message: '未対応のAnalysis scopeです: ' + scope } };
+        }
+        var normalized = { scope: scope };
+        if (scope === 'date') {
+            normalized.dateKey = normalizeArchiveDateString(request.dateKey || '');
+            if (!normalized.dateKey) return { ok: false, error: { code: 'INVALID_DATE', message: 'date scopeには有効なdateKeyが必要です。' } };
+        }
+        if (scope === 'archive-set') {
+            normalized.archiveId = String(request.archiveId || '').trim();
+            if (!normalized.archiveId) return { ok: false, error: { code: 'INVALID_ARCHIVE_ID', message: 'archive-set scopeにはarchiveIdが必要です。' } };
+        }
+        return { ok: true, request: normalized };
+    }
+
+    function selectAnalysisArchiveItems(criteria) {
+        criteria = criteria || {};
+        var dateKey = criteria.dateKey ? normalizeArchiveDateString(criteria.dateKey) : '';
+        var archiveId = criteria.archiveId ? String(criteria.archiveId) : '';
+        var seenIds = {};
+        var selected = [];
+        var items = Array.isArray(globalArchive) ? globalArchive : [];
+        for (var i = 0; i < items.length; i++) {
+            var item = items[i];
+            if (!item) continue;
+            var itemId = String(item.id || '');
+            if (archiveId && itemId !== archiveId) continue;
+            if (dateKey && normalizeArchiveDateString(item.date) !== dateKey) continue;
+            if (itemId && seenIds[itemId]) continue;
+            if (itemId) seenIds[itemId] = true;
+            selected.push(item);
+        }
+        return sortArchiveItemsOldestFirst(selected);
+    }
+
+    function collectAnalysisHistoryItems(archiveItems) {
+        var historyItems = [];
+        (archiveItems || []).forEach(function(item) {
+            if (item && Array.isArray(item.historyLogSnap)) historyItems = historyItems.concat(item.historyLogSnap);
+        });
+        return historyItems;
+    }
+
+    function getAnalysisDisplayIds(statsData, serveEffectRecords) {
+        var basic = [];
+        var reception = [];
+        var serveEffect = [];
+        var validServePlayers = {};
+        (serveEffectRecords || []).forEach(function(record) {
+            if (record && record.server && isValidServeEffect(record)) validServePlayers[record.server] = true;
+        });
+        for (var i = 1; i <= MAX_PLAYERS; i++) {
+            var id = 'p' + i;
+            if (!isPlayerVisible(id)) continue;
+            basic.push(id);
+            var row = statsData && statsData[id] ? statsData[id] : {};
+            var receptionTotal = safeStatNumber(row.reception_a) + safeStatNumber(row.reception_b) +
+                safeStatNumber(row.reception_c) + safeStatNumber(row.reception_d) + safeStatNumber(row.reception_error);
+            if (receptionTotal > 0) reception.push(id);
+            if (validServePlayers[id]) serveEffect.push(id);
+        }
+        return { basic: basic, reception: reception, serveEffect: serveEffect };
+    }
+
+    function getAnalysisCapabilities(scope) {
+        if (scope === 'current-match') {
+            return { rotation: false, runningScore: false, report: false, csv: false, setSummary: false, allTimeSummary: false };
+        }
+        return {
+            rotation: scope === 'current' || scope === 'archive-set',
+            runningScore: scope === 'archive-set',
+            report: true,
+            csv: scope !== 'archive-set',
+            setSummary: scope === 'today' || scope === 'date' || scope === 'archive-set' || scope === 'all',
+            allTimeSummary: scope === 'all'
+        };
+    }
+
+    function createAnalysisFailure(normalizedRequest, code, message) {
+        return { ok: false, normalizedRequest: normalizedRequest || null, error: { code: code, message: message } };
+    }
+
+    function resolveAnalysisSource(request) {
+        var validation = normalizeAnalysisRequest(request);
+        if (!validation.ok) return createAnalysisFailure(null, validation.error.code, validation.error.message);
+        var normalized = validation.request;
+        var scope = normalized.scope;
+        var archiveItems = [];
+        var selectedArchiveItem = null;
+        var statsData;
+        var historyItems;
+
+        if (scope === 'current') {
+            statsData = setData || createEmptyStats();
+            historyItems = Array.isArray(historyLog) ? historyLog.slice() : [];
+        } else {
+            if (scope === 'current-match') {
+                if (matchType !== 'official') return createAnalysisFailure(normalized, 'CURRENT_MATCH_OFFICIAL_ONLY', '現在の試合は公式戦でのみ利用できます。');
+                normalized.dateKey = normalizeArchiveDateString(matchDateKey || getTodayKey());
+                normalized.matchNumber = safeStatNumber(officialMatchNumber);
+                archiveItems = selectAnalysisArchiveItems({ dateKey: normalized.dateKey }).filter(function(item) {
+                    return item && item.matchType === 'official' && safeStatNumber(item.matchNumber) === normalized.matchNumber;
+                });
+                var combinedStatsItems = archiveItems.concat([{ statsSnap: setData || createEmptyStats() }]);
+                statsData = aggregateStatsSnapshots(combinedStatsItems);
+                historyItems = collectAnalysisHistoryItems(archiveItems).concat(Array.isArray(historyLog) ? historyLog.slice() : []);
+            } else if (scope === 'today') {
+                normalized.dateKey = normalizeArchiveDateString(getTodayKey());
+                if (!normalized.dateKey) return createAnalysisFailure(normalized, 'INVALID_DATE', '今日の日付を解決できません。');
+                archiveItems = selectAnalysisArchiveItems({ dateKey: normalized.dateKey });
+            } else if (scope === 'date') {
+                archiveItems = selectAnalysisArchiveItems({ dateKey: normalized.dateKey });
+            } else if (scope === 'archive-set') {
+                archiveItems = selectAnalysisArchiveItems({ archiveId: normalized.archiveId });
+                if (archiveItems.length === 0) return createAnalysisFailure(normalized, 'ARCHIVE_NOT_FOUND', '指定されたArchiveが見つかりません: ' + normalized.archiveId);
+                selectedArchiveItem = archiveItems[0];
+            } else {
+                archiveItems = selectAnalysisArchiveItems({});
+            }
+            if (scope !== 'current-match') {
+                statsData = aggregateStatsSnapshots(archiveItems);
+                historyItems = collectAnalysisHistoryItems(archiveItems);
+            }
+        }
+
+        var receptionSource;
+        if (scope === 'current') {
+            var currentHasReceptionDetail = hasArchiveReceptionAnalyticsData(statsData);
+            receptionSource = {
+                statsData: currentHasReceptionDetail ? statsData : createEmptyStats(),
+                detailedSetCount: currentHasReceptionDetail ? 1 : 0,
+                legacySetCount: 0,
+                note: '',
+                emptyMessage: currentHasReceptionDetail ? '' : 'レセプション詳細データなし'
+            };
+        } else if (scope === 'current-match') {
+            receptionSource = getArchiveReceptionSource(archiveItems.concat([{ statsSnap: setData || createEmptyStats() }]));
+        } else {
+            receptionSource = getArchiveReceptionSource(archiveItems);
+        }
+
+        var serveEffectRecords = scope === 'current'
+            ? collectServeEffectRecordsFromHistory(historyItems)
+            : (scope === 'current-match'
+                ? collectArchiveServeEffectRecords(archiveItems).concat(collectServeEffectRecordsFromHistory(historyLog))
+                : collectArchiveServeEffectRecords(archiveItems));
+        var identity = scope === 'current'
+            ? { nameMap: Object.assign({}, playerNames), numberMap: Object.assign({}, playerNumbers) }
+            : mergeArchivePlayerSnapshots(archiveItems, false);
+        var opponentNames = scope === 'current' ? [oppTeamName || '相手'] : getUniqueOppNames(archiveItems);
+        if (scope === 'current-match' && opponentNames.length === 0) opponentNames.push(oppTeamName || '相手');
+        var setScores = archiveItems.map(function(item) {
+            var values = getArchiveItemDisplayValues(item);
+            return {
+                archiveId: String(item.id || ''),
+                setNumber: item.setNum || 1,
+                matchNumber: item.matchNumber === undefined ? null : item.matchNumber,
+                opponent: item.oppName || '相手',
+                us: safeStatNumber(values.usScore),
+                them: safeStatNumber(values.themScore)
+            };
+        });
+        var periodDate = normalized.dateKey || (selectedArchiveItem ? normalizeArchiveDateString(selectedArchiveItem.date) : '');
+        var scopeLabels = { current: '現セット', 'current-match': '現在の試合', today: '本日', date: '日合計', 'archive-set': '過去1セット', all: '全通算' };
+
+        return {
+            ok: true,
+            normalizedRequest: normalized,
+            statsData: statsData,
+            archiveItems: archiveItems,
+            historyItems: historyItems,
+            receptionSource: receptionSource,
+            serveEffectRecords: serveEffectRecords,
+            nameMap: identity.nameMap,
+            numberMap: identity.numberMap,
+            displayIds: getAnalysisDisplayIds(statsData, serveEffectRecords),
+            teamAggregation: getOwnTeamTotalStats(statsData),
+            opponentNames: opponentNames,
+            setScores: setScores,
+            period: { from: periodDate, to: periodDate, label: periodDate },
+            scopeLabel: scopeLabels[scope],
+            selectedArchiveItem: selectedArchiveItem,
+            lineupSnap: scope === 'current' || scope === 'current-match' ? startingLineup : (selectedArchiveItem ? selectedArchiveItem.startingLineupSnap || null : null),
+            startSideSnap: scope === 'current' || scope === 'current-match' ? startSideSetting : (selectedArchiveItem ? selectedArchiveItem.startSideSettingSnap || null : null),
+            capabilities: getAnalysisCapabilities(scope)
+        };
+    }
+
+    // ==========================
+    // Record Analysis Phase 2
+    // DOM-independent row contracts. These builders consume only a successful
+    // Analysis Source and are not connected to Legacy UI, Report, or CSV paths.
+    // ==========================
+    function isUsableAnalysisSource(source) {
+        return !!(source && source.ok && source.displayIds && source.nameMap && source.numberMap);
+    }
+
+    function buildAnalysisBasicRowData(id, statsData, nameMap, numberMap, options) {
+        var summary = getPlayerStatSummary(id, statsData || {}, nameMap || {}, numberMap || {});
+        options = options || {};
+        return {
+            id: id,
+            kind: options.kind || 'player',
+            name: options.name !== undefined ? options.name : (nameMap[id] || ''),
+            number: options.number !== undefined ? options.number : (numberMap[id] || ''),
+            points: summary.points,
+            spikePoint: summary.ak,
+            spikeMiss: summary.ae,
+            blockPoint: summary.bk,
+            blockMiss: summary.be,
+            serveAce: summary.sa,
+            serveMiss: summary.se,
+            techErrorTotal: summary.techErrors,
+            violationTotal: summary.violations,
+            stats: Object.assign({}, statsData && statsData[id] ? statsData[id] : {})
+        };
+    }
+
+    function buildAnalysisBasicRows(source) {
+        if (!isUsableAnalysisSource(source)) return [];
+        return (source.displayIds.basic || []).filter(function(id) {
+            return id !== 'us_team' && id !== 'team';
+        }).map(function(id) {
+            var summary = getPlayerStatSummary(id, source.statsData || {}, source.nameMap, source.numberMap);
+            return {
+                id: id,
+                kind: 'player',
+                name: source.nameMap[id],
+                number: source.numberMap[id],
+                points: summary.points,
+                spikePoint: summary.ak,
+                spikeMiss: summary.ae,
+                blockPoint: summary.bk,
+                blockMiss: summary.be,
+                serveAce: summary.sa,
+                serveMiss: summary.se,
+                techErrorTotal: summary.techErrors,
+                violationTotal: summary.violations,
+                stats: Object.assign({}, source.statsData && source.statsData[id] ? source.statsData[id] : {})
+            };
+        });
+    }
+
+    function buildAnalysisBasicSummaryRows(source) {
+        if (!isUsableAnalysisSource(source)) return [];
+        var sharedStats = { us_team: source.statsData && source.statsData.us_team ? source.statsData.us_team : {} };
+        var totalStats = { team_total: source.teamAggregation || {} };
+        var opponentStats = { team: source.statsData && source.statsData.team ? source.statsData.team : {} };
+        return [
+            buildAnalysisBasicRowData('us_team', sharedStats, source.nameMap, source.numberMap, { kind: 'shared-team', name: 'チーム共通', number: '' }),
+            buildAnalysisBasicRowData('team_total', totalStats, source.nameMap, source.numberMap, { kind: 'own-team-total', name: 'チーム総計', number: '' }),
+            buildAnalysisBasicRowData('team', opponentStats, source.nameMap, source.numberMap, { kind: 'opponent', name: source.nameMap.team || '相手チーム(全体)', number: '' })
+        ];
+    }
+
+    function buildAnalysisReceptionRows(source) {
+        if (!isUsableAnalysisSource(source) || !source.receptionSource) return [];
+        var receptionStats = source.receptionSource.statsData || {};
+        var rows = (source.displayIds.reception || []).filter(function(id) {
+            return id !== 'us_team' && id !== 'team';
+        }).map(function(id) {
+            var summary = getPlayerStatSummary(id, receptionStats, source.nameMap, source.numberMap);
+            return {
+                id: id,
+                name: source.nameMap[id],
+                number: source.numberMap[id],
+                A: summary.recA,
+                B: summary.recB,
+                C: summary.recC,
+                D: summary.recD,
+                M: summary.recM,
+                total: summary.recTotal,
+                aRate: Number(summary.recAPct),
+                abRate: Number(summary.recABPct),
+                recABPct: summary.recABPct,
+                recTotal: summary.recTotal
+            };
+        });
+        return rows.sort(compareReceptionAnalyticsSummaries);
+    }
+
+    function buildAnalysisServeEffectRows(source) {
+        if (!isUsableAnalysisSource(source)) return [];
+        var aggregate = aggregateServeEffectRecords(source.serveEffectRecords || []);
+        var rows = (source.displayIds.serveEffect || []).filter(function(id) {
+            return id !== 'us_team' && id !== 'team' && !!aggregate.byPlayer[id];
+        }).map(function(id) {
+            var summary = aggregate.byPlayer[id];
+            return {
+                id: id,
+                name: source.nameMap[id],
+                number: source.numberMap[id],
+                attempts: summary.attempts,
+                P: summary.points,
+                effect: summary.effects,
+                miss: summary.misses,
+                effectRate: summary.rate,
+                rate: summary.rate
+            };
+        });
+        return rows.sort(compareServeEffectSummaries);
+    }
+
+    function buildAnalysisTeamSummary(source) {
+        if (!isUsableAnalysisSource(source)) return null;
+        var receptionStats = source.receptionSource && source.receptionSource.statsData
+            ? source.receptionSource.statsData
+            : createEmptyStats();
+        var serveEffect = aggregateServeEffectRecords(source.serveEffectRecords || []);
+        return {
+            stats: Object.assign({}, source.teamAggregation || {}),
+            reception: getTeamReceptionSummary(receptionStats),
+            serveEffect: Object.assign({}, serveEffect.team)
+        };
+    }
+
+    function buildAnalysisContext(source) {
+        if (!source || source.ok !== true) return { supported: false, reason: 'INVALID_ANALYSIS_SOURCE' };
+        var scope = source.normalizedRequest && source.normalizedRequest.scope ? source.normalizedRequest.scope : '';
+        var selected = scope === 'archive-set' ? source.selectedArchiveItem : null;
+        var archiveItems = Array.isArray(source.archiveItems) ? source.archiveItems : [];
+        var receptionStats = source.receptionSource && source.receptionSource.statsData ? source.receptionSource.statsData : null;
+        var receptionSummary = receptionStats ? getTeamReceptionSummary(receptionStats) : null;
+        var receptionAvailable = !!(source.receptionSource && source.receptionSource.detailedSetCount > 0 && receptionSummary && receptionSummary.recTotal > 0);
+        var serveSummary = aggregateServeEffectRecords(source.serveEffectRecords || []);
+        var serveAvailable = serveSummary.recordCount > 0 && typeof serveSummary.team.rate === 'number' && isFinite(serveSummary.team.rate);
+
+        var dateValues = [];
+        archiveItems.forEach(function(item) {
+            var dateKey = normalizeArchiveDateString(item && item.date);
+            if (dateKey && dateValues.indexOf(dateKey) === -1) dateValues.push(dateKey);
+        });
+        var periodFrom = source.period && source.period.from ? String(source.period.from) : '';
+        var periodTo = source.period && source.period.to ? String(source.period.to) : '';
+        if (!periodFrom && dateValues.length) periodFrom = dateValues.reduce(function(a, b) { return a < b ? a : b; });
+        if (!periodTo && dateValues.length) periodTo = dateValues.reduce(function(a, b) { return a > b ? a : b; });
+        var periodLabel = periodFrom && periodTo && periodFrom !== periodTo ? periodFrom + ' ～ ' + periodTo : (periodFrom || periodTo || '');
+
+        var context = {
+            supported: true,
+            scope: scope,
+            scopeLabel: source.scopeLabel || '',
+            contextType: selected ? 'single-set' : (scope === 'current' ? 'current-set' : 'aggregate'),
+            date: { from: periodFrom, to: periodTo, label: periodLabel },
+            match: {
+                type: '',
+                typeLabel: '',
+                number: null,
+                label: '',
+                opponentNames: Array.isArray(source.opponentNames) ? source.opponentNames.slice() : []
+            },
+            set: null,
+            score: null,
+            result: { code: 'unknown', label: '' },
+            time: { startedAt: null, endedAt: null, startText: '', endText: '', rangeText: '' },
+            completedSetCount: archiveItems.length,
+            reception: { supported: receptionAvailable, rate: receptionAvailable ? safeStatNumber(receptionSummary.recABPct) : null, text: receptionAvailable ? safeStatNumber(receptionSummary.recABPct).toFixed(1) + '%' : '－' },
+            serveEffect: { supported: serveAvailable, rate: serveAvailable ? serveSummary.team.rate : null, text: serveAvailable ? formatServeEffectRate(serveSummary.team.rate) : '－' },
+            display: { primary: '', secondary: '', reception: '', serveEffect: '' }
+        };
+
+        if (selected) {
+            var displayValues = getArchiveItemDisplayValues(selected);
+            var normalizedDate = normalizeArchiveDateString(selected.date);
+            context.date = { from: normalizedDate, to: normalizedDate, label: normalizedDate };
+            context.match.type = selected.matchType ? String(selected.matchType) : '';
+            context.match.typeLabel = context.match.type === 'official' ? '公式戦' : (context.match.type === 'practice' ? '練習試合' : '');
+            context.match.number = selected.matchNumber === undefined || selected.matchNumber === null ? null : safeStatNumber(selected.matchNumber);
+            context.match.label = selected.matchLabel ? String(selected.matchLabel) : '';
+            context.match.opponentNames = selected.oppName ? [String(selected.oppName)] : [];
+            context.set = selected.setNum === undefined || selected.setNum === null ? null : { number: safeStatNumber(selected.setNum), label: '第' + safeStatNumber(selected.setNum) + 'セット' };
+            var hasScore = (selected.usScore !== undefined && selected.usScore !== null && selected.themScore !== undefined && selected.themScore !== null) || /^\s*\d+\s*-\s*\d+\s*$/.test(String(selected.score || ''));
+            if (hasScore) {
+                var usScore = safeStatNumber(displayValues.usScore);
+                var themScore = safeStatNumber(displayValues.themScore);
+                context.score = { us: usScore, them: themScore, text: usScore + ' - ' + themScore };
+                context.result = usScore > themScore ? { code: 'win', label: '勝' } : (usScore < themScore ? { code: 'loss', label: '敗' } : { code: 'unknown', label: '' });
+            }
+            context.time = {
+                startedAt: selected.startedAt || null,
+                endedAt: selected.endedAt || null,
+                startText: displayValues.startTimeText || '',
+                endText: displayValues.endTimeText || '',
+                rangeText: displayValues.timeRangeText || ''
+            };
+        }
+
+        var primaryParts = [context.date.label];
+        if (selected) {
+            var matchDisplay = context.match.label || context.match.typeLabel;
+            if (!context.match.label && context.match.typeLabel && context.match.number !== null) matchDisplay += ' 第' + context.match.number + '試合';
+            primaryParts.push(matchDisplay);
+            if (context.match.opponentNames.length) primaryParts.push('vs ' + context.match.opponentNames.join(' / '));
+        } else {
+            primaryParts.push(context.scopeLabel);
+            if (context.match.opponentNames.length) primaryParts.push('vs ' + context.match.opponentNames.join(' / '));
+        }
+        var secondaryParts = [];
+        if (context.set) secondaryParts.push(context.set.label);
+        if (context.score) secondaryParts.push(context.score.text);
+        if (context.result.label) secondaryParts.push(context.result.label);
+        if (context.time.rangeText) secondaryParts.push(context.time.rangeText);
+        if (!selected && context.completedSetCount > 0) secondaryParts.push('完了Archive ' + context.completedSetCount + 'セット');
+        context.display = {
+            primary: primaryParts.filter(function(value) { return !!value; }).join('　'),
+            secondary: secondaryParts.join('　'),
+            reception: 'Reception ' + context.reception.text,
+            serveEffect: 'S効果率 ' + context.serveEffect.text
+        };
+        return context;
+    }
+
+    function buildAnalysisRotationRows(source) {
+        if (!source || source.ok !== true || !source.capabilities || source.capabilities.rotation !== true) {
+            return { supported: false, rows: [], reason: 'ROTATION_SINGLE_SET_ONLY' };
+        }
+        var buckets = calculateRotationAnalysisFromLog(source.historyItems || [], source.startSideSnap || 'S');
+        var baseLineup = source.lineupSnap || {};
+        var nameMap = source.nameMap || {};
+        var numberMap = source.numberMap || {};
+        var maxDiff = -9999;
+        var minDiff = 9999;
+        var hasAny = false;
+
+        var rows = buckets.map(function(bucket, index) {
+            var pointsFor = safeStatNumber(bucket.us);
+            var pointsAgainst = safeStatNumber(bucket.them);
+            var total = pointsFor + pointsAgainst;
+            var diff = pointsFor - pointsAgainst;
+            if (total > 0) {
+                hasAny = true;
+                if (diff > maxDiff) maxDiff = diff;
+                if (diff < minDiff) minDiff = diff;
+            }
+            var rotated = getLineupForRotationIndex(baseLineup, index);
+            var lineup = {};
+            for (var position = 1; position <= 6; position++) {
+                var id = rotated[position] || null;
+                lineup[position] = {
+                    position: 'P' + position,
+                    id: id,
+                    number: id ? String(numberMap[id] == null ? '' : numberMap[id]) : '-',
+                    name: id ? String(nameMap[id] == null ? '' : nameMap[id]) : '未配置'
+                };
+            }
+            return {
+                rotation: bucket.label,
+                lineup: lineup,
+                displayLineup: [4, 3, 2, 5, 6, 1].map(function(position) { return lineup[position]; }),
+                pointsFor: pointsFor,
+                pointsAgainst: pointsAgainst,
+                diff: diff,
+                pointRate: total > 0 ? (pointsFor / total) * 100 : null,
+                pointRateText: total > 0 ? formatPercentDisplay((pointsFor / total) * 100) : '-',
+                isBest: false,
+                isWorst: false
+            };
+        });
+
+        rows.forEach(function(row) {
+            var total = row.pointsFor + row.pointsAgainst;
+            row.isBest = total > 0 && row.diff === maxDiff && maxDiff > 0;
+            row.isWorst = total > 0 && row.diff === minDiff && minDiff < 0;
+        });
+        return { supported: true, rows: rows, hasAny: hasAny, reason: hasAny ? '' : 'NO_ROTATION_POINTS' };
+    }
+
+    function buildAnalysisRunningScoreRows(source) {
+        if (!source || source.ok !== true || !source.capabilities || source.capabilities.runningScore !== true) {
+            return { supported: false, rows: [], reason: 'RUNNING_SCORE_ARCHIVE_SET_ONLY', finalScore: null };
+        }
+        var nameMap = source.nameMap || {};
+        var numberMap = source.numberMap || {};
+        var scoreUs = 0;
+        var scoreThem = 0;
+        var rallyNumber = 0;
+
+        function identity(id) {
+            if (!id) return null;
+            if (id === 'us_team') return { id: id, number: '', name: 'チーム共通', displayName: 'チーム共通' };
+            if (id === 'team') {
+                var opponentName = String(nameMap.team || '相手チーム(全体)').replace('(全体)', '');
+                return { id: id, number: '', name: opponentName, displayName: opponentName };
+            }
+            var number = String(numberMap[id] == null ? '' : numberMap[id]);
+            var name = String(nameMap[id] == null ? '' : nameMap[id]);
+            return { id: id, number: number, name: name, displayName: (number + ' ' + name).trim() };
+        }
+
+        var rows = (Array.isArray(source.historyItems) ? source.historyItems : []).map(function(action, index) {
+            action = action || {};
+            var row = {
+                index: index,
+                eventType: String(action.type || 'unknown'),
+                score: { us: scoreUs, them: scoreThem },
+                scoreText: scoreUs + ' - ' + scoreThem,
+                rallyNumber: null,
+                side: action.team || null,
+                player: null,
+                outPlayer: null,
+                inPlayer: null,
+                label: '',
+                note: action.note ? String(action.note) : '',
+                rawType: String(action.type || '')
+            };
+            if (action.type === 'stat') {
+                var isUsAction = action.player !== 'team';
+                var isUsPoint = isUsAction ? isPositivePointItem(action.item) : !isPositivePointItem(action.item);
+                if (isUsPoint) scoreUs++; else scoreThem++;
+                rallyNumber++;
+                row.score = { us: scoreUs, them: scoreThem };
+                row.scoreText = scoreUs + ' - ' + scoreThem;
+                row.rallyNumber = rallyNumber;
+                row.side = isUsPoint ? 'us' : 'them';
+                row.player = identity(action.player);
+                row.label = getLabelWithMap(action.item, isUsAction, nameMap);
+            } else if (action.type === 'timeout') {
+                row.side = action.team || null;
+                row.teamName = row.side === 'us' ? String(nameMap.us_team || '自チーム').replace('(全体)', '') : String(nameMap.team || '相手チーム').replace('(全体)', '');
+                row.scoreText = action.scoreAt ? String(action.scoreAt).replace('-', ' - ') : row.scoreText;
+                row.label = 'T.O';
+            } else if (action.type === 'substitution') {
+                row.side = action.team || null;
+                row.teamName = row.side === 'us' ? String(nameMap.us_team || '自チーム').replace('(全体)', '') : String(nameMap.team || '相手チーム').replace('(全体)', '');
+                row.scoreText = action.scoreAt ? String(action.scoreAt).replace('-', ' - ') : row.scoreText;
+                row.outPlayer = identity(action.outPlayer);
+                row.inPlayer = identity(action.inPlayer);
+                row.label = '選手交代';
+            } else if (action.type === 'score_adjust') {
+                var fromUs = safeStatNumber(action.fromUs);
+                var fromThem = safeStatNumber(action.fromThem);
+                scoreUs = Math.max(0, parseInt(action.toUs, 10) || 0);
+                scoreThem = Math.max(0, parseInt(action.toThem, 10) || 0);
+                row.fromScore = { us: fromUs, them: fromThem };
+                row.score = { us: scoreUs, them: scoreThem };
+                row.scoreText = scoreUs + ' - ' + scoreThem;
+                row.label = '得点修正';
+            } else if (action.type === 'rotation_adjust') {
+                row.scoreText = action.scoreAt ? String(action.scoreAt).replace('-', ' - ') : row.scoreText;
+                row.delta = parseInt(action.delta, 10) || 0;
+                row.label = 'ローテ修正';
+            } else {
+                row.label = action.type ? String(action.type) : '不明な記録';
+            }
+            return row;
+        });
+        var selected = source.selectedArchiveItem || {};
+        var displayValues = getArchiveItemDisplayValues(selected);
+        return {
+            supported: true,
+            rows: rows,
+            reason: rows.length ? '' : 'NO_RUNNING_SCORE_RECORDS',
+            finalScore: {
+                us: safeStatNumber(displayValues.usScore),
+                them: safeStatNumber(displayValues.themScore),
+                text: displayValues.scoreText || (safeStatNumber(displayValues.usScore) + ' - ' + safeStatNumber(displayValues.themScore))
+            }
+        };
+    }
+
+    // Record Analysis Phase 4J: Source/Builder based, DOM-independent CSV contract.
+    function buildAnalysisCsvFilename(source, context) {
+        var scope = source && source.normalizedRequest ? source.normalizedRequest.scope : '';
+        var dateLabel = context && context.date ? (context.date.from || context.date.to || '') : '';
+        var safeDate = String(dateLabel || '').replace(/[^0-9]+/g, '-').replace(/^-|-$/g, '');
+        if (scope === 'all') return 'SEIMEI_VB_RecordAnalysis_All.csv';
+        if (scope === 'current') return 'SEIMEI_VB_RecordAnalysis_Current.csv';
+        if (scope === 'current-match') return 'SEIMEI_VB_RecordAnalysis_' + (safeDate ? safeDate + '_' : '') + 'CurrentMatch.csv';
+        if (scope === 'archive-set') {
+            var setNumber = context && context.set ? safeStatNumber(context.set.number) : 0;
+            return 'SEIMEI_VB_RecordAnalysis_' + (safeDate || 'Archive') + (setNumber > 0 ? '_Set' + setNumber : '_Set') + '.csv';
+        }
+        return 'SEIMEI_VB_RecordAnalysis_' + (safeDate || (scope === 'today' ? 'Today' : 'Date')) + '_Day.csv';
+    }
+
+    function buildAnalysisCsvSections(source) {
+        if (!source || source.ok !== true) return { ok: false, error: 'INVALID_ANALYSIS_SOURCE', sections: [] };
+        var context = buildAnalysisContext(source);
+        var basicRows = buildAnalysisBasicRows(source).concat(buildAnalysisBasicSummaryRows(source));
+        var receptionRows = buildAnalysisReceptionRows(source);
+        var serveRows = buildAnalysisServeEffectRows(source);
+        var teamSummary = buildAnalysisTeamSummary(source);
+        var pointBreakdown = buildAnalysisPointBreakdown(source);
+        var rotation = buildAnalysisRotationRows(source);
+        var contextRows = [['対象', context.scopeLabel || '']];
+
+        if (context.date && context.date.label) contextRows.push(['期間／日付', context.date.label]);
+        if (context.match && context.match.typeLabel) contextRows.push(['試合種別', context.match.typeLabel]);
+        if (context.match && context.match.number !== null && context.match.number !== undefined) contextRows.push(['試合番号', context.match.number]);
+        if (context.match && context.match.opponentNames && context.match.opponentNames.length) contextRows.push(['対戦相手', context.match.opponentNames.join(' / ')]);
+        if (context.set) contextRows.push(['Set', context.set.number]);
+        if (context.score) contextRows.push(['スコア', context.score.text]);
+        if (context.result && context.result.label) contextRows.push(['勝敗', context.result.label]);
+        if (context.time && context.time.startText) contextRows.push(['開始時刻', context.time.startText]);
+        if (context.time && context.time.endText) contextRows.push(['終了時刻', context.time.endText]);
+        if (context.completedSetCount > 0) contextRows.push(['完了セット数', context.completedSetCount]);
+
+        var sections = [{ title: '対象情報', headers: ['項目', '値'], rows: contextRows }];
+        sections.push({
+            title: '基本スタッツ',
+            headers: ['No', '選手名', '得点', 'スパイク得', 'スパイクミス', 'ブロック得', 'ブロックミス', 'サーブAce', 'サーブミス', 'ミス', '反則'],
+            rows: basicRows.map(function(row) {
+                return [row.number, row.name, row.points, row.spikePoint, row.spikeMiss, row.blockPoint, row.blockMiss, row.serveAce, row.serveMiss, row.techErrorTotal, row.violationTotal];
+            })
+        });
+
+        var receptionCsvRows = receptionRows.map(function(row) {
+            return [row.number, row.name, row.total, row.A, row.B, row.C, row.D, row.M, Number(row.aRate || 0).toFixed(1) + '%', Number(row.abRate || 0).toFixed(1) + '%'];
+        });
+        if (teamSummary && teamSummary.reception && safeStatNumber(teamSummary.reception.recTotal) > 0) {
+            receptionCsvRows.push(['', 'チーム総計', teamSummary.reception.recTotal, teamSummary.reception.recA, teamSummary.reception.recB, teamSummary.reception.recC, teamSummary.reception.recD, teamSummary.reception.recM, teamSummary.reception.recAPct + '%', teamSummary.reception.recABPct + '%']);
+        }
+        sections.push({ title: 'レセプション', headers: ['No', '選手名', '受数', 'A', 'B', 'C', 'D', 'M', 'A率', 'AB率'], rows: receptionCsvRows });
+
+        var serveCsvRows = serveRows.map(function(row) {
+            return [row.number, row.name, row.attempts, row.P, row.effect, row.miss, typeof row.effectRate === 'number' ? row.effectRate.toFixed(1) + '%' : '－'];
+        });
+        if (teamSummary && teamSummary.serveEffect && safeStatNumber(teamSummary.serveEffect.attempts) > 0) {
+            serveCsvRows.push(['', 'チーム総計', teamSummary.serveEffect.attempts, teamSummary.serveEffect.points, teamSummary.serveEffect.effects, teamSummary.serveEffect.misses, typeof teamSummary.serveEffect.rate === 'number' ? teamSummary.serveEffect.rate.toFixed(1) + '%' : '－']);
+        }
+        sections.push({ title: 'サーブ効果', headers: ['No', '選手名', '打数', 'P', '効果', 'ミス', '効果率'], rows: serveCsvRows });
+
+        var pointRows = [];
+        (pointBreakdown.scoring || []).forEach(function(item) { pointRows.push(['得点', item.label, item.count, item.rateText]); });
+        pointRows.push(['得点', '合計', pointBreakdown.scoringTotal, '']);
+        (pointBreakdown.conceding || []).forEach(function(item) { pointRows.push(['失点', item.label, item.count, item.rateText]); });
+        pointRows.push(['失点', '合計', pointBreakdown.concedingTotal, '']);
+        sections.push({ title: '得点割合', headers: ['区分', '項目', '点数', '割合'], rows: pointRows });
+
+        if (source.capabilities && source.capabilities.rotation === true) {
+            sections.push({
+                title: 'ローテーション',
+                headers: ['ローテ', '得点', '失点', '得失点', '得点率'],
+                rows: rotation.supported && rotation.rows.length ? rotation.rows.map(function(row) {
+                    return [row.rotation, row.pointsFor, row.pointsAgainst, row.diff, row.pointRateText];
+                }) : []
+            });
+        }
+        return {
+            ok: true,
+            scope: source.normalizedRequest.scope,
+            context: context,
+            sections: sections,
+            filename: buildAnalysisCsvFilename(source, context),
+            encoding: 'UTF-8 BOM',
+            lineEnding: '\n',
+            includesRunningScore: false
+        };
+    }
+
+    function buildAnalysisCsvRows(source) {
+        var data = buildAnalysisCsvSections(source);
+        if (!data.ok) return [];
+        var rows = [];
+        data.sections.forEach(function(section, index) {
+            if (index > 0) rows.push([]);
+            rows.push(['[' + section.title + ']']);
+            rows.push(section.headers.slice());
+            if (section.rows.length) section.rows.forEach(function(row) { rows.push(row.slice()); });
+            else rows.push(['データなし']);
+        });
+        return rows;
+    }
+
+    function buildAnalysisCsvData(source) {
+        var data = buildAnalysisCsvSections(source);
+        if (!data.ok) return data;
+        data.rows = buildAnalysisCsvRows(source);
+        data.csv = rowsToCsv(data.rows);
+        return data;
+    }
+
+    // Record Analysis Phase 4K: Builder-based, DOM-independent unified Report Model.
+    function buildAnalysisReportModel(source) {
+        if (!source || source.ok !== true) return { ok: false, error: 'INVALID_ANALYSIS_SOURCE' };
+        var scope = source.normalizedRequest && source.normalizedRequest.scope ? source.normalizedRequest.scope : '';
+        var context = buildAnalysisContext(source);
+        var teamSummary = buildAnalysisTeamSummary(source);
+        var receptionRows = buildAnalysisReceptionRows(source);
+        var serveRows = buildAnalysisServeEffectRows(source);
+        var pointBreakdown = buildAnalysisPointBreakdown(source);
+        var rotation = buildAnalysisRotationRows(source);
+        var receptionTeam = teamSummary && teamSummary.reception && safeStatNumber(teamSummary.reception.recTotal) > 0
+            ? Object.assign({}, teamSummary.reception) : null;
+        var serveTeam = teamSummary && teamSummary.serveEffect && safeStatNumber(teamSummary.serveEffect.attempts) > 0
+            ? Object.assign({}, teamSummary.serveEffect) : null;
+        var includeSetSummary = scope !== 'all' && Array.isArray(source.archiveItems) && source.archiveItems.length > 0;
+        var setSummary = includeSetSummary
+            ? buildReportSetSummaries(source.archiveItems)
+            : { available: false, emptyMessage: scope === 'all' ? '全通算ではセット一覧を省略します。' : '完了セット記録なし', columns: [], rows: [] };
+        var hasScoreAdjustments = Array.isArray(source.historyItems) && source.historyItems.some(function(item) { return item && item.type === 'score_adjust'; });
+
+        return {
+            ok: true,
+            reportType: 'record-analysis-' + scope,
+            title: 'SEIMEI VB Tracker 記録分析レポート',
+            subtitle: context.scopeLabel || '',
+            scope: scope,
+            context: context,
+            summary: {
+                completedSetCount: context.completedSetCount,
+                opponentCount: context.match && context.match.opponentNames ? context.match.opponentNames.length : 0,
+                receptionText: context.reception ? context.reception.text : '－',
+                serveEffectText: context.serveEffect ? context.serveEffect.text : '－'
+            },
+            setSummary: setSummary,
+            basic: {
+                rows: buildAnalysisBasicRows(source).concat(buildAnalysisBasicSummaryRows(source))
+            },
+            reception: {
+                available: receptionRows.length > 0 || !!receptionTeam,
+                rows: receptionRows,
+                teamTotal: receptionTeam,
+                emptyMessage: source.receptionSource && source.receptionSource.emptyMessage ? source.receptionSource.emptyMessage : 'レセプション記録なし',
+                note: source.receptionSource && source.receptionSource.note ? String(source.receptionSource.note) : '',
+                detailedSetCount: source.receptionSource ? safeStatNumber(source.receptionSource.detailedSetCount) : 0,
+                legacySetCount: source.receptionSource ? safeStatNumber(source.receptionSource.legacySetCount) : 0
+            },
+            serveEffect: {
+                available: serveRows.length > 0 || !!serveTeam,
+                rows: serveRows,
+                teamTotal: serveTeam,
+                emptyMessage: 'サーブ効果記録なし'
+            },
+            pointBreakdown: pointBreakdown,
+            rotation: source.capabilities && source.capabilities.rotation === true
+                ? rotation
+                : { supported: false, rows: [], reason: 'ROTATION_UNSUPPORTED_FOR_SCOPE' },
+            runningScore: {
+                included: false,
+                reason: '統計レポートの紙面肥大を避けるためPhase 4Kでは非掲載'
+            },
+            notes: hasScoreAdjustments ? ['得点修正は個人得点へ配賦していません。'] : []
+        };
+    }
+
+    function analysisReportTableHtml(headers, rows, className) {
+        var head = '<thead><tr>' + (headers || []).map(function(value) { return '<th>' + escapeHtml(value) + '</th>'; }).join('') + '</tr></thead>';
+        var bodyRows = (rows || []).length ? rows : [['記録なし']];
+        var body = '<tbody>' + bodyRows.map(function(row) {
+            return '<tr>' + row.map(function(value) { return '<td>' + escapeHtml(value) + '</td>'; }).join('') + '</tr>';
+        }).join('') + '</tbody>';
+        return '<table class="' + escapeHtml(className || '') + '">' + head + body + '</table>';
+    }
+
+    function buildAnalysisReportHtml(model) {
+        if (!model || model.ok !== true) return '';
+        var context = model.context || {};
+        var contextRows = [['対象', context.scopeLabel || '']];
+        if (context.date && context.date.label) contextRows.push(['期間／日付', context.date.label]);
+        if (context.match && context.match.typeLabel) contextRows.push(['試合種別', context.match.typeLabel]);
+        if (context.match && context.match.number !== null && context.match.number !== undefined) contextRows.push(['試合番号', context.match.number]);
+        if (context.match && context.match.opponentNames) {
+            var opponentText = model.scope === 'all'
+                ? (context.match.opponentNames.length ? context.match.opponentNames.length + 'チーム' : '－')
+                : (context.match.opponentNames.length ? context.match.opponentNames.join(' / ') : '－');
+            contextRows.push(['対戦相手', opponentText]);
+        }
+        if (context.set) contextRows.push(['Set', context.set.number]);
+        if (context.score) contextRows.push(['スコア', context.score.text]);
+        if (context.result && context.result.label) contextRows.push(['勝敗', context.result.label]);
+        if (context.time && context.time.startText) contextRows.push(['開始時刻', context.time.startText]);
+        if (context.time && context.time.endText) contextRows.push(['終了時刻', context.time.endText]);
+        if (context.completedSetCount > 0) contextRows.push(['完了セット数', context.completedSetCount]);
+        contextRows.push(['レセプション', model.summary.receptionText || '－']);
+        contextRows.push(['S効果率', model.summary.serveEffectText || '－']);
+
+        var setSummaryHtml = '';
+        if (model.setSummary && model.setSummary.available) {
+            setSummaryHtml = '<section><h2>セットサマリー</h2>' + analysisReportTableHtml(
+                ['セット', '対戦相手', 'スコア', '結果', '返球率', 'S効果率'],
+                model.setSummary.rows.map(function(row) { return [row.setLabel, row.opponent, row.score, row.result, row.receptionABRate, row.serveEffectRate]; }),
+                'set-summary-table') + '</section>';
+        }
+
+        var basicRows = model.basic.rows.map(function(row) {
+            return [row.number, row.name, row.points, row.spikePoint + ' / ' + row.spikeMiss, row.blockPoint + ' / ' + row.blockMiss, row.serveAce + ' / ' + row.serveMiss, row.techErrorTotal, row.violationTotal];
+        });
+        var receptionRows = model.reception.rows.map(function(row) {
+            return [row.number, row.name, row.total, row.A, row.B, row.C, row.D, row.M, Number(row.aRate || 0).toFixed(1) + '%', Number(row.abRate || 0).toFixed(1) + '%'];
+        });
+        if (model.reception.teamTotal) {
+            var rec = model.reception.teamTotal;
+            receptionRows.push(['', 'チーム総計', rec.recTotal, rec.recA, rec.recB, rec.recC, rec.recD, rec.recM, rec.recAPct + '%', rec.recABPct + '%']);
+        }
+        var serveRows = model.serveEffect.rows.map(function(row) {
+            return [row.number, row.name, row.attempts, row.P, row.effect, row.miss, typeof row.effectRate === 'number' ? row.effectRate.toFixed(1) + '%' : '－'];
+        });
+        if (model.serveEffect.teamTotal) {
+            var serve = model.serveEffect.teamTotal;
+            serveRows.push(['', 'チーム総計', serve.attempts, serve.points, serve.effects, serve.misses, typeof serve.rate === 'number' ? serve.rate.toFixed(1) + '%' : '－']);
+        }
+        var pointRows = [];
+        (model.pointBreakdown.scoring || []).forEach(function(item) { pointRows.push(['得点', item.label, item.count, item.rateText]); });
+        pointRows.push(['得点', '合計', model.pointBreakdown.scoringTotal, '']);
+        (model.pointBreakdown.conceding || []).forEach(function(item) { pointRows.push(['失点', item.label, item.count, item.rateText]); });
+        pointRows.push(['失点', '合計', model.pointBreakdown.concedingTotal, '']);
+
+        var rotationHtml = '';
+        if (model.rotation && model.rotation.supported) {
+            rotationHtml = '<section><h2>ローテーション</h2>' + analysisReportTableHtml(
+                ['ローテ', '得点', '失点', '得失点', '得点率'],
+                model.rotation.rows.map(function(row) { return [row.rotation, row.pointsFor, row.pointsAgainst, row.diff, row.pointRateText]; }),
+                'rotation-table') + '</section>';
+        }
+        var notesHtml = model.notes.length ? '<aside>' + model.notes.map(function(note) { return '<div>※ ' + escapeHtml(note) + '</div>'; }).join('') + '</aside>' : '';
+
+        return '<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>' + escapeHtml(model.title + ' ' + model.subtitle) + '</title><style>' +
+            '@page{size:A4 portrait;margin:10mm}*{box-sizing:border-box}body{font-family:Arial,"Noto Sans JP",sans-serif;color:#111;background:#fff;margin:0;font-size:10.5px}h1{font-size:20px;margin:0 0 3px;color:#173b73}h2{font-size:14px;margin:14px 0 6px;padding:4px 7px;border-left:4px solid #2563eb;background:#eff6ff;break-after:avoid}p.subtitle{margin:0 0 10px;color:#475569;font-weight:bold}section{break-inside:auto}table{width:100%;border-collapse:collapse;margin-bottom:8px;table-layout:auto}thead{display:table-header-group}tr{break-inside:avoid}th,td{border:1px solid #94a3b8;padding:4px 5px;text-align:right;vertical-align:middle}th{background:#e2e8f0;color:#111;font-weight:bold}th:nth-child(2),td:nth-child(2){text-align:left}.context-table{width:auto;min-width:65%}.context-table th,.context-table td{text-align:left}.basic-table{font-size:9.5px}aside{margin-top:8px;padding:7px;border:1px solid #cbd5e1;background:#f8fafc;color:#475569}@media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}}' +
+            '</style></head><body><h1>' + escapeHtml(model.title) + '</h1><p class="subtitle">' + escapeHtml(model.subtitle) + '</p>' +
+            '<section><h2>対象情報</h2>' + analysisReportTableHtml(['項目', '内容'], contextRows, 'context-table') + '</section>' +
+            setSummaryHtml +
+            '<section><h2>基本スタッツ</h2>' + analysisReportTableHtml(['No', '選手名', '得点', 'スパイク 得/ミス', 'ブロック 決定/ミス', 'サーブ Ace/ミス', 'ミス', '反則'], basicRows, 'basic-table') + '</section>' +
+            '<section><h2>レセプション</h2>' + (model.reception.available ? analysisReportTableHtml(['No', '選手名', '受数', 'A', 'B', 'C', 'D', 'M', 'A率', 'AB率'], receptionRows, 'reception-table') : '<p>記録なし</p>') + '</section>' +
+            '<section><h2>サーブ効果</h2>' + (model.serveEffect.available ? analysisReportTableHtml(['No', '選手名', '打数', 'P', '効果', 'ミス', '効果率'], serveRows, 'serve-table') : '<p>記録なし</p>') + '</section>' +
+            '<section><h2>得点割合</h2>' + analysisReportTableHtml(['区分', '項目', '点数', '割合'], pointRows, 'point-table') + '</section>' +
+            rotationHtml + notesHtml + '</body></html>';
+    }
+
+    function buildAnalysisReportDocumentTitle(model) {
+        var scopePart = model && model.scope ? String(model.scope).replace(/[^a-z0-9-]+/gi, '_') : 'Report';
+        return 'SEIMEI_VB_RecordAnalysis_Report_' + scopePart;
+    }
+
+    // Record Analysis Phase 3 UI adapter. It only renders Phase 1/2 contracts.
+    var recordAnalysisUiScope = 'current-set';
+    var recordAnalysisUiTab = 'basic';
+    var recordAnalysisRotationSupported = false;
+    var recordAnalysisRunningScoreSupported = false;
+
+    function selectRecordAnalysisTab(tab) {
+        var allowed = ['basic', 'reception', 'serve-effect', 'point-breakdown', 'rotation', 'running-score'];
+        if (allowed.indexOf(tab) === -1) tab = 'basic';
+        if (tab === 'rotation' && !recordAnalysisRotationSupported) tab = 'basic';
+        if (tab === 'running-score' && !recordAnalysisRunningScoreSupported) tab = 'basic';
+        recordAnalysisUiTab = tab;
+        var buttons = document.querySelectorAll('[data-record-analysis-tab]');
+        for (var i = 0; i < buttons.length; i++) {
+            buttons[i].classList.toggle('active', buttons[i].getAttribute('data-record-analysis-tab') === tab);
+        }
+        for (var j = 0; j < allowed.length; j++) {
+            var section = document.getElementById('record-analysis-section-' + allowed[j]);
+            if (section) section.classList.toggle('active', allowed[j] === tab);
+        }
+    }
+
+    function selectRecordAnalysisScope(scope) {
+        if (scope === 'current-match' && matchType !== 'official') scope = 'current-set';
+        recordAnalysisUiScope = scope;
+        var buttons = document.querySelectorAll('[data-record-analysis-scope]');
+        for (var i = 0; i < buttons.length; i++) buttons[i].classList.toggle('active', buttons[i].getAttribute('data-record-analysis-scope') === scope);
+        var controls = document.getElementById('record-analysis-archive-controls');
+        if (controls) controls.classList.toggle('active', scope === 'archive');
+        if (scope === 'archive') ensureRecordAnalysisArchiveOptions();
+        renderRecordAnalysis();
+    }
+
+    function ensureRecordAnalysisArchiveOptions() {
+        var dateSelect = document.getElementById('record-analysis-date-select');
+        if (!dateSelect) return;
+        var previous = dateSelect.value;
+        var dates = [];
+        selectAnalysisArchiveItems({}).forEach(function(item) {
+            var dateKey = normalizeArchiveDateString(item && item.date);
+            if (dateKey && dates.indexOf(dateKey) === -1) dates.push(dateKey);
+        });
+        dates.sort().reverse();
+        dateSelect.innerHTML = dates.length ? dates.map(function(dateKey) {
+            return '<option value="' + escapeHtml(dateKey) + '">' + escapeHtml(dateKey) + '</option>';
+        }).join('') : '<option value="">記録なし</option>';
+        if (dates.indexOf(previous) !== -1) dateSelect.value = previous;
+        onRecordAnalysisDateChanged(false);
+    }
+
+    function onRecordAnalysisDateChanged(shouldRender) {
+        var dateSelect = document.getElementById('record-analysis-date-select');
+        var setSelect = document.getElementById('record-analysis-set-select');
+        if (!dateSelect || !setSelect) return;
+        var dateKey = dateSelect.value;
+        var items = dateKey ? selectAnalysisArchiveItems({ dateKey: dateKey }) : [];
+        var options = ['<option value="">この日の合計</option>'];
+        items.forEach(function(item) {
+            var values = getArchiveItemDisplayValues(item);
+            var result = safeStatNumber(values.usScore) > safeStatNumber(values.themScore) ? '○' : (safeStatNumber(values.usScore) < safeStatNumber(values.themScore) ? '●' : '-');
+            var label = (values.timeRangeText ? values.timeRangeText + ' ' : '') + (item.matchLabel ? item.matchLabel + ' ' : '') +
+                'vs ' + (item.oppName || '相手') + ' 第' + (item.setNum || 1) + 'S ' + values.scoreText + ' ' + result;
+            options.push('<option value="' + escapeHtml(String(item.id || '')) + '">' + escapeHtml(label) + '</option>');
+        });
+        setSelect.innerHTML = options.join('');
+        if (shouldRender !== false) renderRecordAnalysis();
+    }
+
+    function getRecordAnalysisRequest() {
+        if (recordAnalysisUiScope === 'current-set') return { scope: 'current' };
+        if (recordAnalysisUiScope === 'current-match') return { scope: 'current-match' };
+        if (recordAnalysisUiScope === 'today') return { scope: 'today' };
+        if (recordAnalysisUiScope === 'all') return { scope: 'all' };
+        var dateSelect = document.getElementById('record-analysis-date-select');
+        var setSelect = document.getElementById('record-analysis-set-select');
+        var archiveId = setSelect ? setSelect.value : '';
+        return archiveId
+            ? { scope: 'archive-set', archiveId: archiveId }
+            : { scope: 'date', dateKey: dateSelect ? dateSelect.value : '' };
+    }
+
+    function exportRecordAnalysisCSV() {
+        var source = resolveAnalysisSource(getRecordAnalysisRequest());
+        if (!source.ok) {
+            alert(source.error && source.error.message ? source.error.message : 'CSV出力対象を確認できません。');
+            return;
+        }
+        var csvData = buildAnalysisCsvData(source);
+        if (!csvData.ok) {
+            alert('CSVを生成できませんでした。');
+            return;
+        }
+        downloadTextFile(csvData.filename, csvData.csv, 'text/csv;charset=utf-8;');
+    }
+
+    function openRecordAnalysisReport() {
+        var source = resolveAnalysisSource(getRecordAnalysisRequest());
+        if (!source.ok) {
+            alert(source.error && source.error.message ? source.error.message : 'レポート対象を確認できません。');
+            return;
+        }
+        var model = buildAnalysisReportModel(source);
+        var reportHtml = buildAnalysisReportHtml(model);
+        if (!model.ok || !reportHtml) {
+            alert('レポートを生成できませんでした。');
+            return;
+        }
+        var reportWindow = window.open('', '_blank');
+        if (!reportWindow) {
+            alert('レポート画面を開けませんでした。ポップアップを許可してください。');
+            return;
+        }
+        reportWindow.opener = null;
+        reportWindow.document.open();
+        reportWindow.document.write(reportHtml);
+        reportWindow.document.title = buildAnalysisReportDocumentTitle(model);
+        reportWindow.document.close();
+        reportWindow.focus();
+        reportWindow.print();
+    }
+
+    function recordAnalysisEmptyRow(columns, message) {
+        return '<tr><td colspan="' + columns + '" style="text-align:center;color:#94a3b8;">' + escapeHtml(message) + '</td></tr>';
+    }
+
+    function buildRecordAnalysisContextMainHtml(analysisContext, defaultPrimary, defaultSecondary) {
+        var context = analysisContext || {};
+        var display = context.display || {};
+        if (context.scope !== 'all') {
+            return '<div class="record-analysis-context-main"><div class="record-analysis-context-primary">' + escapeHtml(defaultPrimary || display.primary || context.scopeLabel || '') + '</div>' +
+                ((defaultSecondary || display.secondary) ? '<div class="record-analysis-context-secondary">' + escapeHtml(defaultSecondary || display.secondary) + '</div>' : '') + '</div>';
+        }
+
+        var dateLabel = context.date && context.date.label ? String(context.date.label) : '';
+        var primary = [dateLabel, context.scopeLabel || ''].filter(function(value) { return !!value; }).join('　');
+        var opponentNames = context.match && Array.isArray(context.match.opponentNames) ? context.match.opponentNames : [];
+        var opponentHtml = opponentNames.length
+            ? '<details class="record-analysis-opponents"><summary>対戦相手　' + opponentNames.length + 'チーム</summary><div class="record-analysis-opponent-list">' + opponentNames.map(function(name) { return '<div>' + escapeHtml(name) + '</div>'; }).join('') + '</div></details>'
+            : '<div class="record-analysis-opponent-empty">対戦相手　－</div>';
+        return '<div class="record-analysis-context-main"><div class="record-analysis-context-primary">' + escapeHtml(primary) + '</div>' +
+            (display.secondary ? '<div class="record-analysis-context-secondary">' + escapeHtml(display.secondary) + '</div>' : '') + opponentHtml + '</div>';
+    }
+
+    function renderRecordAnalysis() {
+        var source = resolveAnalysisSource(getRecordAnalysisRequest());
+        var status = document.getElementById('record-analysis-status');
+        var contextBox = document.getElementById('record-analysis-context');
+        var basicTbody = document.getElementById('record-analysis-basic-tbody');
+        var receptionTbody = document.getElementById('record-analysis-reception-tbody');
+        var serveTbody = document.getElementById('record-analysis-serve-tbody');
+        var teamBox = document.getElementById('record-analysis-team-summary');
+        var pointBox = document.getElementById('record-analysis-point-breakdown');
+        var rotationTbody = document.getElementById('record-analysis-rotation-tbody');
+        var rotationTab = document.getElementById('record-analysis-rotation-tab');
+        var runningScoreBox = document.getElementById('record-analysis-running-score');
+        var runningScoreTab = document.getElementById('record-analysis-running-score-tab');
+        if (!contextBox || !basicTbody || !receptionTbody || !serveTbody || !teamBox || !pointBox || !rotationTbody || !rotationTab || !runningScoreBox || !runningScoreTab) return;
+        if (!source.ok) {
+            recordAnalysisRotationSupported = false;
+            recordAnalysisRunningScoreSupported = false;
+            rotationTab.style.display = 'none';
+            runningScoreTab.style.display = 'none';
+            if (recordAnalysisUiTab === 'rotation' || recordAnalysisUiTab === 'running-score') recordAnalysisUiTab = 'basic';
+            if (status) status.innerText = source.error.message;
+            contextBox.innerHTML = '<div class="record-analysis-context-main"><div class="record-analysis-context-primary">分析対象を確認できません</div></div>';
+            basicTbody.innerHTML = recordAnalysisEmptyRow(11, '表示できるデータがありません');
+            receptionTbody.innerHTML = recordAnalysisEmptyRow(10, 'レセプションデータなし');
+            serveTbody.innerHTML = recordAnalysisEmptyRow(7, 'サーブ効果データなし');
+            teamBox.innerHTML = '';
+            pointBox.innerHTML = '<div class="record-analysis-summary-card">表示できる得点割合データがありません</div>';
+            rotationTbody.innerHTML = '';
+            runningScoreBox.innerHTML = '';
+            selectRecordAnalysisTab(recordAnalysisUiTab);
+            return;
+        }
+
+        var basicRows = buildAnalysisBasicRows(source);
+        var basicSummaryRows = buildAnalysisBasicSummaryRows(source);
+        var analysisContext = buildAnalysisContext(source);
+        var receptionRows = buildAnalysisReceptionRows(source);
+        var serveRows = buildAnalysisServeEffectRows(source);
+        var teamSummary = buildAnalysisTeamSummary(source);
+        var pointBreakdown = buildAnalysisPointBreakdown(source);
+        var rotationAnalysis = buildAnalysisRotationRows(source);
+        var runningScore = buildAnalysisRunningScoreRows(source);
+        recordAnalysisRotationSupported = source.capabilities && source.capabilities.rotation === true;
+        recordAnalysisRunningScoreSupported = source.capabilities && source.capabilities.runningScore === true;
+        rotationTab.style.display = recordAnalysisRotationSupported ? '' : 'none';
+        runningScoreTab.style.display = recordAnalysisRunningScoreSupported ? '' : 'none';
+        if (!recordAnalysisRotationSupported && recordAnalysisUiTab === 'rotation') recordAnalysisUiTab = 'basic';
+        if (!recordAnalysisRunningScoreSupported && recordAnalysisUiTab === 'running-score') recordAnalysisUiTab = 'basic';
+        if (status) {
+            status.innerText = source.scopeLabel + ' / 完了Archive ' + source.archiveItems.length + 'セット';
+        }
+        contextBox.innerHTML = buildRecordAnalysisContextMainHtml(analysisContext, analysisContext.display.primary, analysisContext.display.secondary) +
+            '<div class="record-analysis-context-metrics"><span class="record-analysis-context-chip">' + escapeHtml(analysisContext.display.reception) + '</span>' +
+            '<span class="record-analysis-context-chip">' + escapeHtml(analysisContext.display.serveEffect) + '</span></div>';
+
+        function basicRowHtml(row) {
+            var rowClass = row.kind === 'shared-team' ? 'own-summary-row' : (row.kind === 'own-team-total' ? 'team-total-row' : (row.kind === 'opponent' ? 'opp-summary-row' : ''));
+            return '<tr class="' + rowClass + '"><td>' + escapeHtml(row.number) + '</td><td>' + escapeHtml(row.name) + '</td>' +
+                '<td class="point-total">' + row.points + '</td><td>' + statPairHtml(row.spikePoint, row.spikeMiss) + '</td>' +
+                '<td>' + statPairHtml(row.blockPoint, row.blockMiss) + '</td><td>' + statPairHtml(row.serveAce, row.serveMiss) + '</td>' +
+                '<td><span class="num-red">' + row.techErrorTotal + '</span></td><td><span class="num-red">' + row.violationTotal + '</span></td></tr>';
+        }
+        basicTbody.innerHTML = basicRows.map(basicRowHtml).concat(basicSummaryRows.map(basicRowHtml)).join('');
+
+        receptionTbody.innerHTML = receptionRows.length ? receptionRows.map(function(row) {
+            return '<tr><td>' + escapeHtml(row.number) + '</td><td style="text-align:left;">' + escapeHtml(row.name) + '</td>' +
+                '<td>' + row.total + '</td><td>' + row.A + '</td><td>' + row.B + '</td><td>' + row.C + '</td><td>' + row.D + '</td><td>' + row.M + '</td>' +
+                '<td>' + Number(row.aRate || 0).toFixed(1) + '%</td><td>' + Number(row.abRate || 0).toFixed(1) + '%</td></tr>';
+        }).join('') : recordAnalysisEmptyRow(10, source.receptionSource.emptyMessage || '対象選手のレセプション記録なし');
+
+        serveTbody.innerHTML = serveRows.length ? serveRows.map(function(row) {
+            return '<tr><td>' + escapeHtml(row.number) + '</td><td style="text-align:left;">' + escapeHtml(row.name) + '</td>' +
+                '<td>' + row.attempts + '</td><td>' + row.P + '</td><td>' + row.effect + '</td><td>' + row.miss + '</td>' +
+                '<td>' + (typeof row.effectRate === 'number' ? row.effectRate.toFixed(1) + '%' : '－') + '</td></tr>';
+        }).join('') : recordAnalysisEmptyRow(7, '対象選手のサーブ効果記録なし');
+
+        var teamStats = teamSummary ? teamSummary.stats : {};
+        var teamReception = teamSummary ? teamSummary.reception : { recTotal: 0, recABPct: '0.0' };
+        var teamServe = teamSummary ? teamSummary.serveEffect : { attempts: 0, rate: null };
+        teamBox.innerHTML = '<div class="record-analysis-summary-card"><b>基本スタッツ（チーム）</b><br>スパイク ' + safeStatNumber(teamStats.attack_kill) +
+            ' / ブロック ' + safeStatNumber(teamStats.block_kill) + ' / Ace ' + safeStatNumber(teamStats.serve_ace) + '</div>' +
+            '<div class="record-analysis-summary-card"><b>レセプション（チーム）</b><br>受数 ' + safeStatNumber(teamReception.recTotal) + ' / AB ' + Number(teamReception.recABPct || 0).toFixed(1) + '%</div>' +
+            '<div class="record-analysis-summary-card"><b>サーブ効果率（チーム）</b><br>打数 ' + safeStatNumber(teamServe.attempts) + ' / 効果率 ' + (typeof teamServe.rate === 'number' ? teamServe.rate.toFixed(1) + '%' : '－') + '</div>';
+
+        function renderPointCard(title, items, total, fillClasses) {
+            var rows = items.map(function(item) {
+                return '<div class="record-analysis-point-row"><span>' + escapeHtml(item.label) + '</span><span>' + safeStatNumber(item.count) + '点</span><span>' + escapeHtml(item.rateText) + '</span></div>';
+            }).join('');
+            var fills = items.map(function(item, index) {
+                return '<div class="' + fillClasses[index] + '" style="width:' + escapeHtml(String(item.rate)) + '%"></div>';
+            }).join('');
+            return '<div class="record-analysis-point-card"><h4>' + escapeHtml(title) + '</h4>' + rows +
+                '<div class="ratio-bar" style="margin-top:8px;">' + fills + '</div>' +
+                '<div class="record-analysis-point-total">合計 ' + safeStatNumber(total) + '点</div></div>';
+        }
+        pointBox.innerHTML = renderPointCard('得点', pointBreakdown.scoring, pointBreakdown.scoringTotal, ['ratio-fill-own', 'ratio-fill-opp-err']) +
+            renderPointCard('失点', pointBreakdown.conceding, pointBreakdown.concedingTotal, ['ratio-fill-opp', 'ratio-fill-own-err']);
+
+        if (!rotationAnalysis.supported || !rotationAnalysis.hasAny) {
+            rotationTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:12px;">ローテーション分析に使える得点記録がまだありません。</td></tr>';
+        } else {
+            rotationTbody.innerHTML = rotationAnalysis.rows.map(function(row) {
+                var court = '<div class="rotation-mini-court">' + row.displayLineup.map(function(cell) {
+                    var serverClass = cell.position === 'P1' ? ' rotation-mini-server' : '';
+                    return '<div class="rotation-mini-cell' + serverClass + '"><span class="rotation-mini-pos">' + escapeHtml(cell.position) + '</span>' +
+                        '<span class="rotation-mini-player">' + escapeHtml(cell.number) + ' ' + escapeHtml(cell.name) + '</span></div>';
+                }).join('') + '</div>';
+                var rowClass = row.isBest ? 'rotation-best-row' : (row.isWorst ? 'rotation-worst-row' : '');
+                var diffClass = row.diff > 0 ? 'rotation-diff-plus' : (row.diff < 0 ? 'rotation-diff-minus' : 'rotation-diff-zero');
+                var diffText = row.diff > 0 ? '+' + row.diff : String(row.diff);
+                return '<tr class="' + rowClass + '"><td>' + escapeHtml(row.rotation) + '</td><td>' + court + '</td><td>' + row.pointsFor + '</td><td>' + row.pointsAgainst +
+                    '</td><td class="' + diffClass + '">' + diffText + '</td><td>' + escapeHtml(row.pointRateText) + '</td></tr>';
+            }).join('');
+        }
+
+        if (!runningScore.supported || runningScore.rows.length === 0) {
+            runningScoreBox.innerHTML = '<div style="color:#94a3b8;text-align:center;padding:18px;">このセットにはランニングスコア記録がありません。</div>';
+        } else {
+            runningScoreBox.innerHTML = runningScore.rows.map(function(row) {
+                var eventClass = row.eventType === 'score_adjust' ? 'score-adjust' : (row.eventType === 'rotation_adjust' ? 'rotation-adjust' : row.eventType);
+                var className = 'log-item ' + (row.eventType === 'stat' ? row.side : eventClass);
+                if (row.eventType === 'unknown' || ['stat','timeout','substitution','score_adjust','rotation_adjust'].indexOf(row.eventType) === -1) className += ' running-score-unknown';
+                var detail = '';
+                if (row.eventType === 'stat') {
+                    detail = escapeHtml(row.player ? row.player.displayName : '') + ' : ' + escapeHtml(row.label);
+                } else if (row.eventType === 'timeout') {
+                    detail = '⏳ T.O: ' + escapeHtml(row.teamName);
+                } else if (row.eventType === 'substitution') {
+                    var change = row.outPlayer || row.inPlayer ? '　OUT ' + escapeHtml(row.outPlayer ? row.outPlayer.displayName : '不明') + ' → IN ' + escapeHtml(row.inPlayer ? row.inPlayer.displayName : '不明') : '';
+                    detail = '🔄 交代: ' + escapeHtml(row.teamName) + change;
+                } else if (row.eventType === 'score_adjust') {
+                    detail = '⚙ 得点修正 ' + row.fromScore.us + ' - ' + row.fromScore.them + ' → ' + escapeHtml(row.scoreText);
+                } else if (row.eventType === 'rotation_adjust') {
+                    detail = '🔄 ローテ修正：' + (row.delta > 0 ? Math.abs(row.delta) + 'つ進める' : Math.abs(row.delta) + 'つ戻す');
+                } else {
+                    detail = '記録: ' + escapeHtml(row.label);
+                }
+                if (row.note) detail += '：' + escapeHtml(row.note);
+                return '<div class="' + className + '"><strong>[' + escapeHtml(row.scoreText) + ']</strong> <span class="running-score-detail">' + detail + '</span></div>';
+            }).join('');
+        }
+        selectRecordAnalysisTab(recordAnalysisUiTab);
+    }
+
+    function ensureRecordAnalysisModalState() {
+        var currentMatchButton = document.getElementById('record-analysis-current-match-btn');
+        var csvButton = document.getElementById('record-analysis-csv-btn');
+        var reportButton = document.getElementById('record-analysis-report-btn');
+        if (csvButton && csvButton.dataset.analysisCsvBound !== '1') {
+            csvButton.addEventListener('click', exportRecordAnalysisCSV);
+            csvButton.dataset.analysisCsvBound = '1';
+        }
+        if (reportButton && reportButton.dataset.analysisReportBound !== '1') {
+            reportButton.addEventListener('click', exportRecordAnalysisReportPDF);
+            reportButton.dataset.analysisReportBound = '1';
+        }
+        if (currentMatchButton) currentMatchButton.style.display = matchType === 'official' ? '' : 'none';
+        if (matchType !== 'official' && recordAnalysisUiScope === 'current-match') recordAnalysisUiScope = 'current-set';
+        recordAnalysisUiTab = 'basic';
+        ensureRecordAnalysisArchiveOptions();
+        selectRecordAnalysisScope(recordAnalysisUiScope || 'current-set');
     }
 
     function getTodayReportArchiveItems() {
@@ -6958,6 +8249,282 @@ button, input, select, textarea,
         drawScoringAnalysis(doc, reportData, scoringTitleY + 10);
         addReportFooters(doc, reportData);
         return doc.output('blob');
+    }
+
+    // Record Analysis Phase 4L-B2: Analysis Model -> coaching PDF view model.
+    // This adapter is intentionally independent from the Legacy reportData schema.
+    function buildAnalysisPdfViewModel(model, source) {
+        if (!model || model.ok !== true || !source || source.ok !== true) return { ok: false, error: 'INVALID_ANALYSIS_REPORT_MODEL' };
+        var scope = model.scope || '';
+        var scoreAdjust = { count: 0, us: 0, them: 0 };
+        (Array.isArray(source.historyItems) ? source.historyItems : []).forEach(function(item) {
+            if (!item || item.type !== 'score_adjust') return;
+            scoreAdjust.count++;
+            scoreAdjust.us += safeStatNumber(item.toUs) - safeStatNumber(item.fromUs);
+            scoreAdjust.them += safeStatNumber(item.toThem) - safeStatNumber(item.fromThem);
+        });
+        var resultSummary = { wins: 0, losses: 0, draws: 0 };
+        (Array.isArray(source.setScores) ? source.setScores : []).forEach(function(score) {
+            var us = safeStatNumber(score && score.us);
+            var them = safeStatNumber(score && score.them);
+            if (us > them) resultSummary.wins++;
+            else if (us < them) resultSummary.losses++;
+            else resultSummary.draws++;
+        });
+        var scoringTotal = safeStatNumber(model.pointBreakdown && model.pointBreakdown.scoringTotal);
+        var concedingTotal = safeStatNumber(model.pointBreakdown && model.pointBreakdown.concedingTotal);
+        var context = model.context || {};
+        var overview = [
+            { label: '対象', value: context.scopeLabel || model.subtitle || scope },
+            { label: '日付／期間', value: context.date && context.date.label ? context.date.label : '－' },
+            { label: '完了セット', value: safeStatNumber(context.completedSetCount) + 'セット' },
+            { label: '対戦チーム', value: safeStatNumber(model.summary && model.summary.opponentCount) + 'チーム' },
+            { label: 'Reception AB率', value: model.summary && model.summary.receptionText ? model.summary.receptionText : '－' },
+            { label: 'S効果率', value: model.summary && model.summary.serveEffectText ? model.summary.serveEffectText : '－' }
+        ];
+        if (scope === 'all') {
+            overview.push({ label: '勝', value: String(resultSummary.wins) });
+            overview.push({ label: '敗', value: String(resultSummary.losses) });
+            overview.push({ label: '得点修正', value: scoreAdjust.count ? scoreAdjust.count + '件' : 'なし' });
+        } else {
+            overview.push({ label: 'セット', value: context.set && context.set.label ? context.set.label : '－' });
+            overview.push({ label: 'スコア', value: context.score && context.score.text ? context.score.text : '－' });
+            overview.push({ label: '結果', value: context.result && context.result.label ? context.result.label : '－' });
+        }
+        return {
+            ok: true,
+            title: model.title || 'SEIMEI VB Tracker 記録分析レポート',
+            subtitle: model.subtitle || '',
+            scope: scope,
+            overview: overview,
+            setSummary: model.setSummary && model.setSummary.available ? {
+                available: true,
+                rows: (model.setSummary.rows || []).map(function(row) { return Object.assign({}, row); })
+            } : { available: false, rows: [] },
+            basicRows: (model.basic && model.basic.rows || []).map(function(row) { return Object.assign({}, row); }),
+            reception: {
+                available: !!(model.reception && model.reception.available),
+                rows: (model.reception && model.reception.rows || []).map(function(row) { return Object.assign({}, row); }),
+                teamTotal: model.reception && model.reception.teamTotal ? Object.assign({}, model.reception.teamTotal) : null,
+                note: model.reception && model.reception.note ? model.reception.note : '',
+                emptyMessage: model.reception && model.reception.emptyMessage ? model.reception.emptyMessage : 'レセプション記録なし'
+            },
+            serveEffect: {
+                available: !!(model.serveEffect && model.serveEffect.available),
+                rows: (model.serveEffect && model.serveEffect.rows || []).map(function(row) {
+                    var copy = Object.assign({}, row);
+                    copy.reference = safeStatNumber(row.attempts) === 1;
+                    return copy;
+                }),
+                teamTotal: model.serveEffect && model.serveEffect.teamTotal ? Object.assign({}, model.serveEffect.teamTotal) : null,
+                emptyMessage: model.serveEffect && model.serveEffect.emptyMessage ? model.serveEffect.emptyMessage : 'サーブ効果記録なし'
+            },
+            pointBreakdown: {
+                scoring: (model.pointBreakdown && model.pointBreakdown.scoring || []).map(function(item) { return Object.assign({}, item); }),
+                conceding: (model.pointBreakdown && model.pointBreakdown.conceding || []).map(function(item) { return Object.assign({}, item); }),
+                scoringTotal: scoringTotal,
+                concedingTotal: concedingTotal
+            },
+            scoreAdjustment: {
+                count: scoreAdjust.count,
+                playRecordedPointsUs: scoringTotal,
+                scoreAdjustmentUs: scoreAdjust.us,
+                finalPointsUs: scoringTotal + scoreAdjust.us,
+                playRecordedPointsThem: concedingTotal,
+                scoreAdjustmentThem: scoreAdjust.them,
+                finalPointsThem: concedingTotal + scoreAdjust.them,
+                aggregateOnly: scope === 'all'
+            },
+            resultSummary: resultSummary,
+            rotation: model.rotation && model.rotation.supported === true
+                ? { supported: true, rows: (model.rotation.rows || []).map(function(row) { return Object.assign({}, row); }) }
+                : { supported: false, rows: [] },
+            runningScore: { included: false },
+            appVersion: APP_VERSION
+        };
+    }
+
+    function buildAnalysisReportFilename(model) {
+        var context = model && model.context ? model.context : {};
+        var scope = model && model.scope ? model.scope : '';
+        if (scope === 'all') return 'SEIMEI_VB_RecordAnalysis_All.pdf';
+        var date = context.date && context.date.from ? String(context.date.from) : '';
+        var safeDate = date.replace(/[^0-9]+/g, '-').replace(/^-|-$/g, '');
+        var suffix = scope === 'archive-set' && context.set && context.set.number ? '_Set' + safeStatNumber(context.set.number) :
+            (scope === 'today' || scope === 'date' ? '_Day' : (scope === 'current-match' ? '_CurrentMatch' : '_CurrentSet'));
+        return 'SEIMEI_VB_RecordAnalysis_' + (safeDate || 'Undated') + suffix + '.pdf';
+    }
+
+    function buildAnalysisReportPdfBlob(pdfModel, fontsBase64) {
+        if (!pdfModel || pdfModel.ok !== true) throw new Error('記録分析PDFモデルが不正です。');
+        if (!window.jspdf || typeof window.jspdf.jsPDF !== 'function') throw new Error('jsPDFを利用できません。');
+        var doc = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', compress: true });
+        doc.addFileToVFS(PDF_FONT_REGULAR_FILE, fontsBase64.regular);
+        doc.addFont(PDF_FONT_REGULAR_FILE, PDF_FONT_FAMILY, 'normal');
+        doc.addFileToVFS(PDF_FONT_BOLD_FILE, fontsBase64.bold);
+        doc.addFont(PDF_FONT_BOLD_FILE, PDF_FONT_FAMILY, 'bold');
+        doc.setFont(PDF_FONT_FAMILY, 'normal');
+        var drawTable = getPdfAutoTableFunction(doc);
+
+        function sectionTitle(title, y, color) {
+            doc.setFont(PDF_FONT_FAMILY, 'bold');
+            doc.setFontSize(11);
+            doc.setTextColor.apply(doc, color || [30, 58, 138]);
+            doc.text(title, 14, y);
+            doc.setDrawColor(148, 163, 184);
+            doc.line(14, y + 2, 283, y + 2);
+        }
+        function rateText(value) {
+            return typeof value === 'number' && isFinite(value) ? value.toFixed(1) + '%' : '－';
+        }
+        function addPage() {
+            doc.addPage('a4', 'landscape');
+            doc.setFont(PDF_FONT_FAMILY, 'normal');
+        }
+
+        doc.setFont(PDF_FONT_FAMILY, 'bold');
+        doc.setFontSize(16);
+        doc.setTextColor(0, 0, 0);
+        doc.text(pdfModel.title, 14, 11);
+        doc.setFont(PDF_FONT_FAMILY, 'normal');
+        drawFittedReportText(doc, pdfModel.subtitle, 14, 18, 125, 10, 8);
+        var overviewRows = [];
+        for (var oi = 0; oi < pdfModel.overview.length; oi += 3) {
+            overviewRows.push(pdfModel.overview.slice(oi, oi + 3).map(function(item) { return item.label + '\n' + item.value; }));
+        }
+        drawTable({
+            startY: 5, body: overviewRows, theme: 'grid', tableWidth: 132,
+            styles: { font: PDF_FONT_FAMILY, fontSize: 8.5, cellPadding: 1.3, minCellHeight: 8, textColor: [0,0,0], lineColor: [148,163,184], lineWidth: 0.2, halign: 'center', valign: 'middle' },
+            columnStyles: { 0: { cellWidth: 44 }, 1: { cellWidth: 44 }, 2: { cellWidth: 44 } }, margin: { left: 151, right: 14 }
+        });
+        var y = 36;
+        if (pdfModel.setSummary.available && pdfModel.setSummary.rows.length) {
+            sectionTitle('セットサマリー', y);
+            drawTable({
+                startY: y + 4,
+                head: [['セット','対戦相手','スコア','結果','返球率','S効果率']],
+                body: pdfModel.setSummary.rows.map(function(row) { return [row.setLabel,row.opponent,row.score,row.result,row.receptionABRate,row.serveEffectRate]; }),
+                theme: 'grid', styles: { font: PDF_FONT_FAMILY, fontSize: 8.2, cellPadding: 1.2, textColor: [0,0,0], lineColor: [148,163,184], lineWidth: 0.2 },
+                headStyles: { fillColor: [30,58,138], textColor: [255,255,255], halign: 'center' },
+                columnStyles: { 0:{cellWidth:34,halign:'center'},1:{cellWidth:92},2:{cellWidth:32,halign:'center'},3:{cellWidth:22,halign:'center'},4:{cellWidth:34,halign:'right'},5:{cellWidth:37,halign:'right'} },
+                margin: { left: 14, right: 14, bottom: 14 }
+            });
+            y = doc.lastAutoTable.finalY + 8;
+        }
+        sectionTitle('基本スタッツ', y);
+        drawTable({
+            startY: y + 4,
+            head: [['No','選手名','得点','スパイク\n得 / ミス','ブロック\n決定 / ミス','サーブ\nAce / ミス','ミス','反則']],
+            body: pdfModel.basicRows.map(function(row) { return [row.number,row.name,String(row.points),row.spikePoint+' / '+row.spikeMiss,row.blockPoint+' / '+row.blockMiss,row.serveAce+' / '+row.serveMiss,String(row.techErrorTotal),String(row.violationTotal)]; }),
+            theme: 'grid', styles: { font: PDF_FONT_FAMILY, fontSize: 9, cellPadding: 1.2, minCellHeight: 6.2, textColor: [0,0,0], lineColor: [100,116,139], lineWidth: 0.2, halign: 'center' },
+            bodyStyles: { fontStyle: 'bold' }, headStyles: { fillColor: [30,58,138], textColor: [255,255,255] },
+            columnStyles: { 0:{cellWidth:16},1:{cellWidth:62,halign:'left'},2:{cellWidth:21},3:{cellWidth:36},4:{cellWidth:36},5:{cellWidth:36},6:{cellWidth:24},7:{cellWidth:24} },
+            margin: { left: 14, right: 14, bottom: 14 },
+            didParseCell: function(data) {
+                if (data.section !== 'body') return;
+                var row = pdfModel.basicRows[data.row.index];
+                if (!row) return;
+                if (row.kind === 'shared-team') data.cell.styles.fillColor = [236,254,255];
+                else if (row.kind === 'own-team-total') data.cell.styles.fillColor = [219,234,254];
+                else if (row.kind === 'opponent') data.cell.styles.fillColor = [254,242,242];
+            }
+        });
+
+        addPage();
+        sectionTitle('レセプション', 18, [15,118,110]);
+        if (pdfModel.reception.note) {
+            doc.setFontSize(7.5); doc.setTextColor(71,85,105); doc.text('※ ' + pdfModel.reception.note, 283, 22, { align: 'right' });
+        }
+        var recRows = pdfModel.reception.rows.map(function(row) { return [row.number,row.name,String(row.total),String(row.A),String(row.B),String(row.C),String(row.D),String(row.M),rateText(row.aRate),rateText(row.abRate)]; });
+        if (pdfModel.reception.teamTotal) {
+            var rt = pdfModel.reception.teamTotal;
+            recRows.push(['','チーム総計',String(rt.recTotal),String(rt.recA),String(rt.recB),String(rt.recC),String(rt.recD),String(rt.recM),rateText(Number(rt.recAPct)),rateText(Number(rt.recABPct))]);
+        }
+        if (recRows.length) {
+            drawTable({ startY:24, head:[['No','選手名','受数','A','B','C','D','M','A率','AB率']], body:recRows, theme:'grid',
+                styles:{font:PDF_FONT_FAMILY,fontSize:9,cellPadding:2,textColor:[0,0,0],lineColor:[100,116,139],lineWidth:0.2,halign:'center'}, headStyles:{fillColor:[15,118,110],textColor:[255,255,255]},
+                columnStyles:{0:{cellWidth:16},1:{cellWidth:60,halign:'left'},2:{cellWidth:23},3:{cellWidth:19},4:{cellWidth:19},5:{cellWidth:19},6:{cellWidth:19},7:{cellWidth:19},8:{cellWidth:31},9:{cellWidth:31}}, margin:{left:14,right:14,bottom:14},
+                didParseCell:function(data){ if(data.section==='body' && pdfModel.reception.teamTotal && data.row.index===recRows.length-1) data.cell.styles.fillColor=[204,251,241]; }
+            });
+        } else { doc.setFontSize(11); doc.setTextColor(0,0,0); doc.text(pdfModel.reception.emptyMessage,18,32); }
+        y = recRows.length && doc.lastAutoTable ? doc.lastAutoTable.finalY + 12 : 44;
+        sectionTitle('サーブ効果', y);
+        var serveRows = pdfModel.serveEffect.rows.map(function(row) { return [row.number,row.name+(row.reference?'（参考）':''),String(row.attempts),String(row.P),String(row.effect),String(row.miss),rateText(row.effectRate)]; });
+        if (pdfModel.serveEffect.teamTotal) {
+            var st = pdfModel.serveEffect.teamTotal;
+            serveRows.push(['','チーム総計',String(st.attempts),String(st.points),String(st.effects),String(st.misses),rateText(st.rate)]);
+        }
+        if (serveRows.length) {
+            drawTable({ startY:y+4, head:[['No','選手名','打数','P','効果','ミス','効果率']], body:serveRows, theme:'grid',
+                styles:{font:PDF_FONT_FAMILY,fontSize:9,cellPadding:2,textColor:[0,0,0],lineColor:[100,116,139],lineWidth:0.2,halign:'center'}, headStyles:{fillColor:[30,58,138],textColor:[255,255,255]},
+                columnStyles:{0:{cellWidth:20},1:{cellWidth:82,halign:'left'},2:{cellWidth:30},3:{cellWidth:30},4:{cellWidth:30},5:{cellWidth:30},6:{cellWidth:40}}, margin:{left:14,right:14,bottom:14},
+                didParseCell:function(data){ if(data.section!=='body')return; var sourceRow=pdfModel.serveEffect.rows[data.row.index]; if(sourceRow&&sourceRow.reference)data.cell.styles.fillColor=[254,249,195]; if(pdfModel.serveEffect.teamTotal&&data.row.index===serveRows.length-1)data.cell.styles.fillColor=[219,234,254]; }
+            });
+        } else { doc.setFontSize(11); doc.text(pdfModel.serveEffect.emptyMessage,18,y+12); }
+
+        addPage();
+        sectionTitle('得点・失点内訳', 18);
+        function pointRows(items) { return items.map(function(item) { return [item.label,String(item.count),item.rateText || rateText(item.rate)]; }); }
+        drawTable({ startY:24, head:[['得点内訳','件数','割合']], body:pointRows(pdfModel.pointBreakdown.scoring).concat([['合計',String(pdfModel.pointBreakdown.scoringTotal),'100%']]), theme:'grid', tableWidth:120,
+            styles:{font:PDF_FONT_FAMILY,fontSize:10,cellPadding:3,textColor:[0,0,0],lineColor:[100,116,139],lineWidth:0.2}, headStyles:{fillColor:[30,58,138],textColor:[255,255,255]}, columnStyles:{0:{cellWidth:62},1:{cellWidth:26,halign:'right'},2:{cellWidth:32,halign:'right'}}, margin:{left:14,right:163} });
+        drawTable({ startY:24, head:[['失点内訳','件数','割合']], body:pointRows(pdfModel.pointBreakdown.conceding).concat([['合計',String(pdfModel.pointBreakdown.concedingTotal),'100%']]), theme:'grid', tableWidth:120,
+            styles:{font:PDF_FONT_FAMILY,fontSize:10,cellPadding:3,textColor:[0,0,0],lineColor:[100,116,139],lineWidth:0.2}, headStyles:{fillColor:[153,27,27],textColor:[255,255,255]}, columnStyles:{0:{cellWidth:62},1:{cellWidth:26,halign:'right'},2:{cellWidth:32,halign:'right'}}, margin:{left:163,right:14} });
+        var pointTableEndY = Math.max(doc.lastAutoTable ? doc.lastAutoTable.finalY : 55, 55);
+        function drawPointBand(items, x, bandY, width, colors) {
+            var cursor = x;
+            (items || []).forEach(function(item, index) {
+                var rate = typeof item.rate === 'number' && isFinite(item.rate) ? Math.max(0, Math.min(100, item.rate)) : 0;
+                var segmentWidth = width * rate / 100;
+                var color = colors[index] || [148,163,184];
+                doc.setFillColor(color[0],color[1],color[2]);
+                if (segmentWidth > 0) doc.rect(cursor,bandY,segmentWidth,4,'F');
+                cursor += segmentWidth;
+            });
+            doc.setDrawColor(100,116,139); doc.rect(x,bandY,width,4,'S');
+        }
+        drawPointBand(pdfModel.pointBreakdown.scoring,14,pointTableEndY+3,120,[[37,99,235],[245,158,11]]);
+        drawPointBand(pdfModel.pointBreakdown.conceding,163,pointTableEndY+3,120,[[220,38,38],[124,45,18]]);
+        y = pointTableEndY + 14;
+        if (pdfModel.scoreAdjustment.count > 0) {
+            sectionTitle(pdfModel.scoreAdjustment.aggregateOnly ? '得点修正監査' : '得点修正 3段監査', y);
+            var auditBody = pdfModel.scoreAdjustment.aggregateOnly
+                ? [['得点修正あり',pdfModel.scoreAdjustment.count+'件']]
+                : [['プレー記録合計',String(pdfModel.scoreAdjustment.playRecordedPointsUs),String(pdfModel.scoreAdjustment.playRecordedPointsThem)],['得点修正',String(pdfModel.scoreAdjustment.scoreAdjustmentUs),String(pdfModel.scoreAdjustment.scoreAdjustmentThem)],['最終得点／最終失点',String(pdfModel.scoreAdjustment.finalPointsUs),String(pdfModel.scoreAdjustment.finalPointsThem)]];
+            drawTable({startY:y+4,head:[pdfModel.scoreAdjustment.aggregateOnly?['監査項目','値']:['監査項目','得点側','失点側']],body:auditBody,theme:'grid',tableWidth:150,styles:{font:PDF_FONT_FAMILY,fontSize:9,cellPadding:2,lineColor:[148,163,184],lineWidth:0.2},headStyles:{fillColor:[71,85,105],textColor:[255,255,255]},margin:{left:14}});
+            y = doc.lastAutoTable.finalY + 10;
+        }
+        if (pdfModel.rotation.supported && pdfModel.rotation.rows.length) {
+            sectionTitle('ローテーション分析', y);
+            drawTable({startY:y+4,head:[['Rotation','得点','失点','得失点','得点率']],body:pdfModel.rotation.rows.map(function(row){return[row.rotation,String(row.pointsFor),String(row.pointsAgainst),String(row.diff),row.pointRateText];}),theme:'grid',tableWidth:170,styles:{font:PDF_FONT_FAMILY,fontSize:9,cellPadding:2,halign:'center',lineColor:[148,163,184],lineWidth:0.2},headStyles:{fillColor:[30,58,138],textColor:[255,255,255]},margin:{left:14}});
+        }
+
+        var totalPages = doc.getNumberOfPages();
+        for (var page = 1; page <= totalPages; page++) {
+            doc.setPage(page); doc.setFont(PDF_FONT_FAMILY,'normal'); doc.setFontSize(8); doc.setTextColor(0,0,0);
+            doc.text('SEIMEI VB Tracker Ver.' + pdfModel.appVersion,14,206);
+            doc.text(page + ' / ' + totalPages,283,206,{align:'right'});
+        }
+        return doc.output('blob');
+    }
+
+    function exportRecordAnalysisReportPDF() {
+        var button = document.getElementById('record-analysis-report-btn');
+        var originalText = button ? button.innerText : '';
+        var source = resolveAnalysisSource(getRecordAnalysisRequest());
+        if (!source.ok) { alert(source.error && source.error.message ? source.error.message : 'レポート対象を確認できません。'); return; }
+        var model = buildAnalysisReportModel(source);
+        var pdfModel = buildAnalysisPdfViewModel(model, source);
+        if (!pdfModel.ok) { alert('レポートを生成できませんでした。'); return; }
+        if (button) { button.disabled = true; button.innerText = 'PDF生成中...'; }
+        loadPdfJapaneseFontsBase64().then(function(fontsBase64) {
+            var pdfBlob = buildAnalysisReportPdfBlob(pdfModel, fontsBase64);
+            downloadPdfBlob(pdfBlob, buildAnalysisReportFilename(model));
+        }).catch(function(error) {
+            console.error('Record Analysis PDF generation failed:', error);
+            alert('レポートを生成できませんでした。\n' + (error && error.message ? error.message : String(error)));
+        }).then(function() {
+            if (button) { button.disabled = false; button.innerText = originalText || 'レポート'; }
+        });
     }
 
     function downloadPdfBlob(blob, filename) {
