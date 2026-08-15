@@ -6337,6 +6337,8 @@ button, input, select, textarea,
                 violationTotal: summary.violations,
                 stats: Object.assign({}, source.statsData && source.statsData[id] ? source.statsData[id] : {})
             };
+        }).sort(function(a, b) {
+            return safeStatNumber(b.points) - safeStatNumber(a.points);
         });
     }
 
@@ -8364,7 +8366,7 @@ button, input, select, textarea,
             { label: '日付／期間', value: context.date && context.date.label ? context.date.label : '－' },
             { label: '完了セット', value: safeStatNumber(context.completedSetCount) + 'セット' },
             { label: '対戦チーム', value: safeStatNumber(model.summary && model.summary.opponentCount) + 'チーム' },
-            { label: 'Reception AB率', value: model.summary && model.summary.receptionText ? model.summary.receptionText : '－' },
+            { label: 'レセプション AB率', value: model.summary && model.summary.receptionText ? model.summary.receptionText : '－' },
             { label: 'S効果率', value: model.summary && model.summary.serveEffectText ? model.summary.serveEffectText : '－' }
         ];
         if (scope === 'all') {
