@@ -1180,18 +1180,18 @@
             display: none;
             margin: 0 0 12px 0;
             padding: 10px;
-            border: 1px solid #14532d;
+            border: 2px solid #166534;
             border-radius: 12px;
-            background: rgba(20, 83, 45, 0.18);
+            background: rgba(22, 101, 52, 0.24);
             color: #e5e7eb;
         }
         .reception-panel.active { display: block; }
         .reception-panel.serve-effect-mode {
-            border-color: #1e4f78;
-            background: rgba(15, 55, 88, 0.32);
+            border-color: #9d174d;
+            background: rgba(131, 24, 67, 0.22);
         }
         .reception-panel.serve-effect-mode .reception-title {
-            color: #bfdbfe;
+            color: #ffffff;
         }
         .reception-panel.collapsed .reception-expanded { display: none; }
         .reception-panel:not(.collapsed) .reception-collapsed { display: none; }
@@ -1204,7 +1204,7 @@
         }
         .reception-title {
             font-weight: 900;
-            color: #bbf7d0;
+            color: #ffffff;
             font-size: 0.92rem;
         }
         .reception-note {
@@ -1608,7 +1608,7 @@ button, input, select, textarea,
                 <div class="reception-expanded">
                     <div class="reception-header">
                         <div>
-                            <div id="serve-reception-title" class="reception-title">レセプション</div>
+                            <div id="serve-reception-title" class="reception-title">レセプション評価</div>
                         </div>
                     </div>
                     <div class="reception-grade-row">
@@ -3664,7 +3664,7 @@ button, input, select, textarea,
         var serving = !isOpponentServing();
         panel.classList.toggle('serve-effect-mode', serving);
         var title = document.getElementById('serve-reception-title');
-        if (title) title.innerText = serving ? 'サーブ効果' : 'レセプション';
+        if (title) title.innerText = serving ? 'サーブ効果' : 'レセプション評価';
         var p = document.getElementById('serve-effect-grade-p');
         if (p) p.classList.toggle('grade-placeholder', !serving);
         var buttons = panel.getElementsByClassName('reception-grade-btn');
