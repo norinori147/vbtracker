@@ -8442,6 +8442,54 @@ button, input, select, textarea,
         return 'SEIMEI_VB_RecordAnalysis_' + (safeDate || 'Undated') + suffix + '.pdf';
     }
 
+    function getAnalysisPdfPageGeometry(doc) {
+        var pageHeight = doc && doc.internal && doc.internal.pageSize && typeof doc.internal.pageSize.getHeight === 'function'
+            ? doc.internal.pageSize.getHeight() : 210;
+        var pageTop = 18;
+        var pageBottom = Math.min(194, pageHeight - 16);
+        return { pageTop: pageTop, pageBottom: pageBottom, usablePageHeight: pageBottom - pageTop, epsilon: 0.1 };
+    }
+
+    function ensureAnalysisSectionFits(doc, currentY, requiredHeight, addPage) {
+        var geometry = getAnalysisPdfPageGeometry(doc);
+        var remainingHeight = geometry.pageBottom - currentY;
+        if (requiredHeight <= geometry.usablePageHeight + geometry.epsilon && requiredHeight > remainingHeight + geometry.epsilon) {
+            addPage();
+            return geometry.pageTop;
+        }
+        if (requiredHeight > geometry.usablePageHeight + geometry.epsilon && currentY > geometry.pageTop + geometry.epsilon) {
+            addPage();
+            return geometry.pageTop;
+        }
+        return currentY;
+    }
+
+    function measureAnalysisTableHeight(doc, drawTable, options, startY) {
+        doc.addPage('a4', 'landscape');
+        var firstPage = doc.getNumberOfPages();
+        var measureOptions = Object.assign({}, options, {
+            startY: startY,
+            margin: Object.assign({}, options.margin || {}, { top: 14, bottom: 16 })
+        });
+        drawTable(measureOptions);
+        var lastPage = doc.getNumberOfPages();
+        return {
+            height: doc.lastAutoTable ? Math.max(0, doc.lastAutoTable.finalY - startY) : 0,
+            oversized: lastPage > firstPage
+        };
+    }
+
+    function measureAnalysisSectionHeight(geometry, tableMeasurements, contentBottom, bottomGap) {
+        var oversized = (tableMeasurements || []).some(function(measurement) { return measurement && measurement.oversized; });
+        if (oversized) return geometry.usablePageHeight + geometry.epsilon * 2;
+        var measuredBottom = Number(contentBottom) || 0;
+        (tableMeasurements || []).forEach(function(measurement) {
+            if (!measurement) return;
+            measuredBottom = Math.max(measuredBottom, (Number(measurement.offset) || 0) + (Number(measurement.height) || 0));
+        });
+        return measuredBottom + (Number(bottomGap) || 0);
+    }
+
     function buildAnalysisReportPdfBlob(pdfModel, fontsBase64) {
         if (!pdfModel || pdfModel.ok !== true) throw new Error('記録分析PDFモデルが不正です。');
         if (!window.jspdf || typeof window.jspdf.jsPDF !== 'function') throw new Error('jsPDFを利用できません。');
@@ -8452,6 +8500,14 @@ button, input, select, textarea,
         doc.addFont(PDF_FONT_BOLD_FILE, PDF_FONT_FAMILY, 'bold');
         doc.setFont(PDF_FONT_FAMILY, 'normal');
         var drawTable = getPdfAutoTableFunction(doc);
+        var measureDoc = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', compress: true });
+        measureDoc.addFileToVFS(PDF_FONT_REGULAR_FILE, fontsBase64.regular);
+        measureDoc.addFont(PDF_FONT_REGULAR_FILE, PDF_FONT_FAMILY, 'normal');
+        measureDoc.addFileToVFS(PDF_FONT_BOLD_FILE, fontsBase64.bold);
+        measureDoc.addFont(PDF_FONT_BOLD_FILE, PDF_FONT_FAMILY, 'bold');
+        measureDoc.setFont(PDF_FONT_FAMILY, 'normal');
+        var drawMeasureTable = getPdfAutoTableFunction(measureDoc);
+        var geometry = getAnalysisPdfPageGeometry(doc);
 
         function sectionTitle(title, y, color) {
             doc.setFont(PDF_FONT_FAMILY, 'bold');
@@ -8467,6 +8523,11 @@ button, input, select, textarea,
         function addPage() {
             doc.addPage('a4', 'landscape');
             doc.setFont(PDF_FONT_FAMILY, 'normal');
+        }
+        function measureTable(options, offset) {
+            var measurement = measureAnalysisTableHeight(measureDoc, drawMeasureTable, options, geometry.pageTop + offset);
+            measurement.offset = offset;
+            return measurement;
         }
 
         doc.setFont(PDF_FONT_FAMILY, 'bold');
@@ -8486,21 +8547,22 @@ button, input, select, textarea,
         });
         var y = 36;
         if (pdfModel.setSummary.available && pdfModel.setSummary.rows.length) {
-            sectionTitle('セットサマリー', y);
-            drawTable({
-                startY: y + 4,
+            var setSummaryTableOptions = {
                 head: [['セット','対戦相手','スコア','結果','返球率','S効果率']],
                 body: pdfModel.setSummary.rows.map(function(row) { return [row.setLabel,row.opponent,row.score,row.result,row.receptionABRate,row.serveEffectRate]; }),
                 theme: 'grid', styles: { font: PDF_FONT_FAMILY, fontSize: 8.2, cellPadding: 1.2, textColor: [0,0,0], lineColor: [148,163,184], lineWidth: 0.2 },
                 headStyles: { fillColor: [30,58,138], textColor: [255,255,255], halign: 'center' },
                 columnStyles: { 0:{cellWidth:34,halign:'center'},1:{cellWidth:92},2:{cellWidth:32,halign:'center'},3:{cellWidth:22,halign:'center'},4:{cellWidth:34,halign:'right'},5:{cellWidth:37,halign:'right'} },
                 margin: { left: 14, right: 14, bottom: 14 }
-            });
+            };
+            var setSummaryMeasure = measureTable(setSummaryTableOptions, 4);
+            var setSummaryHeight = measureAnalysisSectionHeight(geometry, [setSummaryMeasure], 0, 8);
+            y = ensureAnalysisSectionFits(doc, y, setSummaryHeight, addPage);
+            sectionTitle('セットサマリー', y);
+            drawTable(Object.assign({}, setSummaryTableOptions, { startY: y + 4 }));
             y = doc.lastAutoTable.finalY + 8;
         }
-        sectionTitle('基本スタッツ', y);
-        drawTable({
-            startY: y + 4,
+        var basicTableOptions = {
             head: [['No','選手名','得点','スパイク\n得 / ミス','ブロック\n決定 / ミス','サーブ\nAce / ミス','ミス','反則']],
             body: pdfModel.basicRows.map(function(row) { return [row.number,row.name,String(row.points),row.spikePoint+' / '+row.spikeMiss,row.blockPoint+' / '+row.blockMiss,row.serveAce+' / '+row.serveMiss,String(row.techErrorTotal),String(row.violationTotal)]; }),
             theme: 'grid', styles: { font: PDF_FONT_FAMILY, fontSize: 9, cellPadding: 1.2, minCellHeight: 6.2, textColor: [0,0,0], lineColor: [100,116,139], lineWidth: 0.2, halign: 'center' },
@@ -8515,48 +8577,69 @@ button, input, select, textarea,
                 else if (row.kind === 'own-team-total') data.cell.styles.fillColor = [219,234,254];
                 else if (row.kind === 'opponent') data.cell.styles.fillColor = [254,242,242];
             }
-        });
+        };
+        var basicMeasure = measureTable(basicTableOptions, 4);
+        var basicHeight = measureAnalysisSectionHeight(geometry, [basicMeasure], 0, 12);
+        y = ensureAnalysisSectionFits(doc, y, basicHeight, addPage);
+        sectionTitle('基本スタッツ', y);
+        drawTable(Object.assign({}, basicTableOptions, { startY: y + 4 }));
+        y = doc.lastAutoTable.finalY + 12;
 
-        addPage();
-        sectionTitle('レセプション', 18, [15,118,110]);
-        if (pdfModel.reception.note) {
-            doc.setFontSize(7.5); doc.setTextColor(71,85,105); doc.text('※ ' + pdfModel.reception.note, 283, 22, { align: 'right' });
-        }
         var recRows = pdfModel.reception.rows.map(function(row) { return [row.number,row.name,String(row.total),String(row.A),String(row.B),String(row.C),String(row.D),String(row.M),rateText(row.aRate),rateText(row.abRate)]; });
         if (pdfModel.reception.teamTotal) {
             var rt = pdfModel.reception.teamTotal;
             recRows.push(['','チーム総計',String(rt.recTotal),String(rt.recA),String(rt.recB),String(rt.recC),String(rt.recD),String(rt.recM),rateText(Number(rt.recAPct)),rateText(Number(rt.recABPct))]);
         }
+        var receptionTableOptions = recRows.length ? { head:[['No','選手名','受数','A','B','C','D','M','A率','AB率']], body:recRows, theme:'grid',
+            styles:{font:PDF_FONT_FAMILY,fontSize:9,cellPadding:2,textColor:[0,0,0],lineColor:[100,116,139],lineWidth:0.2,halign:'center'}, headStyles:{fillColor:[15,118,110],textColor:[255,255,255]},
+            columnStyles:{0:{cellWidth:16},1:{cellWidth:60,halign:'left'},2:{cellWidth:23},3:{cellWidth:19},4:{cellWidth:19},5:{cellWidth:19},6:{cellWidth:19},7:{cellWidth:19},8:{cellWidth:31},9:{cellWidth:31}}, margin:{left:14,right:14,bottom:14},
+            didParseCell:function(data){ if(data.section==='body' && pdfModel.reception.teamTotal && data.row.index===recRows.length-1) data.cell.styles.fillColor=[204,251,241]; }
+        } : null;
+        var receptionMeasure = receptionTableOptions ? measureTable(receptionTableOptions, 6) : null;
+        var receptionHeight = measureAnalysisSectionHeight(geometry, receptionMeasure ? [receptionMeasure] : [], recRows.length ? 0 : 14, 12);
+        y = ensureAnalysisSectionFits(doc, y, receptionHeight, addPage);
+        sectionTitle('レセプション', y, [15,118,110]);
+        if (pdfModel.reception.note) {
+            doc.setFontSize(7.5); doc.setTextColor(71,85,105); doc.text('※ ' + pdfModel.reception.note, 283, y + 4, { align: 'right' });
+        }
         if (recRows.length) {
-            drawTable({ startY:24, head:[['No','選手名','受数','A','B','C','D','M','A率','AB率']], body:recRows, theme:'grid',
-                styles:{font:PDF_FONT_FAMILY,fontSize:9,cellPadding:2,textColor:[0,0,0],lineColor:[100,116,139],lineWidth:0.2,halign:'center'}, headStyles:{fillColor:[15,118,110],textColor:[255,255,255]},
-                columnStyles:{0:{cellWidth:16},1:{cellWidth:60,halign:'left'},2:{cellWidth:23},3:{cellWidth:19},4:{cellWidth:19},5:{cellWidth:19},6:{cellWidth:19},7:{cellWidth:19},8:{cellWidth:31},9:{cellWidth:31}}, margin:{left:14,right:14,bottom:14},
-                didParseCell:function(data){ if(data.section==='body' && pdfModel.reception.teamTotal && data.row.index===recRows.length-1) data.cell.styles.fillColor=[204,251,241]; }
-            });
-        } else { doc.setFontSize(11); doc.setTextColor(0,0,0); doc.text(pdfModel.reception.emptyMessage,18,32); }
-        y = recRows.length && doc.lastAutoTable ? doc.lastAutoTable.finalY + 12 : 44;
-        sectionTitle('サーブ効果', y);
+            drawTable(Object.assign({}, receptionTableOptions, { startY:y + 6 }));
+        } else { doc.setFontSize(11); doc.setTextColor(0,0,0); doc.text(pdfModel.reception.emptyMessage,18,y + 14); }
+        y = recRows.length && doc.lastAutoTable ? doc.lastAutoTable.finalY + 12 : y + 26;
         var serveRows = pdfModel.serveEffect.rows.map(function(row) { return [row.number,row.name+(row.reference?'（参考）':''),String(row.attempts),String(row.P),String(row.effect),String(row.miss),rateText(row.effectRate)]; });
         if (pdfModel.serveEffect.teamTotal) {
             var st = pdfModel.serveEffect.teamTotal;
             serveRows.push(['','チーム総計',String(st.attempts),String(st.points),String(st.effects),String(st.misses),rateText(st.rate)]);
         }
+        var serveTableOptions = serveRows.length ? { head:[['No','選手名','打数','P','効果','ミス','効果率']], body:serveRows, theme:'grid',
+            styles:{font:PDF_FONT_FAMILY,fontSize:9,cellPadding:2,textColor:[0,0,0],lineColor:[100,116,139],lineWidth:0.2,halign:'center'}, headStyles:{fillColor:[30,58,138],textColor:[255,255,255]},
+            columnStyles:{0:{cellWidth:20},1:{cellWidth:82,halign:'left'},2:{cellWidth:30},3:{cellWidth:30},4:{cellWidth:30},5:{cellWidth:30},6:{cellWidth:40}}, margin:{left:14,right:14,bottom:14},
+            didParseCell:function(data){ if(data.section!=='body')return; var sourceRow=pdfModel.serveEffect.rows[data.row.index]; if(sourceRow&&sourceRow.reference)data.cell.styles.fillColor=[254,249,195]; if(pdfModel.serveEffect.teamTotal&&data.row.index===serveRows.length-1)data.cell.styles.fillColor=[219,234,254]; }
+        } : null;
+        var serveMeasure = serveTableOptions ? measureTable(serveTableOptions, 4) : null;
+        var serveHeight = measureAnalysisSectionHeight(geometry, serveMeasure ? [serveMeasure] : [], serveRows.length ? 0 : 12, 12);
+        y = ensureAnalysisSectionFits(doc, y, serveHeight, addPage);
+        sectionTitle('サーブ効果', y);
         if (serveRows.length) {
-            drawTable({ startY:y+4, head:[['No','選手名','打数','P','効果','ミス','効果率']], body:serveRows, theme:'grid',
-                styles:{font:PDF_FONT_FAMILY,fontSize:9,cellPadding:2,textColor:[0,0,0],lineColor:[100,116,139],lineWidth:0.2,halign:'center'}, headStyles:{fillColor:[30,58,138],textColor:[255,255,255]},
-                columnStyles:{0:{cellWidth:20},1:{cellWidth:82,halign:'left'},2:{cellWidth:30},3:{cellWidth:30},4:{cellWidth:30},5:{cellWidth:30},6:{cellWidth:40}}, margin:{left:14,right:14,bottom:14},
-                didParseCell:function(data){ if(data.section!=='body')return; var sourceRow=pdfModel.serveEffect.rows[data.row.index]; if(sourceRow&&sourceRow.reference)data.cell.styles.fillColor=[254,249,195]; if(pdfModel.serveEffect.teamTotal&&data.row.index===serveRows.length-1)data.cell.styles.fillColor=[219,234,254]; }
-            });
+            drawTable(Object.assign({}, serveTableOptions, { startY:y+4 }));
         } else { doc.setFontSize(11); doc.text(pdfModel.serveEffect.emptyMessage,18,y+12); }
+        y = serveRows.length && doc.lastAutoTable ? doc.lastAutoTable.finalY + 12 : y + 24;
 
-        addPage();
-        sectionTitle('得点・失点内訳', 18);
         function pointRows(items) { return items.map(function(item) { return [item.label,String(item.count),item.rateText || rateText(item.rate)]; }); }
-        drawTable({ startY:24, head:[['得点内訳','件数','割合']], body:pointRows(pdfModel.pointBreakdown.scoring).concat([['合計',String(pdfModel.pointBreakdown.scoringTotal),'100%']]), theme:'grid', tableWidth:120,
-            styles:{font:PDF_FONT_FAMILY,fontSize:10,cellPadding:3,textColor:[0,0,0],lineColor:[100,116,139],lineWidth:0.2}, headStyles:{fillColor:[30,58,138],textColor:[255,255,255]}, columnStyles:{0:{cellWidth:62},1:{cellWidth:26,halign:'right'},2:{cellWidth:32,halign:'right'}}, margin:{left:14,right:163} });
-        drawTable({ startY:24, head:[['失点内訳','件数','割合']], body:pointRows(pdfModel.pointBreakdown.conceding).concat([['合計',String(pdfModel.pointBreakdown.concedingTotal),'100%']]), theme:'grid', tableWidth:120,
-            styles:{font:PDF_FONT_FAMILY,fontSize:10,cellPadding:3,textColor:[0,0,0],lineColor:[100,116,139],lineWidth:0.2}, headStyles:{fillColor:[153,27,27],textColor:[255,255,255]}, columnStyles:{0:{cellWidth:62},1:{cellWidth:26,halign:'right'},2:{cellWidth:32,halign:'right'}}, margin:{left:163,right:14} });
-        var pointTableEndY = Math.max(doc.lastAutoTable ? doc.lastAutoTable.finalY : 55, 55);
+        var scoringTableOptions = { head:[['得点内訳','件数','割合']], body:pointRows(pdfModel.pointBreakdown.scoring).concat([['合計',String(pdfModel.pointBreakdown.scoringTotal),'100%']]), theme:'grid', tableWidth:120,
+            styles:{font:PDF_FONT_FAMILY,fontSize:10,cellPadding:3,textColor:[0,0,0],lineColor:[100,116,139],lineWidth:0.2}, headStyles:{fillColor:[30,58,138],textColor:[255,255,255]}, columnStyles:{0:{cellWidth:62},1:{cellWidth:26,halign:'right'},2:{cellWidth:32,halign:'right'}}, margin:{left:14,right:163} };
+        var concedingTableOptions = { head:[['失点内訳','件数','割合']], body:pointRows(pdfModel.pointBreakdown.conceding).concat([['合計',String(pdfModel.pointBreakdown.concedingTotal),'100%']]), theme:'grid', tableWidth:120,
+            styles:{font:PDF_FONT_FAMILY,fontSize:10,cellPadding:3,textColor:[0,0,0],lineColor:[100,116,139],lineWidth:0.2}, headStyles:{fillColor:[153,27,27],textColor:[255,255,255]}, columnStyles:{0:{cellWidth:62},1:{cellWidth:26,halign:'right'},2:{cellWidth:32,halign:'right'}}, margin:{left:163,right:14} };
+        var scoringMeasure = measureTable(scoringTableOptions, 6);
+        var concedingMeasure = measureTable(concedingTableOptions, 6);
+        var pointHeight = measureAnalysisSectionHeight(geometry, [scoringMeasure, concedingMeasure], 37, 14);
+        y = ensureAnalysisSectionFits(doc, y, pointHeight, addPage);
+        sectionTitle('得点・失点内訳', y);
+        drawTable(Object.assign({}, scoringTableOptions, { startY:y + 6 }));
+        var scoringTableEndY = doc.lastAutoTable ? doc.lastAutoTable.finalY : y + 37;
+        drawTable(Object.assign({}, concedingTableOptions, { startY:y + 6 }));
+        var concedingTableEndY = doc.lastAutoTable ? doc.lastAutoTable.finalY : y + 37;
+        var pointTableEndY = Math.max(scoringTableEndY, concedingTableEndY, y + 37);
         function drawPointBand(items, x, bandY, width, colors) {
             var cursor = x;
             (items || []).forEach(function(item, index) {
@@ -8573,16 +8656,24 @@ button, input, select, textarea,
         drawPointBand(pdfModel.pointBreakdown.conceding,163,pointTableEndY+3,120,[[220,38,38],[124,45,18]]);
         y = pointTableEndY + 14;
         if (pdfModel.scoreAdjustment.count > 0) {
-            sectionTitle(pdfModel.scoreAdjustment.aggregateOnly ? '得点修正監査' : '得点修正 3段監査', y);
             var auditBody = pdfModel.scoreAdjustment.aggregateOnly
                 ? [['得点修正あり',pdfModel.scoreAdjustment.count+'件']]
                 : [['プレー記録合計',String(pdfModel.scoreAdjustment.playRecordedPointsUs),String(pdfModel.scoreAdjustment.playRecordedPointsThem)],['得点修正',String(pdfModel.scoreAdjustment.scoreAdjustmentUs),String(pdfModel.scoreAdjustment.scoreAdjustmentThem)],['最終得点／最終失点',String(pdfModel.scoreAdjustment.finalPointsUs),String(pdfModel.scoreAdjustment.finalPointsThem)]];
-            drawTable({startY:y+4,head:[pdfModel.scoreAdjustment.aggregateOnly?['監査項目','値']:['監査項目','得点側','失点側']],body:auditBody,theme:'grid',tableWidth:150,styles:{font:PDF_FONT_FAMILY,fontSize:9,cellPadding:2,lineColor:[148,163,184],lineWidth:0.2},headStyles:{fillColor:[71,85,105],textColor:[255,255,255]},margin:{left:14}});
+            var auditTableOptions = {head:[pdfModel.scoreAdjustment.aggregateOnly?['監査項目','値']:['監査項目','得点側','失点側']],body:auditBody,theme:'grid',tableWidth:150,styles:{font:PDF_FONT_FAMILY,fontSize:9,cellPadding:2,lineColor:[148,163,184],lineWidth:0.2},headStyles:{fillColor:[71,85,105],textColor:[255,255,255]},margin:{left:14}};
+            var auditMeasure = measureTable(auditTableOptions, 4);
+            var auditHeight = measureAnalysisSectionHeight(geometry, [auditMeasure], 0, 10);
+            y = ensureAnalysisSectionFits(doc, y, auditHeight, addPage);
+            sectionTitle(pdfModel.scoreAdjustment.aggregateOnly ? '得点修正監査' : '得点修正 3段監査', y);
+            drawTable(Object.assign({}, auditTableOptions, {startY:y+4}));
             y = doc.lastAutoTable.finalY + 10;
         }
         if (pdfModel.rotation.supported && pdfModel.rotation.rows.length) {
+            var rotationTableOptions = {head:[['Rotation','得点','失点','得失点','得点率']],body:pdfModel.rotation.rows.map(function(row){return[row.rotation,String(row.pointsFor),String(row.pointsAgainst),String(row.diff),row.pointRateText];}),theme:'grid',tableWidth:170,styles:{font:PDF_FONT_FAMILY,fontSize:9,cellPadding:2,halign:'center',lineColor:[148,163,184],lineWidth:0.2},headStyles:{fillColor:[30,58,138],textColor:[255,255,255]},margin:{left:14}};
+            var rotationMeasure = measureTable(rotationTableOptions, 4);
+            var rotationHeight = measureAnalysisSectionHeight(geometry, [rotationMeasure], 0, 0);
+            y = ensureAnalysisSectionFits(doc, y, rotationHeight, addPage);
             sectionTitle('ローテーション分析', y);
-            drawTable({startY:y+4,head:[['Rotation','得点','失点','得失点','得点率']],body:pdfModel.rotation.rows.map(function(row){return[row.rotation,String(row.pointsFor),String(row.pointsAgainst),String(row.diff),row.pointRateText];}),theme:'grid',tableWidth:170,styles:{font:PDF_FONT_FAMILY,fontSize:9,cellPadding:2,halign:'center',lineColor:[148,163,184],lineWidth:0.2},headStyles:{fillColor:[30,58,138],textColor:[255,255,255]},margin:{left:14}});
+            drawTable(Object.assign({}, rotationTableOptions, {startY:y+4}));
         }
 
         var totalPages = doc.getNumberOfPages();
