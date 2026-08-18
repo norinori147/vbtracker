@@ -8612,9 +8612,9 @@ button, input, select, textarea,
             serveRows.push(['','チーム総計',String(st.attempts),String(st.points),String(st.effects),String(st.misses),rateText(st.rate)]);
         }
         var serveTableOptions = serveRows.length ? { head:[['No','選手名','打数','P','効果','ミス','効果率']], body:serveRows, theme:'grid',
-            styles:{font:PDF_FONT_FAMILY,fontSize:9,cellPadding:2,textColor:[0,0,0],lineColor:[100,116,139],lineWidth:0.2,halign:'center'}, headStyles:{fillColor:[30,58,138],textColor:[255,255,255]},
+            styles:{font:PDF_FONT_FAMILY,fontSize:9,cellPadding:2,textColor:[0,0,0],lineColor:[100,116,139],lineWidth:0.2,halign:'center'}, headStyles:{fillColor:[157,23,77],textColor:[255,255,255]},
             columnStyles:{0:{cellWidth:20},1:{cellWidth:82,halign:'left'},2:{cellWidth:30},3:{cellWidth:30},4:{cellWidth:30},5:{cellWidth:30},6:{cellWidth:40}}, margin:{left:14,right:14,bottom:14},
-            didParseCell:function(data){ if(data.section!=='body')return; var sourceRow=pdfModel.serveEffect.rows[data.row.index]; if(sourceRow&&sourceRow.reference)data.cell.styles.fillColor=[254,249,195]; if(pdfModel.serveEffect.teamTotal&&data.row.index===serveRows.length-1)data.cell.styles.fillColor=[219,234,254]; }
+            didParseCell:function(data){ if(data.section!=='body')return; var sourceRow=pdfModel.serveEffect.rows[data.row.index]; if(sourceRow&&sourceRow.reference)data.cell.styles.fillColor=[254,249,195]; if(pdfModel.serveEffect.teamTotal&&data.row.index===serveRows.length-1)data.cell.styles.fillColor=[252,231,243]; }
         } : null;
         var serveMeasure = serveTableOptions ? measureTable(serveTableOptions, 4) : null;
         var serveHeight = measureAnalysisSectionHeight(geometry, serveMeasure ? [serveMeasure] : [], serveRows.length ? 0 : 12, 12);
