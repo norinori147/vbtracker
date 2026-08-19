@@ -1380,6 +1380,10 @@
 .record-analysis-scope-btn.active{background:#1d4ed8;border-color:#60a5fa;color:#fff;}
 .record-analysis-archive-controls{display:none;grid-template-columns:1fr 2fr;gap:10px;margin:8px 0 12px;}
 .record-analysis-archive-controls.active{display:grid;}
+.record-analysis-range-controls{display:none;grid-template-columns:1fr auto 1fr;gap:10px;align-items:end;margin:8px 0 12px;}
+.record-analysis-range-controls.active{display:grid;}
+.record-analysis-range-separator{padding:0 2px 10px;color:#94a3b8;font-weight:800;}
+.record-analysis-range-controls input{min-height:42px;}
 .record-analysis-select{width:100%;padding:9px;border:1px solid #475569;border-radius:8px;background:#0f172a;color:#f8fafc;}
 .record-analysis-status{padding:8px 10px;margin-bottom:10px;border:1px solid #334155;border-radius:8px;background:#020617;color:#93c5fd;font-size:.82rem;}
 .record-analysis-context{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:9px 11px;margin-bottom:10px;border:1px solid #475569;border-radius:9px;background:linear-gradient(90deg,#0f172a,#111827);color:#e2e8f0;}
@@ -1420,6 +1424,7 @@
 .record-analysis-running-score .running-score-detail{color:#cbd5e1;}
 #recordAnalysisModal .stats-table th:not(:first-child),#recordAnalysisModal .stats-table td:not(:first-child){text-align:right;}
 @media(max-width:900px){.record-analysis-archive-controls{grid-template-columns:1fr}.record-analysis-team-summary,.record-analysis-point-grid{grid-template-columns:1fr}.record-analysis-context{align-items:flex-start}.record-analysis-context-main{min-width:0;flex:1 1 100%}}
+@media(max-width:560px){.record-analysis-range-controls{grid-template-columns:1fr}.record-analysis-range-separator{padding:0;text-align:center;}}
 
 
 /* Ver.1.3.9: iPad Safari ダブルタップズーム抑制（CSS/viewport中心・JS preventDefaultなし） */
@@ -1733,8 +1738,14 @@ button, input, select, textarea,
                         <button class="record-analysis-scope-btn active" data-record-analysis-scope="current-set" onclick="selectRecordAnalysisScope('current-set')">現在のセット</button>
                         <button id="record-analysis-current-match-btn" class="record-analysis-scope-btn" data-record-analysis-scope="current-match" onclick="selectRecordAnalysisScope('current-match')">現在の試合</button>
                         <button class="record-analysis-scope-btn" data-record-analysis-scope="today" onclick="selectRecordAnalysisScope('today')">当日</button>
+                        <button class="record-analysis-scope-btn" data-record-analysis-scope="date-range" onclick="selectRecordAnalysisScope('date-range')">指定期間</button>
                         <button class="record-analysis-scope-btn" data-record-analysis-scope="all" onclick="selectRecordAnalysisScope('all')">全通算</button>
                         <button class="record-analysis-scope-btn" data-record-analysis-scope="archive" onclick="selectRecordAnalysisScope('archive')">過去の記録</button>
+                    </div>
+                    <div id="record-analysis-range-controls" class="record-analysis-range-controls">
+                        <label>開始日<input id="record-analysis-range-start" class="record-analysis-select" type="date" onchange="renderRecordAnalysis()"></label>
+                        <span class="record-analysis-range-separator" aria-hidden="true">～</span>
+                        <label>終了日<input id="record-analysis-range-end" class="record-analysis-select" type="date" onchange="renderRecordAnalysis()"></label>
                     </div>
                     <div id="record-analysis-archive-controls" class="record-analysis-archive-controls">
                         <label>日付<select id="record-analysis-date-select" class="record-analysis-select" onchange="onRecordAnalysisDateChanged()"></select></label>
@@ -6096,7 +6107,7 @@ button, input, select, textarea,
     function normalizeAnalysisRequest(request) {
         request = request && typeof request === 'object' ? request : {};
         var scope = String(request.scope || '').trim();
-        var allowed = ['current', 'current-match', 'today', 'date', 'archive-set', 'all'];
+        var allowed = ['current', 'current-match', 'today', 'date-range', 'date', 'archive-set', 'all'];
         if (allowed.indexOf(scope) === -1) {
             return { ok: false, error: { code: 'INVALID_SCOPE', message: '未対応のAnalysis scopeです: ' + scope } };
         }
@@ -6104,6 +6115,13 @@ button, input, select, textarea,
         if (scope === 'date') {
             normalized.dateKey = normalizeArchiveDateString(request.dateKey || '');
             if (!normalized.dateKey) return { ok: false, error: { code: 'INVALID_DATE', message: 'date scopeには有効なdateKeyが必要です。' } };
+        }
+        if (scope === 'date-range') {
+            normalized.startDateKey = normalizeArchiveDateString(request.startDateKey || '');
+            normalized.endDateKey = normalizeArchiveDateString(request.endDateKey || '');
+            if (!normalized.startDateKey) return { ok: false, error: { code: 'INVALID_RANGE_START', message: '開始日を指定してください。' } };
+            if (!normalized.endDateKey) return { ok: false, error: { code: 'INVALID_RANGE_END', message: '終了日を指定してください。' } };
+            if (normalized.startDateKey > normalized.endDateKey) return { ok: false, error: { code: 'INVALID_DATE_RANGE', message: '開始日は終了日以前の日付を指定してください。' } };
         }
         if (scope === 'archive-set') {
             normalized.archiveId = String(request.archiveId || '').trim();
@@ -6207,6 +6225,11 @@ button, input, select, textarea,
                 normalized.dateKey = normalizeArchiveDateString(getTodayKey());
                 if (!normalized.dateKey) return createAnalysisFailure(normalized, 'INVALID_DATE', '今日の日付を解決できません。');
                 archiveItems = selectAnalysisArchiveItems({ dateKey: normalized.dateKey });
+            } else if (scope === 'date-range') {
+                archiveItems = selectAnalysisArchiveItems({}).filter(function(item) {
+                    var itemDateKey = normalizeArchiveDateString(item && item.date);
+                    return itemDateKey && normalized.startDateKey <= itemDateKey && itemDateKey <= normalized.endDateKey;
+                });
             } else if (scope === 'date') {
                 archiveItems = selectAnalysisArchiveItems({ dateKey: normalized.dateKey });
             } else if (scope === 'archive-set') {
@@ -6260,7 +6283,12 @@ button, input, select, textarea,
             };
         });
         var periodDate = normalized.dateKey || (selectedArchiveItem ? normalizeArchiveDateString(selectedArchiveItem.date) : '');
-        var scopeLabels = { current: '現セット', 'current-match': '現在の試合', today: '本日', date: '日合計', 'archive-set': '過去1セット', all: '全通算' };
+        var rangePeriod = scope === 'date-range' ? {
+            from: normalized.startDateKey.replace(/\//g, '-'),
+            to: normalized.endDateKey.replace(/\//g, '-'),
+            label: normalized.startDateKey.replace(/\//g, '-') + ' ～ ' + normalized.endDateKey.replace(/\//g, '-')
+        } : null;
+        var scopeLabels = { current: '現セット', 'current-match': '現在の試合', today: '本日', 'date-range': '指定期間', date: '日合計', 'archive-set': '過去1セット', all: '全通算' };
 
         return {
             ok: true,
@@ -6276,7 +6304,7 @@ button, input, select, textarea,
             teamAggregation: getOwnTeamTotalStats(statsData),
             opponentNames: opponentNames,
             setScores: setScores,
-            period: { from: periodDate, to: periodDate, label: periodDate },
+            period: rangePeriod || { from: periodDate, to: periodDate, label: periodDate },
             scopeLabel: scopeLabels[scope],
             selectedArchiveItem: selectedArchiveItem,
             lineupSnap: scope === 'current' || scope === 'current-match' ? startingLineup : (selectedArchiveItem ? selectedArchiveItem.startingLineupSnap || null : null),
@@ -6546,7 +6574,7 @@ button, input, select, textarea,
         if (context.score) secondaryParts.push(context.score.text);
         if (context.result.label) secondaryParts.push(context.result.label);
         if (context.time.rangeText) secondaryParts.push(context.time.rangeText);
-        if (!selected && scope !== 'all' && scope !== 'date' && context.completedSetCount > 0) secondaryParts.push('完了Archive ' + context.completedSetCount + 'セット');
+        if (!selected && scope !== 'all' && scope !== 'date-range' && scope !== 'date' && context.completedSetCount > 0) secondaryParts.push('完了Archive ' + context.completedSetCount + 'セット');
         context.display = {
             primary: primaryParts.filter(function(value) { return !!value; }).join('　'),
             secondary: secondaryParts.join('　'),
@@ -6710,6 +6738,10 @@ button, input, select, textarea,
         var dateLabel = context && context.date ? (context.date.from || context.date.to || '') : '';
         var safeDate = String(dateLabel || '').replace(/[^0-9]+/g, '-').replace(/^-|-$/g, '');
         if (scope === 'all') return 'SEIMEI_VB_RecordAnalysis_All.csv';
+        if (scope === 'date-range') {
+            var rangeEnd = context && context.date ? String(context.date.to || '').replace(/[^0-9]+/g, '-').replace(/^-|-$/g, '') : '';
+            return 'SEIMEI_VB_RecordAnalysis_' + (safeDate || 'Start') + '_to_' + (rangeEnd || 'End') + '_Range.csv';
+        }
         if (scope === 'current') return 'SEIMEI_VB_RecordAnalysis_Current.csv';
         if (scope === 'current-match') return 'SEIMEI_VB_RecordAnalysis_' + (safeDate ? safeDate + '_' : '') + 'CurrentMatch.csv';
         if (scope === 'archive-set') {
@@ -6840,10 +6872,10 @@ button, input, select, textarea,
             ? Object.assign({}, teamSummary.reception) : null;
         var serveTeam = teamSummary && teamSummary.serveEffect && safeStatNumber(teamSummary.serveEffect.attempts) > 0
             ? Object.assign({}, teamSummary.serveEffect) : null;
-        var includeSetSummary = scope !== 'all' && Array.isArray(source.archiveItems) && source.archiveItems.length > 0;
+        var includeSetSummary = scope !== 'all' && scope !== 'date-range' && Array.isArray(source.archiveItems) && source.archiveItems.length > 0;
         var setSummary = includeSetSummary
             ? buildReportSetSummaries(source.archiveItems)
-            : { available: false, emptyMessage: scope === 'all' ? '全通算ではセット一覧を省略します。' : '完了セット記録なし', columns: [], rows: [] };
+            : { available: false, emptyMessage: scope === 'all' || scope === 'date-range' ? '集約レポートではセット一覧を省略します。' : '完了セット記録なし', columns: [], rows: [] };
         var hasScoreAdjustments = Array.isArray(source.historyItems) && source.historyItems.some(function(item) { return item && item.type === 'score_adjust'; });
 
         return {
@@ -7007,8 +7039,20 @@ button, input, select, textarea,
         for (var i = 0; i < buttons.length; i++) buttons[i].classList.toggle('active', buttons[i].getAttribute('data-record-analysis-scope') === scope);
         var controls = document.getElementById('record-analysis-archive-controls');
         if (controls) controls.classList.toggle('active', scope === 'archive');
+        var rangeControls = document.getElementById('record-analysis-range-controls');
+        if (rangeControls) rangeControls.classList.toggle('active', scope === 'date-range');
         if (scope === 'archive') ensureRecordAnalysisArchiveOptions();
+        if (scope === 'date-range') ensureRecordAnalysisRangeDefaults();
         renderRecordAnalysis();
+    }
+
+    function ensureRecordAnalysisRangeDefaults() {
+        var startInput = document.getElementById('record-analysis-range-start');
+        var endInput = document.getElementById('record-analysis-range-end');
+        if (!startInput || !endInput) return;
+        var today = getTodayKey();
+        if (!startInput.value) startInput.value = today.slice(0, 8) + '01';
+        if (!endInput.value) endInput.value = today;
     }
 
     function ensureRecordAnalysisArchiveOptions() {
@@ -7050,6 +7094,11 @@ button, input, select, textarea,
         if (recordAnalysisUiScope === 'current-set') return { scope: 'current' };
         if (recordAnalysisUiScope === 'current-match') return { scope: 'current-match' };
         if (recordAnalysisUiScope === 'today') return { scope: 'today' };
+        if (recordAnalysisUiScope === 'date-range') {
+            var rangeStart = document.getElementById('record-analysis-range-start');
+            var rangeEnd = document.getElementById('record-analysis-range-end');
+            return { scope: 'date-range', startDateKey: rangeStart ? rangeStart.value : '', endDateKey: rangeEnd ? rangeEnd.value : '' };
+        }
         if (recordAnalysisUiScope === 'all') return { scope: 'all' };
         var dateSelect = document.getElementById('record-analysis-date-select');
         var setSelect = document.getElementById('record-analysis-set-select');
@@ -7173,7 +7222,7 @@ button, input, select, textarea,
         if (!recordAnalysisRotationSupported && recordAnalysisUiTab === 'rotation') recordAnalysisUiTab = 'basic';
         if (!recordAnalysisRunningScoreSupported && recordAnalysisUiTab === 'running-score') recordAnalysisUiTab = 'basic';
         if (status) {
-            var hidesArchiveCount = source.normalizedRequest && ['all', 'date', 'archive-set'].indexOf(source.normalizedRequest.scope) !== -1;
+            var hidesArchiveCount = source.normalizedRequest && ['all', 'date-range', 'date', 'archive-set'].indexOf(source.normalizedRequest.scope) !== -1;
             status.innerText = hidesArchiveCount ? source.scopeLabel : source.scopeLabel + ' / 完了Archive ' + source.archiveItems.length + 'セット';
         }
         contextBox.innerHTML = buildRecordAnalysisContextMainHtml(analysisContext, analysisContext.display.primary, analysisContext.display.secondary) +
@@ -7291,6 +7340,7 @@ button, input, select, textarea,
         if (matchType !== 'official' && recordAnalysisUiScope === 'current-match') recordAnalysisUiScope = 'current-set';
         recordAnalysisUiTab = 'basic';
         ensureRecordAnalysisArchiveOptions();
+        ensureRecordAnalysisRangeDefaults();
         selectRecordAnalysisScope(recordAnalysisUiScope || 'current-set');
     }
 
@@ -8370,7 +8420,7 @@ button, input, select, textarea,
             { label: 'レセプション AB率', value: model.summary && model.summary.receptionText ? model.summary.receptionText : '－' },
             { label: 'S効果率', value: model.summary && model.summary.serveEffectText ? model.summary.serveEffectText : '－' }
         ];
-        if (scope === 'all') {
+        if (scope === 'all' || scope === 'date-range') {
             overview.push({ label: '勝', value: String(resultSummary.wins) });
             overview.push({ label: '敗', value: String(resultSummary.losses) });
             overview.push({ label: '得点修正', value: scoreAdjust.count ? scoreAdjust.count + '件' : 'なし' });
@@ -8421,7 +8471,7 @@ button, input, select, textarea,
                 playRecordedPointsThem: concedingTotal,
                 scoreAdjustmentThem: scoreAdjust.them,
                 finalPointsThem: concedingTotal + scoreAdjust.them,
-                aggregateOnly: scope === 'all'
+                aggregateOnly: scope === 'all' || scope === 'date-range'
             },
             resultSummary: resultSummary,
             rotation: model.rotation && model.rotation.supported === true
@@ -8438,6 +8488,10 @@ button, input, select, textarea,
         if (scope === 'all') return 'SEIMEI_VB_RecordAnalysis_All.pdf';
         var date = context.date && context.date.from ? String(context.date.from) : '';
         var safeDate = date.replace(/[^0-9]+/g, '-').replace(/^-|-$/g, '');
+        if (scope === 'date-range') {
+            var rangeEnd = context.date && context.date.to ? String(context.date.to).replace(/[^0-9]+/g, '-').replace(/^-|-$/g, '') : '';
+            return 'SEIMEI_VB_RecordAnalysis_' + (safeDate || 'Start') + '_to_' + (rangeEnd || 'End') + '_Range.pdf';
+        }
         var suffix = scope === 'archive-set' && context.set && context.set.number ? '_Set' + safeStatNumber(context.set.number) :
             (scope === 'today' || scope === 'date' ? '_Day' : (scope === 'current-match' ? '_CurrentMatch' : '_CurrentSet'));
         return 'SEIMEI_VB_RecordAnalysis_' + (safeDate || 'Undated') + suffix + '.pdf';
