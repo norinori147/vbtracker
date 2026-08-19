@@ -1455,8 +1455,8 @@ button, input, select, textarea,
         <button class="tool-btn" onclick="openModal('lineupModal')">📋 S-Lineup</button>
         <button class="tool-btn" onclick="openIrregularAdjustModal()">⚙ イレギュラーな修正</button>
         <button class="tool-btn" onclick="openModal('historyModal')">📜 セット履歴</button>
-        <button class="tool-btn" onclick="openModal('statsModal')">📊 集計・分析</button>
-        <button class="tool-btn" onclick="openModal('archiveModal')">📂 過去の記録</button>
+        <button class="tool-btn" onclick="openModal('statsModal')" hidden>📊 集計・分析</button>
+        <button class="tool-btn" onclick="openModal('archiveModal')" hidden>📂 過去の記録</button>
         <button class="tool-btn" onclick="openModal('recordAnalysisModal')">📊 記録・分析</button>
         <button class="tool-btn" onclick="openModal('playersModal')">👥 基礎データ管理</button>
         <button class="tool-btn" onclick="openModal('dataModal')">💾 保存・読込</button>
@@ -6546,7 +6546,7 @@ button, input, select, textarea,
         if (context.score) secondaryParts.push(context.score.text);
         if (context.result.label) secondaryParts.push(context.result.label);
         if (context.time.rangeText) secondaryParts.push(context.time.rangeText);
-        if (!selected && context.completedSetCount > 0) secondaryParts.push('完了Archive ' + context.completedSetCount + 'セット');
+        if (!selected && scope !== 'all' && scope !== 'date' && context.completedSetCount > 0) secondaryParts.push('完了Archive ' + context.completedSetCount + 'セット');
         context.display = {
             primary: primaryParts.filter(function(value) { return !!value; }).join('　'),
             secondary: secondaryParts.join('　'),
@@ -7173,7 +7173,8 @@ button, input, select, textarea,
         if (!recordAnalysisRotationSupported && recordAnalysisUiTab === 'rotation') recordAnalysisUiTab = 'basic';
         if (!recordAnalysisRunningScoreSupported && recordAnalysisUiTab === 'running-score') recordAnalysisUiTab = 'basic';
         if (status) {
-            status.innerText = source.scopeLabel + ' / 完了Archive ' + source.archiveItems.length + 'セット';
+            var hidesArchiveCount = source.normalizedRequest && ['all', 'date', 'archive-set'].indexOf(source.normalizedRequest.scope) !== -1;
+            status.innerText = hidesArchiveCount ? source.scopeLabel : source.scopeLabel + ' / 完了Archive ' + source.archiveItems.length + 'セット';
         }
         contextBox.innerHTML = buildRecordAnalysisContextMainHtml(analysisContext, analysisContext.display.primary, analysisContext.display.secondary) +
             '<div class="record-analysis-context-metrics"><span class="record-analysis-context-chip">' + escapeHtml(analysisContext.display.reception) + '</span>' +
@@ -8617,13 +8618,26 @@ button, input, select, textarea,
             didParseCell:function(data){ if(data.section!=='body')return; var sourceRow=pdfModel.serveEffect.rows[data.row.index]; if(sourceRow&&sourceRow.reference)data.cell.styles.fillColor=[254,249,195]; if(pdfModel.serveEffect.teamTotal&&data.row.index===serveRows.length-1)data.cell.styles.fillColor=[252,231,243]; }
         } : null;
         var serveMeasure = serveTableOptions ? measureTable(serveTableOptions, 4) : null;
-        var serveHeight = measureAnalysisSectionHeight(geometry, serveMeasure ? [serveMeasure] : [], serveRows.length ? 0 : 12, 12);
+        var serveFormulaNoteText = 'サーブ効果率の算出方法：（サービスエース×100 ＋ 効果×25 − サーブミス×25）÷ サーブ打数　エースを高く評価し、効果のあるサーブを加点、ミスを減点して評価します。';
+        var serveFormulaNoteFontSize = 7.5;
+        measureDoc.setFont(PDF_FONT_FAMILY, 'normal');
+        measureDoc.setFontSize(serveFormulaNoteFontSize);
+        var serveFormulaNoteLines = measureDoc.splitTextToSize(serveFormulaNoteText, 269);
+        var serveFormulaNoteLineHeight = measureDoc.getLineHeight() / measureDoc.internal.scaleFactor;
+        var serveContentEndOffset = serveRows.length && serveMeasure ? serveMeasure.offset + serveMeasure.height : 16;
+        var serveFormulaNoteOffset = serveContentEndOffset + 4;
+        var serveFormulaNoteHeight = serveFormulaNoteLines.length * serveFormulaNoteLineHeight;
+        var serveHeight = measureAnalysisSectionHeight(geometry, serveMeasure ? [serveMeasure] : [], serveFormulaNoteOffset + serveFormulaNoteHeight, 6);
         y = ensureAnalysisSectionFits(doc, y, serveHeight, addPage);
         sectionTitle('サーブ効果', y);
         if (serveRows.length) {
             drawTable(Object.assign({}, serveTableOptions, { startY:y+4 }));
         } else { doc.setFontSize(11); doc.text(pdfModel.serveEffect.emptyMessage,18,y+12); }
-        y = serveRows.length && doc.lastAutoTable ? doc.lastAutoTable.finalY + 12 : y + 24;
+        var serveContentEndY = serveRows.length && doc.lastAutoTable ? doc.lastAutoTable.finalY : y + 16;
+        var serveFormulaNoteY = serveContentEndY + 4;
+        doc.setFont(PDF_FONT_FAMILY, 'normal'); doc.setFontSize(serveFormulaNoteFontSize); doc.setTextColor(71,85,105);
+        doc.text(serveFormulaNoteLines, 14, serveFormulaNoteY);
+        y = serveFormulaNoteY + serveFormulaNoteHeight + 6;
 
         function pointRows(items) { return items.map(function(item) { return [item.label,String(item.count),item.rateText || rateText(item.rate)]; }); }
         var scoringTableOptions = { head:[['得点内訳','件数','割合']], body:pointRows(pdfModel.pointBreakdown.scoring).concat([['合計',String(pdfModel.pointBreakdown.scoringTotal),'100%']]), theme:'grid', tableWidth:120,
