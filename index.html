@@ -3168,6 +3168,7 @@ button, input, select, textarea,
         updateSideToggleUI();
         saveStorage();
         updateUI();
+        if (side === 'S') syncStatsSelectionToCurrentServer(null);
     }
 
     function updateSideToggleUI() {
@@ -3351,12 +3352,14 @@ button, input, select, textarea,
     function setStartingPlayerFromButton(playerId) {
         if (!selectingLineupPos) return;
         var targetPos = selectingLineupPos;
+        var previousServerId = getCurrentServerPlayerId();
         startingLineup[targetPos] = playerId;
 
         // ポップアップを閉じなくても、S-Lineupの6枠・コート表示・保存データが即時更新されるように明示的に再描画する。
         drawStartingLineupBox();
         saveStorage();
         updateUI();
+        syncStatsSelectionToCurrentServer(previousServerId);
 
         var status = document.getElementById('lineup-rotate-status');
         if (lineupBatchMode) {
@@ -3484,6 +3487,7 @@ button, input, select, textarea,
         steps = steps % 6;
         if (steps === 0) return;
 
+        var previousServerId = getCurrentServerPlayerId();
         var next = normalizeStartingLineupMap(startingLineup);
         for (var i = 0; i < steps; i++) {
             next = (delta > 0) ? rotateLineupOnceForward(next) : rotateLineupOnceBack(next);
@@ -3493,6 +3497,7 @@ button, input, select, textarea,
         drawStartingLineupBox();
         saveStorage();
         updateUI();
+        syncStatsSelectionToCurrentServer(previousServerId);
 
         var status = document.getElementById('lineup-rotate-status');
         if (status) {
@@ -3564,6 +3569,7 @@ button, input, select, textarea,
         var scoreThem = document.getElementById('score-them') ? document.getElementById('score-them').innerText : '0';
         var noteEl = document.getElementById('rotation-adjust-note');
         var note = noteEl ? (noteEl.value || '').trim() : '';
+        var previousServerId = getCurrentServerPlayerId();
         historyLog.push({
             type: 'rotation_adjust',
             delta: pendingRotationAdjustDelta,
@@ -3576,6 +3582,7 @@ button, input, select, textarea,
         closeModal('irregularAdjustModal');
         closeModal('rotationAdjustModal');
         updateUI();
+        syncStatsSelectionToCurrentServer(previousServerId);
             drawStartingLineupBox();
         saveStorage();
 }
@@ -3609,6 +3616,21 @@ button, input, select, textarea,
         document.getElementById('btn-' + id).classList.add('active');
         renderPendingReceptionUI();
         saveStorage();
+    }
+
+    function getCurrentServerPlayerId() {
+        if (hasServeAuthority !== true) return null;
+        var rotationState = getCurrentRotationStateForSubstitution();
+        return rotationState && rotationState[1] ? rotationState[1] : null;
+    }
+
+    function syncStatsSelectionToCurrentServer(previousServerId) {
+        var serverId = getCurrentServerPlayerId();
+        if (!serverId || serverId === previousServerId || serverId === selectedPlayer) return false;
+        selectedPlayer = serverId;
+        activePlayerHighlightFix(selectedPlayer);
+        saveStorage();
+        return true;
     }
 
     function isOpponentServing() {
@@ -4170,6 +4192,7 @@ button, input, select, textarea,
     function recordSubstitution(team) {
         if (subCount[team] >= 6) { alert('メンバー交代上限に達しています。'); return; }
         startSubstitutionFlow(team, null, function(subInfo) {
+            var previousServerId = getCurrentServerPlayerId();
             checkAndRefreshMatchDate();
             ensureMatchStarted();
             var scoreUs = document.getElementById('score-us').innerText;
@@ -4180,6 +4203,7 @@ button, input, select, textarea,
             subCount[team]++;
             historyLog.push(subInfo);
             updateUI();
+            syncStatsSelectionToCurrentServer(previousServerId);
         });
     }
 
@@ -4274,6 +4298,7 @@ button, input, select, textarea,
             action.reception = receptionForAction;
             applyReceptionToStats(receptionForAction, 1);
         }
+        var hadServeAuthority = hasServeAuthority;
         historyLog.push(action);
         if (item === 'serve_ace' || item === 'serve_error') {
             serveEffectRallyState = { historyIndex: historyLog.length - 1, item: item, player: statPlayer, serveEffectRecorded: !!action.serveEffect };
@@ -4283,6 +4308,7 @@ button, input, select, textarea,
         if (serveEffectForAction) clearPendingServeEffect();
         if (receptionForAction || bypassOpponentServeErrorReception) clearPendingReception();
         updateUI();
+        if (!hadServeAuthority && hasServeAuthority) syncStatsSelectionToCurrentServer(null);
     }
 
     function activePlayerHighlightFix(id) {
@@ -4452,6 +4478,7 @@ button, input, select, textarea,
             closeLineupPlayerPicker();
             buildArchiveDaySelect();
             updateUI();
+            syncStatsSelectionToCurrentServer(null);
 
             var logContainer = document.getElementById('running-score-log');
             if (logContainer) logContainer.scrollTop = 0;
