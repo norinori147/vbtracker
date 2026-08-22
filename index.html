@@ -4298,7 +4298,6 @@ button, input, select, textarea,
             action.reception = receptionForAction;
             applyReceptionToStats(receptionForAction, 1);
         }
-        var hadServeAuthority = hasServeAuthority;
         historyLog.push(action);
         if (item === 'serve_ace' || item === 'serve_error') {
             serveEffectRallyState = { historyIndex: historyLog.length - 1, item: item, player: statPlayer, serveEffectRecorded: !!action.serveEffect };
@@ -4308,7 +4307,7 @@ button, input, select, textarea,
         if (serveEffectForAction) clearPendingServeEffect();
         if (receptionForAction || bypassOpponentServeErrorReception) clearPendingReception();
         updateUI();
-        if (!hadServeAuthority && hasServeAuthority) syncStatsSelectionToCurrentServer(null);
+        if (hasServeAuthority) syncStatsSelectionToCurrentServer(null);
     }
 
     function activePlayerHighlightFix(id) {
