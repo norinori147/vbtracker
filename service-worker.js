@@ -1,4 +1,4 @@
-const CACHE_NAME = 'seimei-vb-tracker-v1-4-17-record-analysis-integration-build-20260819';
+const CACHE_NAME = 'seimei-vb-tracker-v1-4-17-record-analysis-integration-build-20260822';
 const ASSETS = [
   './',
   './index.html',
